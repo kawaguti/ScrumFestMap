@@ -22,12 +22,12 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
     );
   }, [events, selectedPrefecture]);
 
-  const getPrefectureColor = (prefectureId: string) => {
+  const getPrefectureColor = (id: string) => {
     const hasEvents = events.some(event => 
-      prefectures.find(p => p.id === prefectureId)?.name === event.prefecture
+      prefectures.find(p => p.id === id)?.name === event.prefecture
     );
     
-    if (selectedPrefecture === prefectureId) {
+    if (selectedPrefecture === id) {
       return "hsl(222.2 47.4% 11.2%)";
     }
     return hasEvents ? "hsl(222.2 47.4% 40%)" : "hsl(222.2 47.4% 80%)";
