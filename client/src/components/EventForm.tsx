@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEventSchema, type InsertEvent } from "@db/schema";
+import { prefectures } from "@/lib/prefectures";
 import {
   Form,
   FormControl,
@@ -9,9 +11,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -19,49 +18,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { prefectures } from "@/lib/prefectures";
-import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { DialogDescription } from "@/components/ui/dialog";
 
 interface EventFormProps {
   onSubmit: (data: InsertEvent) => Promise<void>;
-  defaultValues?: Partial<InsertEvent>;
 }
 
-export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
-  const { toast } = useToast();
+export function EventForm({ onSubmit }: EventFormProps) {
   const form = useForm<InsertEvent>({
     resolver: zodResolver(insertEventSchema),
     defaultValues: {
-      name: defaultValues?.name ?? "",
-      prefecture: defaultValues?.prefecture ?? "",
-      date: defaultValues?.date instanceof Date 
-        ? defaultValues.date 
-        : new Date(),
-      website: defaultValues?.website ?? "",
-      description: defaultValues?.description ?? "",
+      name: "",
+      prefecture: "",
+      date: new Date(),
+      website: "",
+      description: "",
     },
   });
 
-  const handleSubmit = async (data: InsertEvent) => {
-    try {
-      await onSubmit(data);
-      toast({
-        title: "イベントを保存しました",
-        description: "イベントの登録が完了しました。",
-      });
-      form.reset();
-    } catch (error) {
-      toast({
-        title: "エラー",
-        description: "イベントの保存に失敗しました。",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -69,7 +49,7 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
             <FormItem>
               <FormLabel>イベント名</FormLabel>
               <FormControl>
-                <Input {...field} value={field.value || ""} />
+                <Input {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

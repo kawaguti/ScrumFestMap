@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-user";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +27,7 @@ export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const { login, register } = useUser();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const form = useForm<InsertUser>({
     resolver: zodResolver(insertUserSchema),
@@ -57,6 +59,9 @@ export default function AuthPage() {
           ? "ようこそ！"
           : "アカウントが作成されました。",
       });
+
+      // ホームページへリダイレクト
+      setLocation("/");
     } catch (error) {
       toast({
         title: "エラー",
