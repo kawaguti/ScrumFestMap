@@ -42,8 +42,9 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
     <>
       <Card className="p-4">
         <svg
-          viewBox="0 0 800 800"
+          viewBox="0 0 800 1100"
           className="w-full h-full"
+          style={{ maxHeight: '80vh' }}
         >
           {prefectures.map((prefecture) => (
             <path
@@ -52,7 +53,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
               d={prefecturePaths[prefecture.id]}
               fill={getPrefectureColor(prefecture.id)}
               stroke="white"
-              strokeWidth="1"
+              strokeWidth="0.5"
               onClick={() => handlePrefectureClick(prefecture.id)}
               className="cursor-pointer hover:opacity-80 transition-opacity"
             />
