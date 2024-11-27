@@ -20,6 +20,8 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
   
   const handleMarkerClick = (event: Event) => {
     setSelectedEvent(event);
+    // イベントダイアログを表示
+    setShowEventDialog(true);
   };
 
   const prefectureEvents = useMemo(() => {
