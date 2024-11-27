@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { setupAuth } from "./auth";
 import { db } from "../db";
-import { events } from "@db/schema";
+import { events, insertEventSchema } from "@db/schema";
 import { eq } from "drizzle-orm";
 
 export function registerRoutes(app: Express) {
@@ -64,15 +64,30 @@ export function registerRoutes(app: Express) {
         return res.status(403).json({ error: "Forbidden" });
       }
 
+      const result = insertEventSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          error: "Invalid input",
+          details: result.error.issues
+        });
+      }
+
       const [updatedEvent] = await db
         .update(events)
-        .set(req.body)
+        .set({
+          ...result.data,
+          updatedAt: new Date(),
+        })
         .where(eq(events.id, parseInt(req.params.id)))
         .returning();
 
       res.json(updatedEvent);
     } catch (error) {
-      res.status(500).json({ error: "Failed to update event" });
+      console.error('Event update error:', error);
+      res.status(500).json({ 
+        error: "Failed to update event",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
@@ -98,7 +113,11 @@ export function registerRoutes(app: Express) {
 
       res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ error: "Failed to delete event" });
+      console.error('Event deletion error:', error);
+      res.status(500).json({ 
+        error: "Failed to delete event",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 }
