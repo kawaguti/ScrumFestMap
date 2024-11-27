@@ -15,9 +15,15 @@ interface JapanMapProps {
 
 export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: JapanMapProps) {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  
+  const [eventHistory, setEventHistory] = useState<Event[]>([]);
+
   const handleMarkerClick = (event: Event) => {
-    setSelectedEvent(event);  // モーダルを表示せず、選択状態のみ更新
+    setSelectedEvent(event);
+    // 履歴に追加（重複を除去し、最新3件を保持）
+    setEventHistory(prev => {
+      const filtered = prev.filter(e => e.id !== event.id);
+      return [event, ...filtered].slice(0, 3);
+    });
   };
 
   const prefectureEvents = useMemo(() => {
@@ -51,6 +57,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
       click: () => {
         const prefId = feature.properties.id;
         onPrefectureSelect(prefId);
+        setSelectedEvent(null); // 都道府県選択時にイベント選択をクリア
       }
     });
   };
@@ -108,11 +115,14 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
             ? "選択されたイベント" 
             : selectedPrefecture 
               ? `${prefectures.find(p => p.id === selectedPrefecture)?.name}のイベント`
-              : "最近のイベント"
-          }
+              : "最近選択したイベント"}
         </h2>
         <EventList
-          events={selectedEvent ? [selectedEvent] : prefectureEvents}
+          events={selectedEvent 
+            ? [selectedEvent] 
+            : selectedPrefecture
+              ? prefectureEvents
+              : eventHistory}
           selectedEvent={selectedEvent}
         />
       </div>
