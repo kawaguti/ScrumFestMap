@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import type { Event } from "@db/schema";
 import {
   Card,
@@ -13,9 +14,10 @@ import { ExternalLink, Calendar } from "lucide-react";
 
 interface EventListProps {
   events: Event[];
+  selectedEvent?: Event | null;
 }
 
-export function EventList({ events }: EventListProps) {
+export function EventList({ events, selectedEvent }: EventListProps) {
   const sortedEvents = [...events].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
@@ -33,7 +35,11 @@ export function EventList({ events }: EventListProps) {
 
 -y-4">
       {sortedEvents.map((event) => (
-        <Card key={event.id}>
+        <Card 
+          key={event.id}
+          className={cn(
+            selectedEvent?.id === event.id && "border-primary"
+          )}>
           <CardHeader>
             <CardTitle>{event.name}</CardTitle>
             <CardDescription className="flex items-center gap-2">

@@ -16,6 +16,11 @@ interface JapanMapProps {
 
 export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: JapanMapProps) {
   const [showEventDialog, setShowEventDialog] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  
+  const handleMarkerClick = (event: Event) => {
+    setSelectedEvent(event);
+  };
 
   const prefectureEvents = useMemo(() => {
     if (!selectedPrefecture) return [];
@@ -81,6 +86,9 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
               <Marker 
                 key={event.id} 
                 position={coordinates}
+                eventHandlers={{
+                  click: () => handleMarkerClick(event)
+                }}
               >
                 <Popup>
                   <div>
@@ -106,7 +114,10 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
               選択された地域で開催されるイベント一覧
             </DialogDescription>
           </DialogHeader>
-          <EventList events={prefectureEvents} />
+          <EventList 
+            events={selectedEvent ? [selectedEvent] : prefectureEvents}
+            selectedEvent={selectedEvent}
+          />
         </DialogContent>
       </Dialog>
     </>
