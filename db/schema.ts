@@ -28,7 +28,7 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = z.infer<typeof selectUserSchema>;
 
 export const insertEventSchema = createInsertSchema(events, {
-  date: z.string().transform((str) => new Date(str)),
+  date: z.coerce.date(),
 });
 export const selectEventSchema = createSelectSchema(events);
 export type InsertEvent = z.infer<typeof insertEventSchema>;

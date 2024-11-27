@@ -23,16 +23,28 @@ export function registerRoutes(app: Express) {
     }
 
     try {
+      const result = insertEventSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          error: "Invalid input",
+          details: result.error.issues
+        });
+      }
+
       const [event] = await db
         .insert(events)
         .values({
-          ...req.body,
+          ...result.data,
           createdBy: req.user.id,
         })
         .returning();
       res.json(event);
     } catch (error) {
-      res.status(500).json({ error: "Failed to create event" });
+      console.error('Event creation error:', error);
+      res.status(500).json({ 
+        error: "Failed to create event",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
