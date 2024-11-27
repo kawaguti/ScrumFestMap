@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { EventDashboard } from "@/components/EventDashboard";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { Link } from "wouter";
@@ -74,7 +75,9 @@ export default function HomePage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <EventDashboard />
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         <div className="md:col-span-2">
           <JapanMap
             events={events}

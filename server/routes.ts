@@ -8,6 +8,36 @@ export function registerRoutes(app: Express) {
   setupAuth(app);
 
   // Event routes
+  // Statistics route
+  app.get("/api/stats", async (req, res) => {
+    try {
+      const allEvents = await db.select().from(events);
+      
+      // Calculate statistics
+      const totalEvents = allEvents.length;
+      const upcomingEvents = allEvents.filter(e => new Date(e.date) > new Date()).length;
+      const prefectureStats = allEvents.reduce((acc, event) => {
+        acc[event.prefecture] = (acc[event.prefecture] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const monthlyStats = allEvents.reduce((acc, event) => {
+        const month = new Date(event.date).toLocaleString('ja-JP', { month: 'long' });
+        acc[month] = (acc[month] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      res.json({
+        totalEvents,
+        upcomingEvents,
+        prefectureStats,
+        monthlyStats
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch statistics" });
+    }
+  });
+
   // Public endpoint - no authentication required
   app.get("/api/events", async (req, res) => {
     try {
