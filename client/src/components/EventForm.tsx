@@ -34,7 +34,7 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
     defaultValues: {
       name: defaultValues?.name ?? "",
       prefecture: defaultValues?.prefecture ?? "",
-      date: defaultValues?.date ?? new Date().toISOString(),
+      date: defaultValues?.date ? new Date(defaultValues.date).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
       website: defaultValues?.website ?? "",
       description: defaultValues?.description ?? "",
     },
@@ -112,7 +112,7 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                 <Input 
                   type="datetime-local" 
                   {...field}
-                  value={field.value || new Date().toISOString().slice(0, 16)}
+                  value={typeof field.value === 'string' ? field.value.slice(0, 16) : new Date(field.value).toISOString().slice(0, 16)}
                 />
               </FormControl>
               <FormMessage />
