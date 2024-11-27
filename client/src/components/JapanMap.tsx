@@ -4,7 +4,7 @@ import { prefectures } from "@/lib/prefectures";
 import type { GeoJSON, GeoFeature } from "@/lib/japanGeoData";
 import { japanGeoData } from "@/lib/japanGeoData";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { EventList } from "./EventList";
 import type { Event } from "@db/schema";
 
@@ -22,20 +22,18 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
 
   const prefectureEvents = useMemo(() => {
     if (!selectedPrefecture) return [];
-    return events.filter(event => 
-      prefectures.find(p => p.id === selectedPrefecture)?.name === event.prefecture
-    );
+    const prefecture = prefectures.find(p => p.id === selectedPrefecture);
+    return events.filter(event => event.prefecture === prefecture?.name);
   }, [events, selectedPrefecture]);
 
   const getPrefectureColor = (id: string) => {
-    const hasEvents = events.some(event => 
-      prefectures.find(p => p.id === id)?.name === event.prefecture
-    );
+    const prefecture = prefectures.find(p => p.id === id);
+    const hasEvents = events.some(event => event.prefecture === prefecture?.name);
     
     if (selectedPrefecture === id) {
       return "hsl(222.2 47.4% 11.2%)";
     }
-    return hasEvents ? "hsl(222.2 47.4% 40%)" : "hsl(222.2 47.4% 80%)";
+    return hasEvents ? "hsl(222.2 47.4% 40%)" : "hsl(210 40% 96.1%)";
   };
 
   useEffect(() => {
@@ -47,7 +45,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
     // Create the projection
     const projection = d3.geoMercator()
       .center([137, 38])
-      .scale(1000)
+      .scale(1600)
       .translate([mapWidth / 2, mapHeight / 2]);
 
     // Create the path generator
@@ -61,6 +59,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
     // Create zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 8])
+      .translateExtent([[0, 0], [mapWidth, mapHeight]])
       .on("zoom", (event) => {
         g.attr("transform", event.transform.toString());
       });
@@ -129,12 +128,15 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
       </Card>
 
       <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
               {selectedPrefecture && prefectures.find(p => p.id === selectedPrefecture)?.name}
               のイベント
             </DialogTitle>
+            <DialogDescription>
+              選択された地域で開催されるイベント一覧
+            </DialogDescription>
           </DialogHeader>
           <EventList events={prefectureEvents} />
         </DialogContent>
