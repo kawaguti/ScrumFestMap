@@ -119,10 +119,10 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
         </h2>
         <EventList
           events={selectedEvent 
-            ? [selectedEvent] 
+            ? eventHistory  // 選択されたイベントがある場合は履歴を表示
             : selectedPrefecture
-              ? prefectureEvents
-              : eventHistory}
+              ? prefectureEvents  // 都道府県が選択されている場合はその都道府県のイベント
+              : eventHistory}  // それ以外の場合は履歴を表示
           selectedEvent={selectedEvent}
         />
       </div>
