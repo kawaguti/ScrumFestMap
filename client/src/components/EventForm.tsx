@@ -81,6 +81,9 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
           name="prefecture"
           render={({ field }) => (
             <FormItem>
+              <DialogDescription>
+                イベントの詳細情報を入力してください
+              </DialogDescription>
               <FormLabel>開催都道府県</FormLabel>
               <Select 
                 onValueChange={field.onChange}
