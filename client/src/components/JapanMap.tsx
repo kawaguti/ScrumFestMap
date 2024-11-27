@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
 import { prefectures, prefectureCoordinates } from "@/lib/prefectures";
 import { japanGeoData } from "@/lib/japanGeoData";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { EventList } from "./EventList";
 import type { Event } from "@db/schema";
 import type { Layer } from "leaflet";
@@ -15,13 +14,10 @@ interface JapanMapProps {
 }
 
 export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: JapanMapProps) {
-  const [showEventDialog, setShowEventDialog] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   
   const handleMarkerClick = (event: Event) => {
-    setSelectedEvent(event);
-    // イベントダイアログを表示
-    setShowEventDialog(true);
+    setSelectedEvent(event);  // モーダルを表示せず、選択状態のみ更新
   };
 
   const prefectureEvents = useMemo(() => {
@@ -55,73 +51,71 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
       click: () => {
         const prefId = feature.properties.id;
         onPrefectureSelect(prefId);
-        setShowEventDialog(true);
       }
     });
   };
 
   return (
-    <>
-      <Card className="p-4">
-        <MapContainer
-          center={[36.5, 138]}
-          zoom={5}
-          style={{ height: "70vh", width: "100%" }}
-          zoomControl={true}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <GeoJSON
-            data={japanGeoData}
-            style={getFeatureStyle}
-            onEachFeature={onEachFeature}
-          />
-          {events.map((event) => {
-            const prefecture = prefectures.find(p => p.name === event.prefecture);
-            if (!prefecture) return null;
-            const coordinates = prefectureCoordinates[event.prefecture];
-            if (!coordinates) return null;
-            
-            return (
-              <Marker 
-                key={event.id} 
-                position={coordinates}
-                eventHandlers={{
-                  click: () => handleMarkerClick(event)
-                }}
-              >
-                <Popup>
-                  <div>
-                    <h3 className="font-bold">{event.name}</h3>
-                    <p>{event.prefecture}</p>
-                    <p>{new Date(event.date).toLocaleDateString('ja-JP')}</p>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-        </MapContainer>
-      </Card>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="md:col-span-2">
+        <Card className="p-4">
+          <MapContainer
+            center={[36.5, 138]}
+            zoom={5}
+            style={{ height: "70vh", width: "100%" }}
+            zoomControl={true}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <GeoJSON
+              data={japanGeoData}
+              style={getFeatureStyle}
+              onEachFeature={onEachFeature}
+            />
+            {events.map((event) => {
+              const prefecture = prefectures.find(p => p.name === event.prefecture);
+              if (!prefecture) return null;
+              const coordinates = prefectureCoordinates[event.prefecture];
+              if (!coordinates) return null;
+              
+              return (
+                <Marker 
+                  key={event.id} 
+                  position={coordinates}
+                  eventHandlers={{
+                    click: () => handleMarkerClick(event)
+                  }}
+                >
+                  <Popup>
+                    <div>
+                      <h3 className="font-bold">{event.name}</h3>
+                      <p>{event.prefecture}</p>
+                      <p>{new Date(event.date).toLocaleDateString('ja-JP')}</p>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MapContainer>
+        </Card>
+      </div>
 
-      <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedPrefecture && prefectures.find(p => p.id === selectedPrefecture)?.name}
-              のイベント
-            </DialogTitle>
-            <DialogDescription>
-              選択された地域で開催されるイベント一覧
-            </DialogDescription>
-          </DialogHeader>
-          <EventList 
-            events={selectedEvent ? [selectedEvent] : prefectureEvents}
-            selectedEvent={selectedEvent}
-          />
-        </DialogContent>
-      </Dialog>
-    </>
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">
+          {selectedEvent 
+            ? "選択されたイベント" 
+            : selectedPrefecture 
+              ? `${prefectures.find(p => p.id === selectedPrefecture)?.name}のイベント`
+              : "最近のイベント"
+          }
+        </h2>
+        <EventList
+          events={selectedEvent ? [selectedEvent] : prefectureEvents}
+          selectedEvent={selectedEvent}
+        />
+      </div>
+    </div>
   );
 }

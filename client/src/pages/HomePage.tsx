@@ -75,22 +75,14 @@ export default function HomePage() {
         </div>
       </header>
 
-      <EventDashboard />
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        <div className="md:col-span-2">
-          <JapanMap
-            events={events}
-            selectedPrefecture={selectedPrefecture}
-            onPrefectureSelect={setSelectedPrefecture}
-          />
-        </div>
-
-        <div className="space-y-4">
+      <div className="space-y-6">
+        <EventDashboard />
+        
+        <div className="flex justify-end">
           {user ? (
             <Dialog>
               <DialogTrigger asChild>
-                <Button className="w-full">新規イベント登録</Button>
+                <Button>新規イベント登録</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -104,18 +96,17 @@ export default function HomePage() {
               </DialogContent>
             </Dialog>
           ) : (
-            <Button className="w-full" asChild>
+            <Button asChild>
               <Link href="/auth">ログインしてイベントを登録</Link>
             </Button>
           )}
-
-          <h2 className="text-xl font-semibold">最近のイベント</h2>
-          <EventList
-            events={events.filter(
-              (event) => new Date(event.date) >= new Date()
-            )}
-          />
         </div>
+
+        <JapanMap
+          events={events}
+          selectedPrefecture={selectedPrefecture}
+          onPrefectureSelect={setSelectedPrefecture}
+        />
       </div>
     </div>
   );
