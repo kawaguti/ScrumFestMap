@@ -1,10 +1,12 @@
 import { useState, useMemo } from "react";
+import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
 import { prefectures } from "@/lib/prefectures";
-import { prefecturePaths } from "@/lib/prefecturePaths";
+import { japanGeoData } from "@/lib/japanGeoData";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { EventList } from "./EventList";
 import type { Event } from "@db/schema";
+import type { Layer } from "leaflet";
 
 interface JapanMapProps {
   events: Event[];
@@ -21,41 +23,73 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
     return events.filter(event => event.prefecture === prefecture?.name);
   }, [events, selectedPrefecture]);
 
-  const getPrefectureColor = (id: string) => {
-    const prefecture = prefectures.find(p => p.id === id);
+  // スタイル設定
+  const getFeatureStyle = (feature: any) => {
+    const prefId = feature.properties.id;
+    const prefecture = prefectures.find(p => p.id === prefId);
     const hasEvents = events.some(event => event.prefecture === prefecture?.name);
     
-    if (selectedPrefecture === id) {
-      return "hsl(222.2 47.4% 11.2%)";
-    }
-    return hasEvents ? "hsl(222.2 47.4% 40%)" : "hsl(210 40% 96.1%)";
+    return {
+      fillColor: selectedPrefecture === prefId 
+        ? "hsl(222.2 47.4% 11.2%)" 
+        : hasEvents 
+          ? "hsl(222.2 47.4% 40%)" 
+          : "hsl(210 40% 96.1%)",
+      weight: 1,
+      opacity: 1,
+      color: 'white',
+      fillOpacity: 0.7
+    };
+  };
+
+  // クリックイベントハンドラ
+  const onEachFeature = (feature: any, layer: Layer) => {
+    layer.on({
+      click: () => {
+        const prefId = feature.properties.id;
+        onPrefectureSelect(prefId);
+        setShowEventDialog(true);
+      }
+    });
   };
 
   return (
     <>
       <Card className="p-4">
-        <svg
-          viewBox="0 0 800 1100"
-          className="w-full h-full"
-          style={{ maxHeight: '80vh' }}
+        <MapContainer
+          center={[36.5, 138]}
+          zoom={5}
+          style={{ height: "70vh", width: "100%" }}
+          zoomControl={true}
         >
-          <g>
-            {prefectures.map((prefecture) => (
-              <path
-                key={prefecture.id}
-                d={prefecturePaths[prefecture.id]}
-                fill={getPrefectureColor(prefecture.id)}
-                stroke="white"
-                strokeWidth="0.5"
-                className="cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => {
-                  onPrefectureSelect(prefecture.id);
-                  setShowEventDialog(true);
-                }}
-              />
-            ))}
-          </g>
-        </svg>
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <GeoJSON
+            data={japanGeoData}
+            style={getFeatureStyle}
+            onEachFeature={onEachFeature}
+          />
+          {events.map((event) => {
+            const prefecture = prefectures.find(p => p.name === event.prefecture);
+            if (!prefecture) return null;
+            const coord = japanGeoData.features.find(f => f.properties.id === prefecture.id)
+              ?.geometry.coordinates[0][0];
+            if (!coord) return null;
+            return (
+              <Marker key={event.id} position={[coord[1], coord[0]]}>
+                <Popup>
+                  <div>
+                    <h3 className="font-bold">{event.name}</h3>
+                    <p>{event.prefecture}</p>
+                    <p>{new Date(event.date).toLocaleDateString('ja-JP')}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MapContainer>
       </Card>
 
       <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
