@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
+import { Link } from "wouter";
 import { JapanMap } from "@/components/JapanMap";
 import { EventForm } from "@/components/EventForm";
 import { EventList } from "@/components/EventList";
@@ -56,12 +57,20 @@ export default function HomePage() {
       <header className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">スクラムフェスマップ</h1>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">
-            {user?.username}
-          </span>
-          <Button variant="outline" onClick={() => logout()}>
-            ログアウト
-          </Button>
+          {user ? (
+            <>
+              <span className="text-sm text-muted-foreground">
+                {user.username}
+              </span>
+              <Button variant="outline" onClick={() => logout()}>
+                ログアウト
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" asChild>
+              <Link href="/auth">ログイン</Link>
+            </Button>
+          )}
         </div>
       </header>
 
@@ -75,21 +84,27 @@ export default function HomePage() {
         </div>
 
         <div className="space-y-4">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="w-full">新規イベント登録</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>新規イベント登録</DialogTitle>
-              </DialogHeader>
-              <EventForm
-                onSubmit={async (data) => {
-                  await createEventMutation.mutateAsync(data);
-                }}
-              />
-            </DialogContent>
-          </Dialog>
+          {user ? (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="w-full">新規イベント登録</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>新規イベント登録</DialogTitle>
+                </DialogHeader>
+                <EventForm
+                  onSubmit={async (data) => {
+                    await createEventMutation.mutateAsync(data);
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+          ) : (
+            <Button className="w-full" asChild>
+              <Link href="/auth">ログインしてイベントを登録</Link>
+            </Button>
+          )}
 
           <h2 className="text-xl font-semibold">最近のイベント</h2>
           <EventList

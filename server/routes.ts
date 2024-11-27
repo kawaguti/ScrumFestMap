@@ -8,6 +8,7 @@ export function registerRoutes(app: Express) {
   setupAuth(app);
 
   // Event routes
+  // Public endpoint - no authentication required
   app.get("/api/events", async (req, res) => {
     try {
       const allEvents = await db.select().from(events);
