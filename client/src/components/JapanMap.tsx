@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
-import { prefectures } from "@/lib/prefectures";
+import { prefectures, prefectureCoordinates } from "@/lib/prefectures";
 import { japanGeoData } from "@/lib/japanGeoData";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -74,11 +74,14 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
           {events.map((event) => {
             const prefecture = prefectures.find(p => p.name === event.prefecture);
             if (!prefecture) return null;
-            const coord = japanGeoData.features.find(f => f.properties.id === prefecture.id)
-              ?.geometry.coordinates[0][0];
-            if (!coord) return null;
+            const coordinates = prefectureCoordinates[event.prefecture];
+            if (!coordinates) return null;
+            
             return (
-              <Marker key={event.id} position={[coord[1], coord[0]]}>
+              <Marker 
+                key={event.id} 
+                position={coordinates}
+              >
                 <Popup>
                   <div>
                     <h3 className="font-bold">{event.name}</h3>
