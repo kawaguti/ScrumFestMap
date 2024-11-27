@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { prefectures } from "@/lib/prefectures";
+import { prefecturePaths } from "@/lib/prefecturePaths";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EventList } from "./EventList";
@@ -44,8 +45,18 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
           viewBox="0 0 800 800"
           className="w-full h-full"
         >
-          {/* SVG paths for Japan map would go here */}
-          {/* This is a placeholder. You would need to add actual SVG paths for each prefecture */}
+          {prefectures.map((prefecture) => (
+            <path
+              key={prefecture.id}
+              id={prefecture.id}
+              d={prefecturePaths[prefecture.id]}
+              fill={getPrefectureColor(prefecture.id)}
+              stroke="white"
+              strokeWidth="1"
+              onClick={() => handlePrefectureClick(prefecture.id)}
+              className="cursor-pointer hover:opacity-80 transition-opacity"
+            />
+          ))}
         </svg>
       </Card>
 
