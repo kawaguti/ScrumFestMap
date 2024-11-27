@@ -39,6 +39,7 @@ async function createEvent(event: InsertEvent): Promise<Event> {
 export default function HomePage() {
   const { user, logout } = useUser();
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: events = [] } = useQuery({
@@ -80,7 +81,7 @@ export default function HomePage() {
         
         <div className="flex justify-end">
           {user ? (
-            <Dialog>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button>新規イベント登録</Button>
               </DialogTrigger>
@@ -91,6 +92,7 @@ export default function HomePage() {
                 <EventForm
                   onSubmit={async (data) => {
                     await createEventMutation.mutateAsync(data);
+                    setIsDialogOpen(false);  // 登録後にダイアログを閉じる
                   }}
                 />
               </DialogContent>
@@ -102,11 +104,13 @@ export default function HomePage() {
           )}
         </div>
 
-        <JapanMap
-          events={events}
-          selectedPrefecture={selectedPrefecture}
-          onPrefectureSelect={setSelectedPrefecture}
-        />
+        {!isDialogOpen && (
+          <JapanMap
+            events={events}
+            selectedPrefecture={selectedPrefecture}
+            onPrefectureSelect={setSelectedPrefecture}
+          />
+        )}
       </div>
     </div>
   );
