@@ -30,9 +30,15 @@ export const japanGeoData = {
     },
     geometry: {
       type: "Polygon",
-      coordinates: [prefecturePaths[pref.id].split(" ")
-        .filter((_, i) => i > 0)
-        .map(coord => coord.split(",").map(Number))]
+      coordinates: [[
+        ...prefecturePaths[pref.id]
+          .split(/[MLZ]/)
+          .filter(Boolean)
+          .map(coord => {
+            const [x, y] = coord.trim().split(" ");
+            return [Number(x), Number(y)];
+          })
+      ]]
     }
   }))
 } as GeoJSON;

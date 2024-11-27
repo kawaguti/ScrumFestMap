@@ -45,11 +45,12 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
     // Create the projection
     const projection = d3.geoMercator()
       .center([137, 38])
-      .scale(1600)
+      .scale(800)
       .translate([mapWidth / 2, mapHeight / 2]);
 
     // Create the path generator
-    const path = d3.geoPath().projection(projection);
+    const path = d3.geoPath()
+      .projection(projection);
 
     // Create the SVG container
     const svg = d3.select(svgRef.current)
