@@ -18,9 +18,13 @@ interface EventListProps {
 }
 
 export function EventList({ events, selectedEvent }: EventListProps) {
-  const sortedEvents = [...events].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+  // イベント履歴の場合は並び替えを行わず、そのままの順序を維持
+  // それ以外の場合（都道府県別表示など）は日付でソート
+  const sortedEvents = selectedEvent
+    ? events  // 履歴表示の場合は並び替えない
+    : [...events].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
 
   if (events.length === 0) {
     return (
