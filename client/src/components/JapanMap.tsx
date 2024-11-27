@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo, useState } from "react";
 import * as d3 from "d3";
 import { prefectures } from "@/lib/prefectures";
+import type { GeoJSON, GeoFeature } from "@/lib/japanGeoData";
 import { japanGeoData } from "@/lib/japanGeoData";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -102,7 +103,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
       const prefecture = prefectures.find(p => p.name === event.prefecture);
       if (!prefecture) return;
 
-      const feature = japanGeoData.features.find(f => f.properties.id === prefecture.id);
+      const feature = japanGeoData.features.find((f: GeoFeature) => f.properties.id === prefecture.id);
       if (!feature) return;
 
       const [x, y] = path.centroid(feature as any);
