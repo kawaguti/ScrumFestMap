@@ -15,6 +15,14 @@ function Router() {
     <Switch>
       <Route path="/" component={HomePage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/admin" component={() => {
+        const AdminPage = React.lazy(() => import('./pages/AdminPage'));
+        return (
+          <React.Suspense fallback={<div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
+            <AdminPage />
+          </React.Suspense>
+        );
+      }} />
       <Route>404 Page Not Found</Route>
     </Switch>
   );

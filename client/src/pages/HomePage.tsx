@@ -64,9 +64,16 @@ export default function HomePage() {
               <span className="text-sm text-muted-foreground">
                 {user.username}
               </span>
-              <Button variant="outline" onClick={() => logout()}>
-                ログアウト
-              </Button>
+              <div className="flex items-center gap-2">
+                {user.isAdmin && (
+                  <Button variant="outline" asChild>
+                    <Link href="/admin">管理者ダッシュボード</Link>
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => logout()}>
+                  ログアウト
+                </Button>
+              </div>
             </>
           ) : (
             <Button variant="outline" asChild>

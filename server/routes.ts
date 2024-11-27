@@ -151,4 +151,30 @@ export function registerRoutes(app: Express) {
       });
     }
   });
+
+  // Admin routes
+  const requireAdmin = (req: any, res: any, next: any) => {
+    if (!req.user?.isAdmin) {
+      return res.status(403).json({ error: "Forbidden: Admin access required" });
+    }
+    next();
+  };
+
+  app.get("/api/admin/users", requireAdmin, async (req, res) => {
+    try {
+      const allUsers = await db.select().from(users);
+      res.json(allUsers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/admin/events", requireAdmin, async (req, res) => {
+    try {
+      const allEvents = await db.select().from(events);
+      res.json(allEvents);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch events" });
+    }
+  });
 }
