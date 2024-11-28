@@ -37,15 +37,78 @@ async function fetchAllEvents(): Promise<Event[]> {
   return response.json();
 }
 
+import { useToast } from "@/hooks/use-toast";
+
+async function promoteToAdmin(userId: number) {
+  const response = await fetch(`/api/admin/promote/${userId}`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error("Failed to promote user");
+  }
+  return response.json();
+}
+
+async function demoteFromAdmin(userId: number) {
+  const response = await fetch(`/api/admin/demote/${userId}`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error("Failed to demote user");
+  }
+  return response.json();
+}
+
 export default function AdminPage() {
+  const { toast } = useToast();
   const { user } = useUser();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  
+  const promoteMutation = useMutation({
+    mutationFn: promoteToAdmin,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      toast({
+        title: "成功",
+        description: "ユーザーを管理者に昇格しました。",
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: "管理者への昇格に失敗しました。",
+      });
+    },
+  });
 
-  // Redirect if user is not admin
+  const demoteMutation = useMutation({
+    mutationFn: demoteFromAdmin,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      toast({
+        title: "成功",
+        description: "管理者権限を剥奪しました。",
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: "管理者権限の剥奪に失敗しました。",
+      });
+    },
+  });
+
+  // Redirect if user is not logged in or not admin
   useEffect(() => {
-    if (user && !user.isAdmin) {
-      setLocation("/");
+    if (!user) {
+      setLocation("/auth");  // ユーザーが未ログインの場合は認証ページへ
+    } else if (!user.isAdmin) {
+      setLocation("/");  // 管理者権限がない場合はホームへ
     }
   }, [user, setLocation]);
 
@@ -93,15 +156,36 @@ export default function AdminPage() {
                     <TableHead>ユーザー名</TableHead>
                     <TableHead>メールアドレス</TableHead>
                     <TableHead>管理者権限</TableHead>
+                    <TableHead>操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.id}</TableCell>
-                      <TableCell>{user.username}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.isAdmin ? "はい" : "いいえ"}</TableCell>
+                  {users.map((targetUser) => (
+                    <TableRow key={targetUser.id}>
+                      <TableCell>{targetUser.id}</TableCell>
+                      <TableCell>{targetUser.username}</TableCell>
+                      <TableCell>{targetUser.email}</TableCell>
+                      <TableCell>{targetUser.isAdmin ? "はい" : "いいえ"}</TableCell>
+                      <TableCell>
+                        {!targetUser.isAdmin && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => promoteMutation.mutate(targetUser.id)}
+                          >
+                            管理者に昇格
+                          </Button>
+                        )}
+                        {targetUser.isAdmin && targetUser.id !== user?.id && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => demoteMutation.mutate(targetUser.id)}
+                          >
+                            管理者権限を剥奪
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -140,7 +224,9 @@ export default function AdminPage() {
                       <TableCell>
                         {new Date(event.date).toLocaleDateString("ja-JP")}
                       </TableCell>
-                      <TableCell>{event.createdBy}</TableCell>
+                      <TableCell>
+                        {users.find(u => u.id === event.createdBy)?.username || event.createdBy}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

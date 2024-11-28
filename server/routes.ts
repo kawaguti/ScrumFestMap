@@ -1,47 +1,25 @@
-import type { Express } from "express";
-import { setupAuth } from "./auth";
+import { type Express } from "express";
 import { db } from "../db";
-import { events, insertEventSchema } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { events, users } from "@db/schema";
+import { eq, and, desc } from "drizzle-orm";
 
-export function registerRoutes(app: Express) {
-  setupAuth(app);
+// Admin middleware
+function requireAdmin(req: any, res: any, next: any) {
+  if (!req.isAuthenticated() || !req.user?.isAdmin) {
+    return res.status(403).json({ error: "Unauthorized" });
+  }
+  next();
+}
 
-  // Event routes
-  // Statistics route
-  app.get("/api/stats", async (req, res) => {
-    try {
-      const allEvents = await db.select().from(events);
-      
-      // Calculate statistics
-      const totalEvents = allEvents.length;
-      const upcomingEvents = allEvents.filter(e => new Date(e.date) > new Date()).length;
-      const prefectureStats = allEvents.reduce((acc, event) => {
-        acc[event.prefecture] = (acc[event.prefecture] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      const monthlyStats = allEvents.reduce((acc, event) => {
-        const month = new Date(event.date).toLocaleString('ja-JP', { month: 'long' });
-        acc[month] = (acc[month] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      res.json({
-        totalEvents,
-        upcomingEvents,
-        prefectureStats,
-        monthlyStats
-      });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch statistics" });
-    }
-  });
-
-  // Public endpoint - no authentication required
+export function setupRoutes(app: Express) {
+  // イベント関連のエンドポイント
   app.get("/api/events", async (req, res) => {
     try {
-      const allEvents = await db.select().from(events);
+      const allEvents = await db
+        .select()
+        .from(events)
+        .where(eq(events.isArchived, false))
+        .orderBy(desc(events.date));
       res.json(allEvents);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch events" });
@@ -49,117 +27,62 @@ export function registerRoutes(app: Express) {
   });
 
   app.post("/api/events", async (req, res) => {
-    if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
     }
 
     try {
-      const result = insertEventSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ 
-          error: "Invalid input",
-          details: result.error.issues
-        });
-      }
-
       const [event] = await db
         .insert(events)
         .values({
-          ...result.data,
-          createdBy: req.user.id,
+          ...req.body,
+          createdBy: req.user?.id,
         })
         .returning();
       res.json(event);
     } catch (error) {
-      console.error('Event creation error:', error);
-      res.status(500).json({ 
-        error: "Failed to create event",
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
+      res.status(500).json({ error: "Failed to create event" });
     }
   });
 
-  app.put("/api/events/:id", async (req, res) => {
-    if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
+  app.get("/api/stats", async (req, res) => {
     try {
-      const [event] = await db
+      const allEvents = await db
         .select()
         .from(events)
-        .where(eq(events.id, parseInt(req.params.id)))
-        .limit(1);
+        .where(eq(events.isArchived, false));
 
-      if (!event || event.createdBy !== req.user.id) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
+      const now = new Date();
+      const upcomingEvents = allEvents.filter(
+        (event) => new Date(event.date) > now
+      );
 
-      const result = insertEventSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ 
-          error: "Invalid input",
-          details: result.error.issues
-        });
-      }
+      // Count events by prefecture
+      const prefectureStats = allEvents.reduce((acc: Record<string, number>, event) => {
+        acc[event.prefecture] = (acc[event.prefecture] || 0) + 1;
+        return acc;
+      }, {});
 
-      const [updatedEvent] = await db
-        .update(events)
-        .set({
-          ...result.data,
-          updatedAt: new Date(),
-        })
-        .where(eq(events.id, parseInt(req.params.id)))
-        .returning();
+      // Count events by month
+      const monthlyStats = allEvents.reduce((acc: Record<string, number>, event) => {
+        const month = new Date(event.date).getMonth() + 1;
+        const monthKey = `${month}月`;
+        acc[monthKey] = (acc[monthKey] || 0) + 1;
+        return acc;
+      }, {});
 
-      res.json(updatedEvent);
-    } catch (error) {
-      console.error('Event update error:', error);
-      res.status(500).json({ 
-        error: "Failed to update event",
-        details: error instanceof Error ? error.message : 'Unknown error'
+      res.json({
+        totalEvents: allEvents.length,
+        upcomingEvents: upcomingEvents.length,
+        prefectureStats,
+        monthlyStats,
       });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch statistics" });
     }
   });
 
-  app.delete("/api/events/:id", async (req, res) => {
-    if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    try {
-      const [event] = await db
-        .select()
-        .from(events)
-        .where(eq(events.id, parseInt(req.params.id)))
-        .limit(1);
-
-      if (!event || event.createdBy !== req.user.id) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-
-      await db
-        .delete(events)
-        .where(eq(events.id, parseInt(req.params.id)));
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Event deletion error:', error);
-      res.status(500).json({ 
-        error: "Failed to delete event",
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  });
-
-  // Admin routes
-  const requireAdmin = (req: any, res: any, next: any) => {
-    if (!req.user?.isAdmin) {
-      return res.status(403).json({ error: "Forbidden: Admin access required" });
-    }
-    next();
-  };
-
+  // 管理者用エンドポイント
   app.get("/api/admin/users", requireAdmin, async (req, res) => {
     try {
       const allUsers = await db.select().from(users);
@@ -171,10 +94,54 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/admin/events", requireAdmin, async (req, res) => {
     try {
-      const allEvents = await db.select().from(events);
+      const allEvents = await db
+        .select()
+        .from(events)
+        .orderBy(desc(events.createdAt));
       res.json(allEvents);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch events" });
+    }
+  });
+
+  app.post("/api/admin/promote/:userId", requireAdmin, async (req, res) => {
+    try {
+      const [user] = await db
+        .update(users)
+        .set({ isAdmin: true })
+        .where(eq(users.id, parseInt(req.params.userId)))
+        .returning();
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to promote user" });
+    }
+  });
+
+  app.post("/api/admin/demote/:userId", requireAdmin, async (req, res) => {
+    try {
+      // 自分自身の権限は剥奪できないようにする
+      if (parseInt(req.params.userId) === req.user?.id) {
+        return res.status(400).json({ error: "Cannot demote yourself" });
+      }
+
+      const [user] = await db
+        .update(users)
+        .set({ isAdmin: false })
+        .where(eq(users.id, parseInt(req.params.userId)))
+        .returning();
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to demote user" });
     }
   });
 }
