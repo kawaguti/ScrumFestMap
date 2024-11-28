@@ -1,6 +1,6 @@
 import { type Express } from "express";
 import { db } from "../db";
-import { events, users } from "@db/schema";
+import { events, users, insertEventSchema } from "@db/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 // Admin middleware
@@ -32,16 +32,31 @@ export function setupRoutes(app: Express) {
     }
 
     try {
+      // リクエストデータの検証
+      const result = insertEventSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          error: "Invalid input", 
+          details: result.error.issues 
+        });
+      }
+
+      // イベントの作成
       const [event] = await db
         .insert(events)
         .values({
-          ...req.body,
+          ...result.data,  // 検証済みのデータを使用
           createdBy: req.user?.id,
         })
         .returning();
+
       res.json(event);
     } catch (error) {
-      res.status(500).json({ error: "Failed to create event" });
+      console.error('Event creation error:', error);
+      res.status(500).json({ 
+        error: "Failed to create event",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
