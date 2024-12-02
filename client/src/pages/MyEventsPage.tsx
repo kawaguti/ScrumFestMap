@@ -92,7 +92,7 @@ export default function MyEventsPage() {
       </header>
 
       <div className="grid gap-4">
-        {events.map((event) => (
+        {events.map((event: Event) => (
           <Card key={event.id}>
             <CardHeader>
               <CardTitle>{event.name}</CardTitle>
@@ -137,17 +137,28 @@ export default function MyEventsPage() {
       </div>
 
       <Dialog open={!!editingEvent} onOpenChange={() => setEditingEvent(null)}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-2xl font-bold">イベントの編集</DialogTitle>
+        <DialogContent className="sm:max-w-[650px] p-8">
+          <DialogHeader className="space-y-4 mb-8">
+            <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+              イベントの編集
+            </DialogTitle>
           </DialogHeader>
           {editingEvent && (
-            <EventForm
-              defaultValues={editingEvent}
-              onSubmit={async (data) => {
-                await updateEventMutation.mutateAsync({ ...data, id: editingEvent.id });
-              }}
-            />
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/3 to-transparent rounded-lg -m-3 p-3" />
+              <div className="relative z-10 space-y-6">
+                <EventForm
+                  defaultValues={editingEvent}
+                  onSubmit={async (data) => {
+                    await updateEventMutation.mutateAsync({
+                      ...editingEvent,
+                      ...data,
+                      id: editingEvent.id,
+                    });
+                  }}
+                />
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

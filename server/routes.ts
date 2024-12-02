@@ -1,25 +1,22 @@
 import { type Express } from "express";
 import { db } from "../db";
-import { events, users } from "@db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { users, events, insertEventSchema } from "@db/schema";
+import { eq, desc } from "drizzle-orm";
 
-// Admin middleware
-function requireAdmin(req: any, res: any, next: any) {
+function requireAdmin(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
   if (!req.isAuthenticated() || !req.user?.isAdmin) {
-    return res.status(403).json({ error: "Unauthorized" });
+    return res.status(403).json({ error: "Forbidden" });
   }
   next();
 }
 
 export function setupRoutes(app: Express) {
-  // イベント関連のエンドポイント
   app.get("/api/events", async (req, res) => {
     try {
       const allEvents = await db
         .select()
         .from(events)
-        .where(eq(events.isArchived, false))
-        .orderBy(desc(events.date));
+        .where(eq(events.isArchived, false));
       res.json(allEvents);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch events" });
@@ -32,16 +29,33 @@ export function setupRoutes(app: Express) {
     }
 
     try {
+      // バリデーションの追加
+      const result = insertEventSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          error: "Invalid input",
+          details: result.error.issues.map((i: { message: string }) => i.message)
+        });
+      }
+
+      // イベントの作成
       const [event] = await db
         .insert(events)
         .values({
-          ...req.body,
+          ...result.data,
           createdBy: req.user?.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         })
         .returning();
+
       res.json(event);
     } catch (error) {
-      res.status(500).json({ error: "Failed to create event" });
+      console.error("Event creation error:", error);
+      res.status(500).json({ 
+        error: "Failed to create event",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
