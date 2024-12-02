@@ -10,11 +10,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Calendar } from "lucide-react";
+import { ExternalLink, Calendar, Edit2 } from "lucide-react";
 
 interface EventListProps {
   events: Event[];
   selectedEvent?: Event | null;
+  onEditEvent?: (event: Event) => void;
 }
 
 export function EventList({ events, selectedEvent }: EventListProps) {
@@ -54,21 +55,35 @@ export function EventList({ events, selectedEvent }: EventListProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {event.description && (
-              <p className="text-sm text-muted-foreground mb-4">
-                {event.description}
-              </p>
-            )}
-            {event.website && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => event.website && window.open(event.website, "_blank")}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Webサイトへ
-              </Button>
-            )}
+            <div className="space-y-4">
+              <div>
+                {event.description && (
+                  <p className="text-sm text-muted-foreground">
+                    {event.description}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {event.website && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => event.website && window.open(event.website, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Webサイトへ
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEditEvent?.(event)}
+                >
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  編集
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       ))}
