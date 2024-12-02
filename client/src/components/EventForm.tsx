@@ -121,7 +121,11 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                   <FormControl>
                     <DatePicker
                       selected={field.value}
-                      onChange={(date: Date) => field.onChange(roundToNearest15Min(date))}
+                      onChange={(date: Date | null) => {
+                        if (date) {
+                          field.onChange(roundToNearest15Min(date));
+                        }
+                      }}
                       showTimeSelect
                       timeIntervals={15}
                       timeFormat="HH:mm"
