@@ -120,20 +120,11 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                     <Input
                       type="datetime-local"
                       step="900"
-                      value={field.value instanceof Date ? 
-                        new Date(field.value.getTime() + (field.value.getTimezoneOffset() * 60000))
-                          .toISOString()
-                          .slice(0, 16) : 
-                        ''
-                      }
+                      value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
                       onChange={(e) => {
                         const selectedDate = new Date(e.target.value);
                         if (!isNaN(selectedDate.getTime())) {
-                          // タイムゾーンオフセットを補正
-                          const localDate = new Date(
-                            selectedDate.getTime() - (selectedDate.getTimezoneOffset() * 60000)
-                          );
-                          field.onChange(roundToNearest15Min(localDate));
+                          field.onChange(roundToNearest15Min(selectedDate));
                         }
                       }}
                       min={new Date().toISOString().slice(0, 16)}
