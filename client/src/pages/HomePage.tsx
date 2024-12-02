@@ -85,7 +85,7 @@ export default function HomePage() {
               <DialogTrigger asChild>
                 <Button>新規イベント登録</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle>新規イベント登録</DialogTitle>
                 </DialogHeader>

@@ -41,7 +41,7 @@ export function EventForm({ onSubmit }: EventFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-1">
         <FormField
           control={form.control}
           name="name"
@@ -61,7 +61,7 @@ export function EventForm({ onSubmit }: EventFormProps) {
           name="prefecture"
           render={({ field }) => (
             <FormItem>
-              <DialogDescription>
+              <DialogDescription className="text-sm text-muted-foreground mb-4">
                 イベントの詳細情報を入力してください
               </DialogDescription>
               <FormLabel>開催都道府県</FormLabel>
@@ -136,7 +136,11 @@ export function EventForm({ onSubmit }: EventFormProps) {
           )}
         />
 
-        <Button type="submit">保存</Button>
+        <div className="flex justify-end pt-4">
+          <Button type="submit" className="w-full sm:w-auto">
+            保存する
+          </Button>
+        </div>
       </form>
     </Form>
   );
