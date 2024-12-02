@@ -76,32 +76,27 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                   <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                     開催都道府県
                   </FormLabel>
-                  <Select
-                    value={field.value ? prefectures.find(p => p.name === field.value)?.id || "" : ""}
-                    onValueChange={(value) => {
-                      const prefecture = prefectures.find(p => p.id === value);
-                      if (prefecture) {
-                        field.onChange(prefecture.name);
-                      }
-                    }}
-                  >
-                    <FormControl>
+                  <FormControl>
+                    <Select
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <SelectTrigger className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20">
                         <SelectValue placeholder="都道府県を選択" />
                       </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-background/95 backdrop-blur-md border-primary/20">
-                      {prefectures.map((pref) => (
-                        <SelectItem
-                          key={pref.id}
-                          value={pref.id}
-                          className="hover:bg-primary/5 transition-colors duration-200"
-                        >
-                          {pref.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                      <SelectContent>
+                        {prefectures.map((pref) => (
+                          <SelectItem
+                            key={pref.id}
+                            value={pref.name}
+                            className="hover:bg-primary/5 transition-colors duration-200"
+                          >
+                            {pref.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
