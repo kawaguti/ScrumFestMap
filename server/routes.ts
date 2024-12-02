@@ -144,4 +144,21 @@ export function setupRoutes(app: Express) {
       res.status(500).json({ error: "Failed to demote user" });
     }
   });
+
+  app.delete("/api/admin/events/:eventId", requireAdmin, async (req, res) => {
+    try {
+      const [deletedEvent] = await db
+        .delete(events)
+        .where(eq(events.id, parseInt(req.params.eventId)))
+        .returning();
+
+      if (!deletedEvent) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      res.json(deletedEvent);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete event" });
+    }
+  });
 }
