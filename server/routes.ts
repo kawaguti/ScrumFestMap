@@ -1,7 +1,7 @@
 import { type Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { users, events, insertEventSchema } from "@db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || !req.user?.isAdmin) {
@@ -146,9 +146,14 @@ export function setupRoutes(app: Express) {
       const userEvents = await db
         .select()
         .from(events)
-        .where(eq(events.createdBy, req.user.id))
+        .where(
+          and(
+            eq(events.createdBy, req.user.id),
+            eq(events.isArchived, false)
+          )
+        )
         .orderBy(desc(events.date));
-      
+    
       res.json(userEvents);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch events" });

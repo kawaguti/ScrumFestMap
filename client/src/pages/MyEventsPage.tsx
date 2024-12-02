@@ -49,7 +49,13 @@ export default function MyEventsPage() {
       const response = await fetch(`/api/events/${data.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          name: data.name,
+          prefecture: data.prefecture,
+          date: data.date,
+          website: data.website,
+          description: data.description,
+        }),
         credentials: "include",
       });
       
@@ -61,10 +67,10 @@ export default function MyEventsPage() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-events", "events"] });
+      queryClient.invalidateQueries({ queryKey: ["my-events"] });
       toast({
         title: "更新完了",
-        description: "イベントの内容を更新しました。",
+        description: "イベントを更新しました。",
       });
       setEditingEvent(null);
     },
@@ -92,7 +98,7 @@ export default function MyEventsPage() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-events", "events"] });
+      queryClient.invalidateQueries({ queryKey: ["my-events"] });
       toast({
         title: "削除完了",
         description: "イベントを削除しました。",
@@ -121,7 +127,7 @@ export default function MyEventsPage() {
       </header>
 
       <div className="grid gap-4">
-        {events.map((event) => (
+        {events.map((event: Event) => (
           <Card key={event.id}>
             <CardHeader>
               <CardTitle>{event.name}</CardTitle>
