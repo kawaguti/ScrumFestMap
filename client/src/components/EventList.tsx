@@ -131,20 +131,18 @@ export function EventList({ events, selectedEvent, onEditStateChange }: EventLis
           }
         }}
       >
-        <DialogContent className="fixed inset-0 flex items-center justify-center">
-          <div className="bg-background rounded-lg shadow-lg w-full max-w-[500px] p-6">
-            <DialogHeader className="pb-4">
-              <DialogTitle className="text-2xl font-semibold">イベントの編集</DialogTitle>
-            </DialogHeader>
-            {editingEvent && (
-              <EventForm
-                defaultValues={editingEvent}
-                onSubmit={async (data) => {
-                  await updateEventMutation.mutateAsync({ ...data, id: editingEvent.id });
-                }}
-              />
-            )}
-          </div>
+        <DialogContent className="sm:max-w-[500px] p-6 z-50">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-2xl font-semibold">イベントの編集</DialogTitle>
+          </DialogHeader>
+          {editingEvent && (
+            <EventForm
+              defaultValues={editingEvent}
+              onSubmit={async (data) => {
+                await updateEventMutation.mutateAsync({ ...data, id: editingEvent.id });
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

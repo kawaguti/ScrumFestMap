@@ -88,23 +88,28 @@ export default function HomePage() {
       </header>
 
       <div className="space-y-6">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
           {user ? (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>新規イベント登録</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px] p-6 z-50">
-                <DialogHeader>
-                  <DialogTitle>新規イベント登録</DialogTitle>
-                </DialogHeader>
-                <EventForm
-                  onSubmit={async (data) => {
-                    await createEventMutation.mutateAsync(data);
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
+            <>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>新規イベント登録</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px] p-6 z-50">
+                  <DialogHeader>
+                    <DialogTitle>新規イベント登録</DialogTitle>
+                  </DialogHeader>
+                  <EventForm
+                    onSubmit={async (data) => {
+                      await createEventMutation.mutateAsync(data);
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
+              <Button variant="outline" asChild>
+                <Link href="/my-events">マイイベント</Link>
+              </Button>
+            </>
           ) : (
             <Button asChild>
               <Link href="/auth">ログインしてイベントを登録</Link>
