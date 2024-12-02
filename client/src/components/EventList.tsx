@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import type { Event } from "@db/schema";
+import type { Event, InsertEvent } from "@db/schema";
 import {
   Card,
   CardContent,
@@ -10,7 +10,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Calendar } from "lucide-react";
+import { ExternalLink, Calendar, Edit2 } from "lucide-react";
+import { useUser } from "@/hooks/use-user";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EventForm } from "@/components/EventForm";
+import { useState } from "react";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 interface EventListProps {
   events: Event[];
@@ -18,6 +24,35 @@ interface EventListProps {
 }
 
 export function EventList({ events, selectedEvent }: EventListProps) {
+  const { user } = useUser();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+
+  const updateEventMutation = useMutation({
+    mutationFn: async (data: InsertEvent & { id: number }) => {
+      const response = await fetch(`/api/events/${data.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to update event");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      toast({ title: "成功", description: "イベントを更新しました。" });
+      setEditingEvent(null);
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: "イベントの更新に失敗しました。",
+      });
+    },
+  });
+
   // イベント履歴の場合は並び替えを行わず、そのままの順序を維持
   // それ以外の場合（都道府県別表示など）は日付でソート
   const sortedEvents = selectedEvent
@@ -35,9 +70,7 @@ export function EventList({ events, selectedEvent }: EventListProps) {
   }
 
   return (
-    <div className="space
-
--y-4">
+    <div className="space-y-4">
       {sortedEvents.map((event) => (
         <Card 
           key={event.id}
@@ -59,19 +92,48 @@ export function EventList({ events, selectedEvent }: EventListProps) {
                 {event.description}
               </p>
             )}
-            {event.website && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => event.website && window.open(event.website, "_blank")}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Webサイトへ
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {event.website && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => event.website && window.open(event.website, "_blank")}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Webサイトへ
+                </Button>
+              )}
+              {event.createdBy === user?.id && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-2"
+                  onClick={() => setEditingEvent(event)}
+                >
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  編集
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       ))}
+
+      <Dialog open={!!editingEvent} onOpenChange={() => setEditingEvent(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>イベントの編集</DialogTitle>
+          </DialogHeader>
+          {editingEvent && (
+            <EventForm
+              defaultValues={editingEvent}
+              onSubmit={async (data) => {
+                await updateEventMutation.mutateAsync({ ...data, id: editingEvent.id });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

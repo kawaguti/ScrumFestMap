@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertEventSchema, type InsertEvent } from "@db/schema";
+import { insertEventSchema, type InsertEvent, type Event } from "@db/schema";
 import { prefectures } from "@/lib/prefectures";
 import {
   Form,
@@ -24,13 +24,14 @@ import { Button } from "@/components/ui/button";
 import { DialogDescription } from "@/components/ui/dialog";
 
 interface EventFormProps {
+  defaultValues?: Event;
   onSubmit: (data: InsertEvent) => Promise<void>;
 }
 
-export function EventForm({ onSubmit }: EventFormProps) {
+export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
   const form = useForm<InsertEvent>({
     resolver: zodResolver(insertEventSchema),
-    defaultValues: {
+    defaultValues: defaultValues ?? {
       name: "",
       prefecture: "",
       date: new Date(),
