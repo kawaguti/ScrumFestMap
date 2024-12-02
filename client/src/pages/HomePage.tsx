@@ -58,7 +58,7 @@ export default function HomePage() {
       <header className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">スクラムフェスマップ</h1>
         <div className="flex items-center gap-4">
-          {user ? (
+          {user && (
             <>
               <span className="text-sm text-muted-foreground">
                 {user.username}
@@ -74,10 +74,6 @@ export default function HomePage() {
                 </Button>
               </div>
             </>
-          ) : (
-            <Button asChild>
-              <Link href="/auth">ログインしてイベントを登録</Link>
-            </Button>
           )}
         </div>
       </header>
