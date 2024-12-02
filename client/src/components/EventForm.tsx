@@ -132,6 +132,21 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                       dateFormat="yyyy/MM/dd"
                       minDate={new Date()}
                       className="w-full bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+                      popperClassName="react-datepicker-popper"
+                      popperModifiers={[
+                        {
+                          name: "offset",
+                          options: {
+                            offset: [0, 10]
+                          }
+                        },
+                        {
+                          name: "preventOverflow",
+                          options: {
+                            boundary: "viewport"
+                          }
+                        }
+                      ]}
                     />
                   </FormControl>
                   <FormMessage />

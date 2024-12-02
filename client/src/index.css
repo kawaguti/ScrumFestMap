@@ -11,3 +11,11 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+.react-datepicker-popper {
+  z-index: 100 !important;
+}
+
+.react-datepicker {
+  @apply bg-background border border-primary/20 rounded-lg shadow-lg !important;
+}
