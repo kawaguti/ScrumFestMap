@@ -25,12 +25,13 @@ import { DialogDescription } from "@/components/ui/dialog";
 
 interface EventFormProps {
   onSubmit: (data: InsertEvent) => Promise<void>;
+  defaultValues?: InsertEvent;
 }
 
-export function EventForm({ onSubmit }: EventFormProps) {
+export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
   const form = useForm<InsertEvent>({
     resolver: zodResolver(insertEventSchema),
-    defaultValues: {
+    defaultValues: defaultValues || {
       name: "",
       prefecture: "",
       date: new Date(),

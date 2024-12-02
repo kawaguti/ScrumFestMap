@@ -64,6 +64,25 @@ export default function HomePage() {
                 {user.username}
               </span>
               <div className="flex items-center gap-2">
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>新規イベント登録</Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle>新規イベント登録</DialogTitle>
+                    </DialogHeader>
+                    <EventForm
+                      onSubmit={async (data) => {
+                        await createEventMutation.mutateAsync(data);
+                        setIsDialogOpen(false);
+                      }}
+                    />
+                  </DialogContent>
+                </Dialog>
+                <Button variant="outline" asChild>
+                  <Link href="/my-events">マイイベント</Link>
+                </Button>
                 {user.isAdmin && (
                   <Button variant="outline" asChild>
                     <Link href="/admin">管理者ダッシュボード</Link>
