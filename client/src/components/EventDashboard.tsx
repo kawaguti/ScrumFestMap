@@ -2,16 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
 interface EventStats {
-  totalEvents: number;
-  upcomingEvents: number;
-  prefectureStats: Record<string, number>;
   monthlyStats: Record<string, number>;
 }
 
@@ -41,52 +38,27 @@ export function EventDashboard() {
     return null;
   }
 
-  // Sort prefecture stats by count
-  const sortedPrefectureStats = Object.entries(stats.prefectureStats)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5);
-
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4">
       <Card>
         <CardHeader>
-          <CardTitle>総イベント数</CardTitle>
-          <CardDescription>登録された全イベント</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-3xl font-bold">{stats.totalEvents}</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>開催予定</CardTitle>
-          <CardDescription>今後のイベント数</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-3xl font-bold">{stats.upcomingEvents}</p>
-        </CardContent>
-      </Card>
-
-      <Card className="md:col-span-2">
-        <CardHeader>
-          <CardTitle>都道府県別トップ5</CardTitle>
-          <CardDescription>イベント数が多い地域</CardDescription>
+          <CardTitle>月別イベント統計</CardTitle>
+          <CardDescription>月ごとのイベント数</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {sortedPrefectureStats.map(([prefecture, count]) => (
-              <div key={prefecture} className="flex items-center gap-2">
+            {Object.entries(stats.monthlyStats).map(([month, count]) => (
+              <div key={month} className="flex items-center gap-2">
                 <div className="w-full bg-muted rounded-full h-2">
                   <div
                     className="bg-primary rounded-full h-2"
                     style={{
-                      width: `${(count / stats.totalEvents) * 100}%`,
+                      width: `${(count / Math.max(...Object.values(stats.monthlyStats))) * 100}%`,
                     }}
                   />
                 </div>
                 <span className="text-sm text-muted-foreground min-w-[8rem] text-right">
-                  {prefecture} ({count}件)
+                  {month} ({count}件)
                 </span>
               </div>
             ))}
