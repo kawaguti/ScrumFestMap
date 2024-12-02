@@ -77,8 +77,13 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                     開催都道府県
                   </FormLabel>
                   <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
+                    onValueChange={(value) => {
+                      const prefecture = prefectures.find((p) => p.id === value);
+                      if (prefecture) {
+                        field.onChange(prefecture.name);
+                      }
+                    }}
+                    value={prefectures.find((p) => p.name === field.value)?.id || ""}
                   >
                     <FormControl>
                       <SelectTrigger className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20">
@@ -89,7 +94,7 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                       {prefectures.map((pref) => (
                         <SelectItem 
                           key={pref.id} 
-                          value={pref.name}
+                          value={pref.id}
                           className="hover:bg-primary/5 transition-colors duration-200"
                         >
                           {pref.name}
