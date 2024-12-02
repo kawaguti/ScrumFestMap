@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,6 @@ import { ExternalLink, Calendar, Edit2 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EventForm } from "@/components/EventForm";
-import { useState, useEffect } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
@@ -58,10 +58,8 @@ export function EventList({ events, selectedEvent, onEditStateChange }: EventLis
     },
   });
 
-  // イベント履歴の場合は並び替えを行わず、そのままの順序を維持
-  // それ以外の場合（都道府県別表示など）は日付でソート
   const sortedEvents = selectedEvent
-    ? events  // 履歴表示の場合は並び替えない
+    ? events
     : [...events].sort(
         (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
       );

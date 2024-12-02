@@ -112,7 +112,7 @@ export default function HomePage() {
           )}
         </div>
 
-        {!isDialogOpen && !isEditing && (
+        {(!isDialogOpen && !isEditing) && (
           <JapanMap
             events={events}
             selectedPrefecture={selectedPrefecture}
