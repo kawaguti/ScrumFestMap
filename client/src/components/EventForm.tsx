@@ -3,6 +3,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEventSchema, type InsertEvent } from "@db/schema";
 import { prefectures } from "@/lib/prefectures";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import {
   Form,
   FormControl,
@@ -117,18 +119,15 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                 <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
                   <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">開催日時</FormLabel>
                   <FormControl>
-                    <Input
-                      type="datetime-local"
-                      step="900"
-                      value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
-                      onChange={(e) => {
-                        const selectedDate = new Date(e.target.value);
-                        if (!isNaN(selectedDate.getTime())) {
-                          field.onChange(roundToNearest15Min(selectedDate));
-                        }
-                      }}
-                      min={new Date().toISOString().slice(0, 16)}
-                      className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+                    <DatePicker
+                      selected={field.value}
+                      onChange={(date: Date) => field.onChange(roundToNearest15Min(date))}
+                      showTimeSelect
+                      timeIntervals={15}
+                      timeFormat="HH:mm"
+                      dateFormat="yyyy/MM/dd HH:mm"
+                      minDate={new Date()}
+                      className="w-full bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                     />
                   </FormControl>
                   <FormMessage />
