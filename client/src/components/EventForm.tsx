@@ -114,7 +114,10 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
               control={form.control}
               name="date"
               render={({ field }) => {
-                const value = field.value instanceof Date ? roundToNearest15Min(field.value) : roundToNearest15Min(new Date());
+                // 入力値を日本時間として扱う
+                const value = field.value instanceof Date 
+                  ? new Date(field.value.getTime() - (field.value.getTimezoneOffset() * 60000))
+                  : new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000));
                 
                 return (
                   <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
@@ -127,10 +130,16 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                         value={value.toISOString().slice(0, 16)}
                         onChange={(e) => {
                           const inputDate = new Date(e.target.value);
-                          if (isNaN(inputDate.getTime())) {
-                            field.onChange(roundToNearest15Min(new Date()));
+                          // 入力値を UTC として扱い、必要な変換を行う
+                          const utcDate = new Date(
+                            inputDate.getTime() + (inputDate.getTimezoneOffset() * 60000)
+                          );
+                          if (isNaN(utcDate.getTime())) {
+                            field.onChange(new Date());
                           } else {
-                            field.onChange(roundToNearest15Min(inputDate));
+                            // 15分単位に丸める
+                            const roundedDate = roundToNearest15Min(utcDate);
+                            field.onChange(roundedDate);
                           }
                         }}
                         min={new Date().toISOString().slice(0, 16)}
