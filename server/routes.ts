@@ -24,6 +24,25 @@ export function setupRoutes(app: Express) {
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch events" });
     }
+  // マイイベント取得
+  app.get("/api/my-events", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const userEvents = await db
+        .select()
+        .from(events)
+        .where(eq(events.createdBy, req.user.id))
+        .orderBy(desc(events.date));
+      
+      res.json(userEvents);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch events" });
+    }
+  });
+
   });
   app.put("/api/events/:eventId", async (req, res) => {
     if (!req.isAuthenticated()) {

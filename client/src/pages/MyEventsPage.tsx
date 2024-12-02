@@ -90,7 +90,7 @@ export default function MyEventsPage() {
       </header>
 
       <div className="grid gap-4">
-        {events.map((event) => (
+        {events.map((event: Event) => (
           <Card key={event.id}>
             <CardHeader>
               <CardTitle>{event.name}</CardTitle>
