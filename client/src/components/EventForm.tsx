@@ -102,23 +102,36 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
             <FormField
               control={form.control}
               name="date"
-              render={({ field }) => (
-                <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
-                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">開催日時</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="datetime-local"
-                      {...field}
-                      className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
-                      value={field.value instanceof Date
-                        ? field.value.toISOString().slice(0, 16)
-                        : new Date().toISOString().slice(0, 16)
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                // フィールドの値が常にDate型になるようにする
+                const value = field.value instanceof Date ? field.value : new Date();
+                // 15分単位に丸める
+                value.setMinutes(Math.ceil(value.getMinutes() / 15) * 15);
+                
+                return (
+                  <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
+                    <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">開催日時</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="datetime-local"
+                        className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+                        value={value.toISOString().slice(0, 16)}
+                        onChange={(e) => {
+                          const date = new Date(e.target.value);
+                          // 無効な日付の場合は現在時刻を設定
+                          if (isNaN(date.getTime())) {
+                            field.onChange(new Date());
+                          } else {
+                            field.onChange(date);
+                          }
+                        }}
+                        min={new Date().toISOString().slice(0, 16)} // 過去の日付を選択できないようにする
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
