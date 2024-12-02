@@ -120,9 +120,9 @@ export function EventList({ events, selectedEvent }: EventListProps) {
       ))}
 
       <Dialog open={!!editingEvent} onOpenChange={() => setEditingEvent(null)}>
-        <DialogContent className="z-50">
-          <DialogHeader>
-            <DialogTitle>イベントの編集</DialogTitle>
+        <DialogContent className="sm:max-w-[500px] p-6">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-2xl font-semibold">イベントの編集</DialogTitle>
           </DialogHeader>
           {editingEvent && (
             <EventForm
