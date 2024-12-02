@@ -43,10 +43,11 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="relative space-y-6">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/3 to-transparent rounded-lg -m-3 p-3" />
-          <div className="relative z-10 space-y-6">
-            <DialogDescription className="text-sm text-muted-foreground">
+        <div className="relative space-y-6 p-6 bg-gradient-to-b from-background via-background/95 to-background/90 rounded-lg shadow-lg border border-primary/10">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-lg opacity-50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/30 to-background/60 rounded-lg" />
+          <div className="relative z-10 space-y-8">
+            <DialogDescription className="text-base text-muted-foreground leading-relaxed">
               イベントの詳細情報を入力してください
             </DialogDescription>
 
@@ -54,10 +55,13 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
               control={form.control}
               name="name"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base font-semibold">イベント名</FormLabel>
+                <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
+                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">イベント名</FormLabel>
                   <FormControl>
-                    <Input {...field} className="bg-background/50 backdrop-blur-sm" />
+                    <Input 
+                      {...field} 
+                      className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20" 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -68,20 +72,24 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
               control={form.control}
               name="prefecture"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base font-semibold">開催都道府県</FormLabel>
+                <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
+                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">開催都道府県</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value || ""}
                   >
                     <FormControl>
-                      <SelectTrigger className="bg-background/50 backdrop-blur-sm">
+                      <SelectTrigger className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20">
                         <SelectValue placeholder="都道府県を選択" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="bg-background/95 backdrop-blur-md border-primary/20">
                       {prefectures.map((pref) => (
-                        <SelectItem key={pref.id} value={pref.name}>
+                        <SelectItem 
+                          key={pref.id} 
+                          value={pref.name}
+                          className="hover:bg-primary/5 transition-colors duration-200"
+                        >
                           {pref.name}
                         </SelectItem>
                       ))}
@@ -96,13 +104,13 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
               control={form.control}
               name="date"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base font-semibold">開催日</FormLabel>
+                <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
+                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">開催日</FormLabel>
                   <FormControl>
                     <Input
                       type="datetime-local"
                       {...field}
-                      className="bg-background/50 backdrop-blur-sm"
+                      className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                       value={field.value instanceof Date
                         ? field.value.toISOString().slice(0, 16)
                         : new Date().toISOString().slice(0, 16)
@@ -118,13 +126,13 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
               control={form.control}
               name="website"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base font-semibold">Webサイト URL</FormLabel>
+                <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
+                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Webサイト URL</FormLabel>
                   <FormControl>
                     <Input
                       type="url"
                       {...field}
-                      className="bg-background/50 backdrop-blur-sm"
+                      className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                       value={field.value || ""}
                     />
                   </FormControl>
@@ -137,12 +145,12 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
               control={form.control}
               name="description"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base font-semibold">イベント説明</FormLabel>
+                <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
+                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">イベント説明</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      className="bg-background/50 backdrop-blur-sm min-h-[100px]"
+                      className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 min-h-[100px] resize-y"
                       value={field.value || ""}
                     />
                   </FormControl>
@@ -151,10 +159,10 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
               )}
             />
 
-            <div className="flex justify-end pt-4">
+            <div className="flex justify-end pt-6">
               <Button
                 type="submit"
-                className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] text-background font-semibold"
               >
                 保存する
               </Button>

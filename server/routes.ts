@@ -1,9 +1,9 @@
-import { type Express } from "express";
+import { type Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { users, events, insertEventSchema } from "@db/schema";
 import { eq, desc } from "drizzle-orm";
 
-function requireAdmin(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || !req.user?.isAdmin) {
     return res.status(403).json({ error: "Forbidden" });
   }
@@ -133,6 +133,25 @@ export function setupRoutes(app: Express) {
       res.json(user);
     } catch (error) {
       res.status(500).json({ error: "Failed to promote user" });
+    }
+  });
+
+  // マイイベント取得
+  app.get("/api/my-events", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const userEvents = await db
+        .select()
+        .from(events)
+        .where(eq(events.createdBy, req.user.id))
+        .orderBy(desc(events.date));
+      
+      res.json(userEvents);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch events" });
     }
   });
 
