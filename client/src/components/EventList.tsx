@@ -14,20 +14,25 @@ import { ExternalLink, Calendar, Edit2 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EventForm } from "@/components/EventForm";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 interface EventListProps {
   events: Event[];
   selectedEvent?: Event | null;
+  onEditStateChange?: (editing: boolean) => void;
 }
 
-export function EventList({ events, selectedEvent }: EventListProps) {
+export function EventList({ events, selectedEvent, onEditStateChange }: EventListProps) {
   const { user } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+
+  useEffect(() => {
+    onEditStateChange?.(!!editingEvent);
+  }, [editingEvent, onEditStateChange]);
 
   const updateEventMutation = useMutation({
     mutationFn: async (data: InsertEvent & { id: number }) => {
@@ -119,7 +124,13 @@ export function EventList({ events, selectedEvent }: EventListProps) {
         </Card>
       ))}
 
-      <Dialog open={!!editingEvent} onOpenChange={() => setEditingEvent(null)}>
+      <Dialog 
+        open={!!editingEvent} 
+        onOpenChange={(open) => {
+          setEditingEvent(null);
+          onEditStateChange?.(false);
+        }}
+      >
         <DialogContent className="sm:max-w-[500px] p-6">
           <DialogHeader className="pb-4">
             <DialogTitle className="text-2xl font-semibold">イベントの編集</DialogTitle>

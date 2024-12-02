@@ -39,6 +39,7 @@ export default function HomePage() {
   const { user, logout } = useUser();
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);  // 追加
   const queryClient = useQueryClient();
 
   const { data: events = [] } = useQuery({
@@ -104,7 +105,7 @@ export default function HomePage() {
           )}
         </div>
 
-        {!isDialogOpen && (
+        {!isDialogOpen && !isEditing && (
           <JapanMap
             events={events}
             selectedPrefecture={selectedPrefecture}
