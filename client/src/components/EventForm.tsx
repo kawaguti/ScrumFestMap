@@ -78,12 +78,16 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                   </FormLabel>
                   <Select
                     onValueChange={(value) => {
-                      const prefecture = prefectures.find((p) => p.id === value);
-                      if (prefecture) {
-                        field.onChange(prefecture.name);
+                      try {
+                        const prefecture = prefectures.find((p) => p.id === value);
+                        if (prefecture) {
+                          field.onChange(prefecture.name);
+                        }
+                      } catch (error) {
+                        console.error('Prefecture selection error:', error);
                       }
                     }}
-                    value={prefectures.find((p) => p.name === field.value)?.id || ""}
+                    defaultValue={prefectures.find((p) => p.name === field.value)?.id}
                   >
                     <FormControl>
                       <SelectTrigger className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20">
