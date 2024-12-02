@@ -121,7 +121,7 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                       type="datetime-local"
                       step="900"
                       value={field.value instanceof Date ? 
-                        new Date(field.value.getTime() - (field.value.getTimezoneOffset() * 60000))
+                        new Date(field.value.getTime() + (9 * 60 * 60 * 1000))
                           .toISOString()
                           .slice(0, 16) : 
                         ''
@@ -129,11 +129,9 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                       onChange={(e) => {
                         const selectedDate = new Date(e.target.value);
                         if (!isNaN(selectedDate.getTime())) {
-                          // 入力された日時をローカルタイムとして扱う
-                          const localDate = new Date(
-                            selectedDate.getTime() + (selectedDate.getTimezoneOffset() * 60000)
-                          );
-                          field.onChange(roundToNearest15Min(localDate));
+                          // JSTからUTCに変換
+                          const utcDate = new Date(selectedDate.getTime() - (9 * 60 * 60 * 1000));
+                          field.onChange(roundToNearest15Min(utcDate));
                         }
                       }}
                       min={new Date().toISOString().slice(0, 16)}
