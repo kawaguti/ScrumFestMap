@@ -114,9 +114,7 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
               control={form.control}
               name="date"
               render={({ field }) => {
-                // UTCからJSTへの変換処理を追加
-                const jstDate = new Date(field.value.getTime() + 9 * 60 * 60 * 1000);
-                const value = jstDate instanceof Date ? roundToNearest15Min(jstDate) : roundToNearest15Min(new Date());
+                const value = field.value instanceof Date ? roundToNearest15Min(field.value) : roundToNearest15Min(new Date());
                 
                 return (
                   <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
@@ -129,12 +127,10 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                         value={value.toISOString().slice(0, 16)}
                         onChange={(e) => {
                           const inputDate = new Date(e.target.value);
-                          // JSTからUTCへの変換処理を追加
-                          const utcDate = new Date(inputDate.getTime() - 9 * 60 * 60 * 1000);
-                          if (isNaN(utcDate.getTime())) {
+                          if (isNaN(inputDate.getTime())) {
                             field.onChange(roundToNearest15Min(new Date()));
                           } else {
-                            field.onChange(roundToNearest15Min(utcDate));
+                            field.onChange(roundToNearest15Min(inputDate));
                           }
                         }}
                         min={new Date().toISOString().slice(0, 16)}
