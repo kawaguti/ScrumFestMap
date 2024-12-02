@@ -28,13 +28,24 @@ interface EventFormProps {
   defaultValues?: InsertEvent;
 }
 
+const roundToNearest15Min = (date: Date) => {
+  const minutes = date.getMinutes();
+  const remainder = minutes % 15;
+  const roundedMinutes = remainder < 8 ? minutes - remainder : minutes + (15 - remainder);
+  const newDate = new Date(date);
+  newDate.setMinutes(roundedMinutes);
+  newDate.setSeconds(0);
+  newDate.setMilliseconds(0);
+  return newDate;
+};
+
 export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
   const form = useForm<InsertEvent>({
     resolver: zodResolver(insertEventSchema),
     defaultValues: defaultValues || {
       name: "",
       prefecture: "",
-      date: new Date(),
+      date: roundToNearest15Min(new Date()),
       website: "",
       description: "",
     },
@@ -103,10 +114,7 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
               control={form.control}
               name="date"
               render={({ field }) => {
-                // フィールドの値が常にDate型になるようにする
-                const value = field.value instanceof Date ? field.value : new Date();
-                // 15分単位に丸める
-                value.setMinutes(Math.ceil(value.getMinutes() / 15) * 15);
+                const value = field.value instanceof Date ? roundToNearest15Min(field.value) : roundToNearest15Min(new Date());
                 
                 return (
                   <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
@@ -114,18 +122,18 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                     <FormControl>
                       <Input
                         type="datetime-local"
+                        step="900"
                         className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                         value={value.toISOString().slice(0, 16)}
                         onChange={(e) => {
                           const date = new Date(e.target.value);
-                          // 無効な日付の場合は現在時刻を設定
                           if (isNaN(date.getTime())) {
-                            field.onChange(new Date());
+                            field.onChange(roundToNearest15Min(new Date()));
                           } else {
-                            field.onChange(date);
+                            field.onChange(roundToNearest15Min(date));
                           }
                         }}
-                        min={new Date().toISOString().slice(0, 16)} // 過去の日付を選択できないようにする
+                        min={new Date().toISOString().slice(0, 16)}
                       />
                     </FormControl>
                     <FormMessage />
