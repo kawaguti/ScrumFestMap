@@ -73,15 +73,15 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
               name="prefecture"
               render={({ field }) => (
                 <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
-                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                    開催都道府県
-                  </FormLabel>
+                  <FormLabel>開催都道府県</FormLabel>
                   <FormControl>
                     <Select
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                      }}
                     >
-                      <SelectTrigger className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20">
+                      <SelectTrigger>
                         <SelectValue placeholder="都道府県を選択" />
                       </SelectTrigger>
                       <SelectContent>
@@ -89,7 +89,6 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                           <SelectItem
                             key={pref.id}
                             value={pref.name}
-                            className="hover:bg-primary/5 transition-colors duration-200"
                           >
                             {pref.name}
                           </SelectItem>
