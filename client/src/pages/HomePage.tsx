@@ -68,9 +68,11 @@ export default function HomePage() {
                   <DialogTrigger asChild>
                     <Button>新規イベント登録</Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                      <DialogTitle>新規イベント登録</DialogTitle>
+                  <DialogContent className="sm:max-w-[650px] p-8">
+                    <DialogHeader className="space-y-4 mb-8">
+                      <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                        新規イベント登録
+                      </DialogTitle>
                     </DialogHeader>
                     <EventForm
                       onSubmit={async (data) => {

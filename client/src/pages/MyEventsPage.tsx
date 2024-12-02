@@ -137,7 +137,7 @@ export default function MyEventsPage() {
       </div>
 
       <Dialog open={!!editingEvent} onOpenChange={() => setEditingEvent(null)}>
-        <DialogContent className="sm:max-w-[650px] p-8">
+        <DialogContent className="sm:max-w-[650px] p-8 backdrop-blur-sm bg-background/95">
           <DialogHeader className="space-y-4 mb-8">
             <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
               イベントの編集
@@ -145,8 +145,9 @@ export default function MyEventsPage() {
           </DialogHeader>
           {editingEvent && (
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/3 to-transparent rounded-lg -m-3 p-3" />
-              <div className="relative z-10 space-y-6">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-lg -m-3 p-3" />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background/80 rounded-lg opacity-50" />
+              <div className="relative z-10 space-y-8">
                 <EventForm
                   defaultValues={editingEvent}
                   onSubmit={async (data) => {

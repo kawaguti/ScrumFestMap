@@ -16,6 +16,7 @@ interface JapanMapProps {
 export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: JapanMapProps) {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventHistory, setEventHistory] = useState<Event[]>([]);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
   const handleMarkerClick = (event: Event) => {
     setSelectedEvent(event);
