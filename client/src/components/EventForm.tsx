@@ -73,10 +73,12 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
               name="prefecture"
               render={({ field }) => (
                 <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
-                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">開催都道府県</FormLabel>
+                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                    開催都道府県
+                  </FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value || ""}
+                    defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20">
@@ -105,7 +107,7 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
               name="date"
               render={({ field }) => (
                 <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
-                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">開催日</FormLabel>
+                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">開催日時</FormLabel>
                   <FormControl>
                     <Input
                       type="datetime-local"
@@ -162,7 +164,7 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
             <div className="flex justify-end pt-6">
               <Button
                 type="submit"
-                className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] text-background font-semibold"
+                className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] text-primary-foreground font-semibold"
               >
                 保存する
               </Button>
