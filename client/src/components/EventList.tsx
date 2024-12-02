@@ -120,7 +120,7 @@ export function EventList({ events, selectedEvent }: EventListProps) {
       ))}
 
       <Dialog open={!!editingEvent} onOpenChange={() => setEditingEvent(null)}>
-        <DialogContent>
+        <DialogContent className="z-50">
           <DialogHeader>
             <DialogTitle>イベントの編集</DialogTitle>
           </DialogHeader>
