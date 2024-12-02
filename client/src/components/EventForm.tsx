@@ -113,42 +113,27 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
             <FormField
               control={form.control}
               name="date"
-              render={({ field }) => {
-                // 入力値を日本時間として扱う
-                const value = field.value instanceof Date 
-                  ? new Date(field.value.getTime() - (field.value.getTimezoneOffset() * 60000))
-                  : new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000));
-                
-                return (
-                  <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
-                    <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">開催日時</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="datetime-local"
-                        step="900"
-                        className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
-                        value={value.toISOString().slice(0, 16)}
-                        onChange={(e) => {
-                          const inputDate = new Date(e.target.value);
-                          // 入力値を UTC として扱い、必要な変換を行う
-                          const utcDate = new Date(
-                            inputDate.getTime() + (inputDate.getTimezoneOffset() * 60000)
-                          );
-                          if (isNaN(utcDate.getTime())) {
-                            field.onChange(new Date());
-                          } else {
-                            // 15分単位に丸める
-                            const roundedDate = roundToNearest15Min(utcDate);
-                            field.onChange(roundedDate);
-                          }
-                        }}
-                        min={new Date().toISOString().slice(0, 16)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
+              render={({ field }) => (
+                <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
+                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">開催日時</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="datetime-local"
+                      step="900"
+                      value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                      onChange={(e) => {
+                        const date = new Date(e.target.value);
+                        if (!isNaN(date.getTime())) {
+                          field.onChange(roundToNearest15Min(date));
+                        }
+                      }}
+                      min={new Date().toISOString().slice(0, 16)}
+                      className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
 
             <FormField
