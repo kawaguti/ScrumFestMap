@@ -1,10 +1,10 @@
 import { useState } from "react";
+import { EventDashboard } from "@/components/EventDashboard";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { Link } from "wouter";
 import { JapanMap } from "@/components/JapanMap";
 import { EventForm } from "@/components/EventForm";
-import { EventList } from "@/components/EventList";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,10 +38,7 @@ async function createEvent(event: InsertEvent): Promise<Event> {
 export default function HomePage() {
   const { user, logout } = useUser();
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [eventHistory, setEventHistory] = useState<Event[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: events = [] } = useQuery({
@@ -49,16 +46,10 @@ export default function HomePage() {
     queryFn: fetchEvents,
   });
 
-  const prefectureEvents = events.filter(event => {
-    if (!selectedPrefecture) return false;
-    return event.prefecture === events.find(e => e.prefecture === event.prefecture)?.prefecture;
-  });
-
   const createEventMutation = useMutation({
     mutationFn: createEvent,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
-      setIsDialogOpen(false);
     },
   });
 
@@ -88,28 +79,24 @@ export default function HomePage() {
       </header>
 
       <div className="space-y-6">
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end">
           {user ? (
-            <>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>新規イベント登録</Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[500px] p-6 z-50">
-                  <DialogHeader>
-                    <DialogTitle>新規イベント登録</DialogTitle>
-                  </DialogHeader>
-                  <EventForm
-                    onSubmit={async (data) => {
-                      await createEventMutation.mutateAsync(data);
-                    }}
-                  />
-                </DialogContent>
-              </Dialog>
-              <Button variant="outline" asChild>
-                <Link href="/my-events">マイイベント</Link>
-              </Button>
-            </>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>新規イベント登録</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>新規イベント登録</DialogTitle>
+                </DialogHeader>
+                <EventForm
+                  onSubmit={async (data) => {
+                    await createEventMutation.mutateAsync(data);
+                    setIsDialogOpen(false);  // 登録後にダイアログを閉じる
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
           ) : (
             <Button asChild>
               <Link href="/auth">ログインしてイベントを登録</Link>
@@ -117,23 +104,13 @@ export default function HomePage() {
           )}
         </div>
 
-        {(!isDialogOpen && !isEditing) && (
+        {!isDialogOpen && (
           <JapanMap
             events={events}
             selectedPrefecture={selectedPrefecture}
             onPrefectureSelect={setSelectedPrefecture}
           />
         )}
-
-        <EventList
-          events={selectedEvent 
-            ? eventHistory
-            : selectedPrefecture
-              ? prefectureEvents
-              : eventHistory}
-          selectedEvent={selectedEvent}
-          onEditStateChange={setIsEditing}
-        />
       </div>
     </div>
   );

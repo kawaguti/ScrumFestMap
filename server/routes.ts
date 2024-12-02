@@ -24,61 +24,6 @@ export function setupRoutes(app: Express) {
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch events" });
     }
-  // マイイベント取得
-  app.get("/api/my-events", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-
-    try {
-      const userEvents = await db
-        .select()
-        .from(events)
-        .where(eq(events.createdBy, req.user.id))
-        .orderBy(desc(events.date));
-      
-      res.json(userEvents);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch events" });
-    }
-  });
-
-  });
-  app.put("/api/events/:eventId", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-
-    try {
-      // 作成者チェック
-      const [event] = await db
-        .select()
-        .from(events)
-        .where(eq(events.id, parseInt(req.params.eventId)))
-        .limit(1);
-
-      if (!event) {
-        return res.status(404).json({ error: "Event not found" });
-      }
-
-      if (event.createdBy !== req.user?.id) {
-        return res.status(403).json({ error: "Not authorized to edit this event" });
-      }
-
-      // イベントの更新
-      const [updatedEvent] = await db
-        .update(events)
-        .set({
-          ...req.body,
-          updatedAt: new Date(),
-        })
-        .where(eq(events.id, parseInt(req.params.eventId)))
-        .returning();
-
-      res.json(updatedEvent);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update event" });
-    }
   });
 
   app.post("/api/events", async (req, res) => {
@@ -197,23 +142,6 @@ export function setupRoutes(app: Express) {
       res.json(user);
     } catch (error) {
       res.status(500).json({ error: "Failed to demote user" });
-    }
-  });
-
-  app.delete("/api/admin/events/:eventId", requireAdmin, async (req, res) => {
-    try {
-      const [deletedEvent] = await db
-        .delete(events)
-        .where(eq(events.id, parseInt(req.params.eventId)))
-        .returning();
-
-      if (!deletedEvent) {
-        return res.status(404).json({ error: "Event not found" });
-      }
-
-      res.json(deletedEvent);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete event" });
     }
   });
 }

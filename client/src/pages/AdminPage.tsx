@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-user";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
 import {
   Card,
   CardContent,
@@ -38,6 +37,8 @@ async function fetchAllEvents(): Promise<Event[]> {
   return response.json();
 }
 
+import { useToast } from "@/hooks/use-toast";
+
 async function promoteToAdmin(userId: number) {
   const response = await fetch(`/api/admin/promote/${userId}`, {
     method: 'POST',
@@ -65,33 +66,6 @@ export default function AdminPage() {
   const { user } = useUser();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
-
-  const deleteEventMutation = useMutation({
-    mutationFn: async (eventId: number) => {
-      const response = await fetch(`/api/admin/events/${eventId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        throw new Error("Failed to delete event");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "events"] });
-      toast({
-        title: "成功",
-        description: "イベントを削除しました。",
-      });
-    },
-    onError: () => {
-      toast({
-        variant: "destructive",
-        title: "エラー",
-        description: "イベントの削除に失敗しました。",
-      });
-    },
-  });
   
   const promoteMutation = useMutation({
     mutationFn: promoteToAdmin,
@@ -239,7 +213,6 @@ export default function AdminPage() {
                     <TableHead>開催地</TableHead>
                     <TableHead>開催日</TableHead>
                     <TableHead>作成者</TableHead>
-                    <TableHead>操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -253,19 +226,6 @@ export default function AdminPage() {
                       </TableCell>
                       <TableCell>
                         {users.find(u => u.id === event.createdBy)?.username || event.createdBy}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => {
-                            if (confirm('このイベントを完全に削除してもよろしいですか？')) {
-                              deleteEventMutation.mutate(event.id);
-                            }
-                          }}
-                        >
-                          削除
-                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
