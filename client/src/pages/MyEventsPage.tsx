@@ -4,6 +4,17 @@ import { useUser } from "@/hooks/use-user";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Card,
   CardContent,
   CardHeader,
@@ -39,20 +50,30 @@ export default function MyEventsPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        credentials: "include",
       });
-      if (!response.ok) throw new Error("Failed to update event");
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update event");
+      }
+      
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-events", "events"] });
-      toast({ title: "成功", description: "イベントを更新しました。" });
+      toast({
+        title: "更新完了",
+        description: "イベントの内容を更新しました。",
+        className: "bg-background/95 border-primary/20",
+      });
       setEditingEvent(null);
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         variant: "destructive",
-        title: "エラー",
-        description: "イベントの更新に失敗しました。",
+        title: "更新エラー",
+        description: error instanceof Error ? error.message : "イベントの更新に失敗しました。",
       });
     },
   });
@@ -61,19 +82,29 @@ export default function MyEventsPage() {
     mutationFn: async (eventId: number) => {
       const response = await fetch(`/api/events/${eventId}`, {
         method: "DELETE",
+        credentials: "include",
       });
-      if (!response.ok) throw new Error("Failed to delete event");
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to delete event");
+      }
+      
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-events", "events"] });
-      toast({ title: "成功", description: "イベントを削除しました。" });
+      toast({
+        title: "削除完了",
+        description: "イベントを削除しました。",
+        className: "bg-background/95 border-primary/20",
+      });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         variant: "destructive",
-        title: "エラー",
-        description: "イベントの削除に失敗しました。",
+        title: "削除エラー",
+        description: error instanceof Error ? error.message : "イベントの削除に失敗しました。",
       });
     },
   });
@@ -117,18 +148,37 @@ export default function MyEventsPage() {
                     <Edit2 className="h-4 w-4 mr-2" />
                     編集
                   </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      if (confirm("このイベントを削除してもよろしいですか？")) {
-                        deleteEventMutation.mutate(event.id);
-                      }
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    削除
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        削除
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-background/95 backdrop-blur-sm border-destructive/20">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl font-bold bg-gradient-to-r from-destructive to-destructive/80 bg-clip-text text-transparent">
+                          イベントの削除
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-base">
+                          このイベントを削除してもよろしいですか？<br />
+                          この操作は取り消すことができません。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="bg-background/50 border-input/20">キャンセル</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteEventMutation.mutate(event.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          削除する
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </CardContent>

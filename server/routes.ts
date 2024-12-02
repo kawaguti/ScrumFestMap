@@ -177,4 +177,101 @@ export function setupRoutes(app: Express) {
       res.status(500).json({ error: "Failed to demote user" });
     }
   });
+
+  // イベントの更新エンドポイント
+  app.put("/api/events/:eventId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const eventId = parseInt(req.params.eventId);
+
+    try {
+      // バリデーションの追加
+      const result = insertEventSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          error: "Invalid input",
+          details: result.error.issues.map((i) => i.message),
+        });
+      }
+
+      // イベントの存在確認と権限チェック
+      const [existingEvent] = await db
+        .select()
+        .from(events)
+        .where(eq(events.id, eventId))
+        .limit(1);
+
+      if (!existingEvent) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      if (existingEvent.createdBy !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ error: "Not authorized to update this event" });
+      }
+
+      // イベントの更新
+      const [updatedEvent] = await db
+        .update(events)
+        .set({
+          ...result.data,
+          updatedAt: new Date(),
+        })
+        .where(eq(events.id, eventId))
+        .returning();
+
+      res.json(updatedEvent);
+    } catch (error) {
+      console.error("Event update error:", error);
+      res.status(500).json({
+        error: "Failed to update event",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  // イベントの削除エンドポイント
+  app.delete("/api/events/:eventId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const eventId = parseInt(req.params.eventId);
+
+    try {
+      // イベントの存在確認と権限チェック
+      const [existingEvent] = await db
+        .select()
+        .from(events)
+        .where(eq(events.id, eventId))
+        .limit(1);
+
+      if (!existingEvent) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      if (existingEvent.createdBy !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ error: "Not authorized to delete this event" });
+      }
+
+      // 論理削除の実装
+      const [deletedEvent] = await db
+        .update(events)
+        .set({
+          isArchived: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(events.id, eventId))
+        .returning();
+
+      res.json(deletedEvent);
+    } catch (error) {
+      console.error("Event deletion error:", error);
+      res.status(500).json({
+        error: "Failed to delete event",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
 }
