@@ -10,12 +10,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Calendar, Edit2 } from "lucide-react";
+import { ExternalLink, Calendar } from "lucide-react";
 
 interface EventListProps {
   events: Event[];
   selectedEvent?: Event | null;
-  onEditEvent?: (event: Event) => void;
 }
 
 export function EventList({ events, selectedEvent }: EventListProps) {
@@ -36,9 +35,7 @@ export function EventList({ events, selectedEvent }: EventListProps) {
   }
 
   return (
-    <div className="space
-
--y-4">
+    <div className="space-y-4">
       {sortedEvents.map((event) => (
         <Card 
           key={event.id}
@@ -74,14 +71,6 @@ export function EventList({ events, selectedEvent }: EventListProps) {
                     Webサイトへ
                   </Button>
                 )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onEditEvent?.(event)}
-                >
-                  <Edit2 className="h-4 w-4 mr-2" />
-                  編集
-                </Button>
               </div>
             </div>
           </CardContent>
