@@ -123,13 +123,13 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                       selected={field.value}
                       onChange={(date: Date | null) => {
                         if (date) {
-                          field.onChange(roundToNearest15Min(date));
+                          // 時刻は固定で12:00に設定
+                          const newDate = new Date(date);
+                          newDate.setHours(12, 0, 0, 0);
+                          field.onChange(newDate);
                         }
                       }}
-                      showTimeSelect
-                      timeIntervals={15}
-                      timeFormat="HH:mm"
-                      dateFormat="yyyy/MM/dd HH:mm"
+                      dateFormat="yyyy/MM/dd"
                       minDate={new Date()}
                       className="w-full bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                     />
