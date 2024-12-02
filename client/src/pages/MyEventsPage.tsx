@@ -37,8 +37,13 @@ export default function MyEventsPage() {
   const { data: events = [] } = useQuery({
     queryKey: ["my-events"],
     queryFn: async () => {
-      const response = await fetch("/api/my-events");
-      if (!response.ok) throw new Error("Failed to fetch events");
+      const response = await fetch("/api/my-events", {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to fetch events");
+      }
       return response.json();
     },
     enabled: !!user,
@@ -53,8 +58,8 @@ export default function MyEventsPage() {
           name: data.name,
           prefecture: data.prefecture,
           date: data.date,
-          website: data.website,
-          description: data.description,
+          website: data.website || "",
+          description: data.description || "",
         }),
         credentials: "include",
       });
@@ -67,7 +72,7 @@ export default function MyEventsPage() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-events"] });
+      queryClient.invalidateQueries({ queryKey: ["my-events", "events"] });
       toast({
         title: "更新完了",
         description: "イベントを更新しました。",
@@ -75,6 +80,7 @@ export default function MyEventsPage() {
       setEditingEvent(null);
     },
     onError: (error) => {
+      console.error("Update error:", error);
       toast({
         variant: "destructive",
         title: "更新エラー",
@@ -98,13 +104,14 @@ export default function MyEventsPage() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-events"] });
+      queryClient.invalidateQueries({ queryKey: ["my-events", "events"] });
       toast({
         title: "削除完了",
         description: "イベントを削除しました。",
       });
     },
     onError: (error) => {
+      console.error("Delete error:", error);
       toast({
         variant: "destructive",
         title: "削除エラー",
@@ -141,6 +148,13 @@ export default function MyEventsPage() {
                   })}</p>
                   {event.description && (
                     <p className="text-sm text-muted-foreground mt-2">{event.description}</p>
+                  )}
+                  {event.website && (
+                    <p className="text-sm text-muted-foreground">
+                      <a href={event.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        Webサイトを開く
+                      </a>
+                    </p>
                   )}
                 </div>
                 <div className="flex gap-2">
@@ -199,12 +213,17 @@ export default function MyEventsPage() {
           </DialogHeader>
           {editingEvent && (
             <EventForm
-              defaultValues={editingEvent}
+              defaultValues={{
+                name: editingEvent.name,
+                prefecture: editingEvent.prefecture,
+                date: new Date(editingEvent.date),
+                website: editingEvent.website || "",
+                description: editingEvent.description || "",
+              }}
               onSubmit={async (data) => {
                 await updateEventMutation.mutateAsync({
                   ...editingEvent,
                   ...data,
-                  id: editingEvent.id,
                 });
               }}
             />
