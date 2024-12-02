@@ -5,7 +5,6 @@ import { useUser } from "@/hooks/use-user";
 import { Link } from "wouter";
 import { JapanMap } from "@/components/JapanMap";
 import { EventForm } from "@/components/EventForm";
-import { EventList } from "@/components/EventList";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -76,16 +75,14 @@ export default function HomePage() {
               </div>
             </>
           ) : (
-            <Button variant="outline" asChild>
-              <Link href="/auth">ログイン</Link>
+            <Button asChild>
+              <Link href="/auth">ログインしてイベントを登録</Link>
             </Button>
           )}
         </div>
       </header>
 
       <div className="space-y-6">
-        <EventDashboard />
-        
         <div className="flex justify-end">
           {user ? (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
