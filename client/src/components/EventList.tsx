@@ -131,7 +131,7 @@ export function EventList({ events, selectedEvent, onEditStateChange }: EventLis
           onEditStateChange?.(false);
         }}
       >
-        <DialogContent className="sm:max-w-[500px] p-6">
+        <DialogContent className="sm:max-w-[500px] p-6 z-50">
           <DialogHeader className="pb-4">
             <DialogTitle className="text-2xl font-semibold">イベントの編集</DialogTitle>
           </DialogHeader>
