@@ -1,22 +1,13 @@
 import { useState, useMemo } from "react";
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
-import type { PropsWithChildren } from 'react';
+import type { Layer } from "leaflet";
+import MarkerClusterGroup from "react-leaflet-markercluster";
+import "react-leaflet-markercluster/dist/styles.min.css";
 import { prefectures, prefectureCoordinates } from "@/lib/prefectures";
-import MarkerClusterGroup from 'react-leaflet-markercluster';
 import { japanGeoData } from "@/lib/japanGeoData";
 import { Card } from "@/components/ui/card";
-import "react-leaflet-markercluster/dist/styles.min.css";
-
-type MarkerClusterGroupProps = PropsWithChildren<{
-  chunkedLoading?: boolean;
-  spiderfyOnMaxZoom?: boolean;
-  animate?: boolean;
-  maxClusterRadius?: number;
-}>;
 import { EventList } from "./EventList";
 import type { Event } from "@db/schema";
-import type { Layer } from "leaflet";
-import "react-leaflet-markercluster/dist/styles.min.css";
 
 interface JapanMapProps {
   events: Event[];
