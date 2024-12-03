@@ -131,6 +131,11 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                     />
                   </FormControl>
                   <FormMessage />
+                  {field.value instanceof Date && field.value < new Date() && (
+                    <p className="text-sm text-orange-500 mt-2 pl-2 border-l-2 border-orange-500/50">
+                      過去のイベントです
+                    </p>
+                  )}
                 </FormItem>
               )}
             />
