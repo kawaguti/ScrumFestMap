@@ -1,11 +1,13 @@
 import { useState, useMemo } from "react";
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
+import MarkerClusterGroup from "react-leaflet-markercluster";
 import { prefectures, prefectureCoordinates } from "@/lib/prefectures";
 import { japanGeoData } from "@/lib/japanGeoData";
 import { Card } from "@/components/ui/card";
 import { EventList } from "./EventList";
 import type { Event } from "@db/schema";
 import type { Layer } from "leaflet";
+import "react-leaflet-markercluster/dist/styles.min.css";
 
 interface JapanMapProps {
   events: Event[];
@@ -81,30 +83,45 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
               style={getFeatureStyle}
               onEachFeature={onEachFeature}
             />
-            {events.map((event) => {
-              const prefecture = prefectures.find(p => p.name === event.prefecture);
-              if (!prefecture) return null;
-              const coordinates = prefectureCoordinates[event.prefecture];
-              if (!coordinates) return null;
-              
-              return (
-                <Marker 
-                  key={event.id} 
-                  position={coordinates}
-                  eventHandlers={{
-                    click: () => handleMarkerClick(event)
-                  }}
-                >
-                  <Popup>
-                    <div>
-                      <h3 className="font-bold">{event.name}</h3>
-                      <p>{event.prefecture}</p>
-                      <p>{new Date(event.date).toLocaleDateString('ja-JP')}</p>
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
+            <MarkerClusterGroup>
+              {events.map((event) => {
+                const prefecture = prefectures.find(p => p.name === event.prefecture);
+                if (!prefecture) return null;
+                const coordinates = prefectureCoordinates[event.prefecture];
+                if (!coordinates) return null;
+                
+                return (
+                  <Marker 
+                    key={event.id} 
+                    position={coordinates}
+                    eventHandlers={{
+                      click: () => handleMarkerClick(event)
+                    }}
+                  >
+                    <Popup>
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-lg">{event.name}</h3>
+                        <p className="text-sm text-muted-foreground">{event.prefecture}</p>
+                        <p className="text-sm">{new Date(event.date).toLocaleDateString('ja-JP')}</p>
+                        {event.description && (
+                          <p className="text-sm mt-2">{event.description}</p>
+                        )}
+                        {event.website && (
+                          <a
+                            href={event.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-500 hover:text-blue-700"
+                          >
+                            イベントサイトへ
+                          </a>
+                        )}
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              })}
+            </MarkerClusterGroup>
           </MapContainer>
         </Card>
       </div>
