@@ -83,7 +83,12 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
               style={getFeatureStyle}
               onEachFeature={onEachFeature}
             />
-            <MarkerClusterGroup>
+            <MarkerClusterGroup
+              chunkedLoading
+              spiderfyOnMaxZoom
+              animate
+              maxClusterRadius={40}
+            >
               {events.map((event) => {
                 const prefecture = prefectures.find(p => p.name === event.prefecture);
                 if (!prefecture) return null;
