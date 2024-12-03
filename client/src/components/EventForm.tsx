@@ -114,19 +114,20 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
               name="date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>開催日時</FormLabel>
+                  <FormLabel>開催日</FormLabel>
                   <FormControl>
                     <Input
-                      type="datetime-local"
-                      step="900"
-                      value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                      type="date"
+                      value={field.value instanceof Date ? field.value.toISOString().slice(0, 10) : ''}
                       onChange={(e) => {
                         const selectedDate = new Date(e.target.value);
                         if (!isNaN(selectedDate.getTime())) {
+                          // 時刻を12:00に固定
+                          selectedDate.setHours(12, 0, 0, 0);
                           field.onChange(selectedDate);
                         }
                       }}
-                      min={new Date().toISOString().slice(0, 16)}
+                      min={new Date().toISOString().slice(0, 10)}
                       className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                     />
                   </FormControl>
