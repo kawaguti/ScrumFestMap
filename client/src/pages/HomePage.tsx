@@ -86,8 +86,8 @@ export default function HomePage() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <header className="flex flex-col space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b px-4 py-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b px-4 py-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 w-full sm:w-auto">
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent whitespace-nowrap">スクラムフェスマップ</h1>
           </div>
           
@@ -95,7 +95,7 @@ export default function HomePage() {
           <div className="sm:hidden w-full">
             <Drawer>
               <DrawerTrigger asChild>
-                <Button variant="outline" className="w-full flex items-center justify-between px-3 py-1.5">
+                <Button variant="outline" className="w-full flex items-center justify-between px-4 py-2 min-h-[44px]">
                   <span className="text-sm font-medium">メニュー</span>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -115,13 +115,13 @@ export default function HomePage() {
                   </svg>
                 </Button>
               </DrawerTrigger>
-              <DrawerContent>
-                <DrawerHeader>
+              <DrawerContent className="h-[85vh] overflow-y-auto">
+                <DrawerHeader className="sticky top-0 bg-background z-10 border-b pb-4">
                   <DrawerTitle className="text-center text-lg font-semibold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
                     {user ? `${user.username}さん` : 'メニュー'}
                   </DrawerTitle>
                 </DrawerHeader>
-                <div className="px-4 pb-6 space-y-2.5">
+                <div className="px-4 py-6 space-y-3">
                   {user ? (
                     <>
                       <Button 
