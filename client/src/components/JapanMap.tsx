@@ -132,9 +132,6 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                         <h3 className="font-bold text-lg">{event.name}</h3>
                         <p className="text-sm text-muted-foreground">{event.prefecture}</p>
                         <p className="text-sm">{new Date(event.date).toLocaleDateString('ja-JP')}</p>
-                        {event.description && (
-                          <p className="text-sm mt-2">{event.description}</p>
-                        )}
                         {event.website && (
                           <a
                             href={event.website}
@@ -142,7 +139,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                             rel="noopener noreferrer"
                             className="text-sm text-blue-500 hover:text-blue-700"
                           >
-                            イベントサイトへ
+                            詳細を見る
                           </a>
                         )}
                       </div>
