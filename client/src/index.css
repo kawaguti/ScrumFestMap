@@ -12,3 +12,29 @@
   }
 }
 
+@layer components {
+  .marker-pin {
+    width: 30px;
+    height: 42px;
+    border-radius: 50% 50% 50% 0;
+    position: relative;
+    transform: rotate(-45deg);
+    margin: -20px -15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .marker-pin::after {
+    content: '';
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}

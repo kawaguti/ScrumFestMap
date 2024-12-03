@@ -1,11 +1,13 @@
 import { useState, useMemo, FC, PropsWithChildren } from "react";
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
 import type { Layer } from "leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { Card } from "@/components/ui/card";
 import MarkerClusterGroup from "react-leaflet-markercluster";
 import "react-leaflet-markercluster/dist/styles.min.css";
 import { prefectures, prefectureCoordinates } from "@/lib/prefectures";
 import { japanGeoData } from "@/lib/japanGeoData";
-import { Card } from "@/components/ui/card";
 import { EventList } from "./EventList";
 import type { Event } from "@db/schema";
 
@@ -102,6 +104,9 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                 const coordinates = prefectureCoordinates[event.prefecture];
                 if (!coordinates) return null;
                 
+                const isFutureEvent = new Date(event.date) > new Date();
+                const markerColor = isFutureEvent ? 'bg-primary' : 'bg-muted';
+                
                 return (
                   <Marker 
                     key={event.id} 
@@ -109,6 +114,13 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                     eventHandlers={{
                       click: () => handleMarkerClick(event)
                     }}
+                    icon={L.divIcon({
+                      className: `custom-div-icon`,
+                      html: `<div class="marker-pin ${markerColor}"></div>`,
+                      iconSize: [30, 42],
+                      iconAnchor: [15, 42],
+                      popupAnchor: [0, -42]
+                    })}
                   >
                     <Popup>
                       <div className="space-y-2">
