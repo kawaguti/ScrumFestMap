@@ -76,8 +76,7 @@ export function setupRoutes(app: Express) {
       const [updatedUser] = await db
         .update(users)
         .set({ 
-          password: hashedNewPassword,
-          updatedAt: new Date()
+          password: hashedNewPassword
         })
         .where(eq(users.id, req.user.id))
         .returning();

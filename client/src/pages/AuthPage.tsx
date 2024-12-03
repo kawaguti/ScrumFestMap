@@ -25,7 +25,8 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const { login, register } = useUser();
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const { login, register, user, changePassword } = useUser();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -70,6 +71,111 @@ export default function AuthPage() {
       });
     }
   };
+
+  const PasswordChangeForm = () => {
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [error, setError] = useState("");
+    
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setError("");
+      
+      if (newPassword !== confirmPassword) {
+        setError("新しいパスワードと確認用パスワードが一致しません");
+        return;
+      }
+
+      try {
+        const result = await changePassword({ currentPassword, newPassword });
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
+        
+        toast({
+          title: "成功",
+          description: "パスワードが変更されました",
+        });
+        setShowPasswordChange(false);
+      } catch (error) {
+        setError("パスワードの変更に失敗しました");
+      }
+    };
+
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>パスワード変更</CardTitle>
+          <CardDescription>
+            新しいパスワードを設定してください
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <FormItem>
+              <FormLabel>現在のパスワード</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                />
+              </FormControl>
+            </FormItem>
+            <FormItem>
+              <FormLabel>新しいパスワード</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </FormControl>
+            </FormItem>
+            <FormItem>
+              <FormLabel>新しいパスワード（確認）</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </FormControl>
+            </FormItem>
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
+            <div className="space-y-2">
+              <Button type="submit" className="w-full">
+                パスワードを変更
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowPasswordChange(false)}
+              >
+                キャンセル
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  if (user && showPasswordChange) {
+    return (
+      <div className="container mx-auto max-w-md min-h-screen flex items-center justify-center">
+        <PasswordChangeForm />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-md min-h-screen flex items-center justify-center">
@@ -143,6 +249,16 @@ export default function AuthPage() {
                     ? "新規登録はこちら"
                     : "ログインはこちら"}
                 </Button>
+                {user && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="w-full"
+                    onClick={() => setShowPasswordChange(true)}
+                  >
+                    パスワードを変更する
+                  </Button>
+                )}
               </div>
             </form>
           </Form>
