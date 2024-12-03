@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
-import MarkerClusterGroup from "react-leaflet-markercluster";
-import type { MarkerClusterGroupProps } from 'react-leaflet-markercluster';
+// @ts-ignore
+import MarkerClusterGroup from 'react-leaflet-markercluster';
 import { prefectures, prefectureCoordinates } from "@/lib/prefectures";
 import { japanGeoData } from "@/lib/japanGeoData";
 import { Card } from "@/components/ui/card";
@@ -22,7 +22,6 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
 
   const handleMarkerClick = (event: Event) => {
     setSelectedEvent(event);
-    // 履歴に追加（重複を除去し、最新3件を保持）
     setEventHistory(prev => {
       const filtered = prev.filter(e => e.id !== event.id);
       return [event, ...filtered].slice(0, 3);
@@ -35,7 +34,6 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
     return events.filter(event => event.prefecture === prefecture?.name);
   }, [events, selectedPrefecture]);
 
-  // スタイル設定
   const getFeatureStyle = (feature: any) => {
     const prefId = feature.properties.id;
     const prefecture = prefectures.find(p => p.id === prefId);
@@ -54,13 +52,12 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
     };
   };
 
-  // クリックイベントハンドラ
   const onEachFeature = (feature: any, layer: Layer) => {
     layer.on({
       click: () => {
         const prefId = feature.properties.id;
         onPrefectureSelect(prefId);
-        setSelectedEvent(null); // 都道府県選択時にイベント選択をクリア
+        setSelectedEvent(null);
       }
     });
   };
@@ -89,17 +86,6 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
               spiderfyOnMaxZoom
               animate
               maxClusterRadius={30}
-              showCoverageOnHover={true}
-              zoomToBoundsOnClick={true}
-              removeOutsideVisibleBounds={true}
-              spiderfyDistanceMultiplier={2}
-              polygonOptions={{
-                fillColor: 'hsl(222.2 47.4% 40%)',
-                color: 'hsl(222.2 47.4% 11.2%)',
-                weight: 0.5,
-                opacity: 1,
-                fillOpacity: 0.2
-              }}
             >
               {events.map((event) => {
                 const prefecture = prefectures.find(p => p.name === event.prefecture);
@@ -153,10 +139,10 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
         </h2>
         <EventList
           events={selectedEvent 
-            ? eventHistory  // 選択されたイベントがある場合は履歴を表示
+            ? eventHistory
             : selectedPrefecture
-              ? prefectureEvents  // 都道府県が選択されている場合はその都道府県のイベント
-              : eventHistory}  // それ以外の場合は履歴を表示
+              ? prefectureEvents
+              : eventHistory}
           selectedEvent={selectedEvent}
         />
       </div>
