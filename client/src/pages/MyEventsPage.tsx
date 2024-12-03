@@ -80,8 +80,18 @@ export default function MyEventsPage() {
       
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-events", "events"] });
+    onSuccess: (updatedEvent) => {
+      // Immediately update the cache with the new data
+      queryClient.setQueryData<Event[]>(["my-events"], (oldEvents) => {
+        if (!oldEvents) return [updatedEvent];
+        return oldEvents.map((event) =>
+          event.id === updatedEvent.id ? updatedEvent : event
+        );
+      });
+      
+      // Also invalidate the events query to ensure global list is updated
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      
       toast({
         title: "更新完了",
         description: "イベントを更新しました。",
