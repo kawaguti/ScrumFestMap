@@ -10,6 +10,17 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -19,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Download } from "lucide-react";
+import { Loader2, Download, Trash2 } from "lucide-react";
 import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
 import type { Event, User } from "@db/schema";
 
@@ -93,6 +104,44 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       toast({
         title: "成功",
+  const deleteEventMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "イベントの削除に失敗しました");
+      }
+      
+      return response.json();
+    },
+    onSuccess: (_, deletedEventId) => {
+      // イベントリストから削除されたイベントを即座に除外
+      queryClient.setQueryData<Event[]>(["admin", "events"], (oldEvents) => {
+        if (!oldEvents) return [];
+        return oldEvents.filter((event) => event.id !== deletedEventId);
+      });
+
+      // グローバルイベントリストも更新
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+
+      toast({
+        title: "削除完了",
+        description: "イベントを削除しました。",
+      });
+    },
+    onError: (error) => {
+      console.error("Delete error:", error);
+      toast({
+        variant: "destructive",
+        title: "削除エラー",
+        description: error instanceof Error ? error.message : "イベントの削除に失敗しました。",
+      });
+    },
+  });
         description: "管理者権限を剥奪しました。",
       });
     },
@@ -229,6 +278,7 @@ export default function AdminPage() {
                     <TableHead>開催地</TableHead>
                     <TableHead>開催日</TableHead>
                     <TableHead>作成者</TableHead>
+                    <TableHead>操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -242,6 +292,40 @@ export default function AdminPage() {
                       </TableCell>
                       <TableCell>
                         {users.find(u => u.id === event.createdBy)?.username || event.createdBy}
+                      </TableCell>
+                      <TableCell>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="hover:bg-destructive/90 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              削除
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-background/95 backdrop-blur-sm border-destructive/20">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-xl font-bold bg-gradient-to-r from-destructive to-destructive/80 bg-clip-text text-transparent">
+                                イベントの削除
+                              </AlertDialogTitle>
+                              <AlertDialogDescription className="text-base">
+                                このイベントを削除してもよろしいですか？<br />
+                                この操作は取り消すことができません。
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="bg-background/50 border-input/20">キャンセル</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteEventMutation.mutate(event.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                削除する
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     </TableRow>
                   ))}
