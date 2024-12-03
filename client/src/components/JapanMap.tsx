@@ -1,9 +1,17 @@
 import { useState, useMemo } from "react";
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
 import MarkerClusterGroup from 'react-leaflet-markercluster';
-import type { MarkerClusterGroupProps } from '@types/react-leaflet-markercluster';
 import type { PropsWithChildren } from 'react';
 import { prefectures, prefectureCoordinates } from "@/lib/prefectures";
+
+// Define MarkerClusterGroup props type
+interface MarkerClusterGroupProps {
+  chunkedLoading?: boolean;
+  spiderfyOnMaxZoom?: boolean;
+  animate?: boolean;
+  maxClusterRadius?: number;
+  children?: React.ReactNode;
+}
 import { japanGeoData } from "@/lib/japanGeoData";
 import { Card } from "@/components/ui/card";
 import { EventList } from "./EventList";
