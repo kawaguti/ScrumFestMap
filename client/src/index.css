@@ -13,27 +13,40 @@
 }
 
 @layer components {
-  .marker-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .marker-pin {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
+  .marker-pin-google {
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    border: 2px solid white;
-    transition: all 0.2s ease-in-out;
+    width: 30px;
+    height: 42px;
   }
 
-  .marker-pin:hover {
-    transform: scale(1.1);
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+  .marker-head {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .marker-tail {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    height: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    transform: translateX(-50%);
+  }
+
+  .future-event .marker-head {
+    background: hsl(var(--primary));
+    border: 2px solid white;
+  }
+
+  .past-event .marker-head {
+    background: hsl(var(--slate-600));
+    border: 2px solid white;
   }
 }
