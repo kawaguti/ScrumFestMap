@@ -91,7 +91,7 @@ export default function HomePage() {
           </RadioGroup>
         </div>
         <div className="flex items-center gap-4">
-          {user && (
+          {user ? (
             <>
               <span className="text-sm text-muted-foreground">
                 {user.username}
@@ -128,19 +128,15 @@ export default function HomePage() {
                 </Button>
               </div>
             </>
-          )}
-        </div>
-      </header>
-
-      <div className="space-y-6">
-        <div className="flex justify-end">
-          {!user && (
+          ) : (
             <Button asChild>
               <Link href="/auth">ログインしてイベントを登録</Link>
             </Button>
           )}
         </div>
+      </header>
 
+      <div className="space-y-6">
         {!isDialogOpen && (
           <JapanMap
             events={filteredEvents}
