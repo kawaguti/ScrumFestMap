@@ -29,6 +29,14 @@ export default function AuthPage() {
   const { login, register, user, changePassword } = useUser();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  
+  // URLのクエリパラメータを取得
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('change_password') === 'true' && user) {
+      setShowPasswordChange(true);
+    }
+  }, [user]);
 
   const form = useForm<InsertUser>({
     resolver: zodResolver(insertUserSchema),
@@ -158,7 +166,10 @@ export default function AuthPage() {
                 type="button"
                 variant="outline"
                 className="w-full"
-                onClick={() => setShowPasswordChange(false)}
+                onClick={() => {
+                  setShowPasswordChange(false);
+                  setLocation('/');
+                }}
               >
                 キャンセル
               </Button>

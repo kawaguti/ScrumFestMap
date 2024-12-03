@@ -123,6 +123,9 @@ export default function HomePage() {
                     <Link href="/admin">管理者ダッシュボード</Link>
                   </Button>
                 )}
+                <Button variant="outline" asChild>
+                  <Link href="/auth?change_password=true">パスワード変更</Link>
+                </Button>
                 <Button variant="outline" onClick={() => logout()}>
                   ログアウト
                 </Button>
