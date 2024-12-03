@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useUser } from "@/hooks/use-user";
 import { useLocation } from "wouter";
-import { useForm } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertUserSchema, type InsertUser } from "@db/schema";
 import { validatePasswordStrength } from "@/lib/password-validation";
@@ -39,27 +39,7 @@ export default function AuthPage() {
   }, [user]);
 
   const form = useForm<InsertUser>({
-    resolver: async (values) => {
-      const zodResult = await zodResolver(insertUserSchema)(values);
-      
-      if (!isLogin && !zodResult.errors?.password) {
-        const validation = validatePasswordStrength(values.password);
-        if (!validation.isValid) {
-          return {
-            ...zodResult,
-            errors: {
-              ...zodResult.errors,
-              password: {
-                type: 'custom',
-                message: validation.errors.join('\n')
-              }
-            }
-          };
-        }
-      }
-      
-      return zodResult;
-    },
+    resolver: zodResolver(insertUserSchema),
     defaultValues: {
       username: "",
       password: "",
@@ -69,6 +49,16 @@ export default function AuthPage() {
 
   const onSubmit = async (data: InsertUser) => {
     try {
+      const validation = validatePasswordStrength(data.password);
+      if (!isLogin && !validation.isValid) {
+        toast({
+          variant: "destructive",
+          title: "パスワードエラー",
+          description: validation.errors.join('\n')
+        });
+        return;
+      }
+
       const result = isLogin
         ? await login(data)
         : await register(data);
@@ -106,7 +96,7 @@ export default function AuthPage() {
       confirmPassword: string;
     }
 
-    const form = useForm<PasswordFormValues>({
+    const passwordForm = useForm<PasswordFormValues>({
       defaultValues: {
         currentPassword: "",
         newPassword: "",
@@ -131,7 +121,7 @@ export default function AuthPage() {
         }
 
         return {
-          values: errors.newPassword || errors.confirmPassword ? {} : values,
+          values: Object.keys(errors).length === 0 ? values : {},
           errors
         };
       }
@@ -177,10 +167,10 @@ export default function AuthPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <FormProvider {...passwordForm}>
+            <form onSubmit={passwordForm.handleSubmit(handleSubmit)} className="space-y-4">
               <FormField
-                control={form.control}
+                control={passwordForm.control}
                 name="currentPassword"
                 render={({ field }) => (
                   <FormItem>
@@ -193,7 +183,7 @@ export default function AuthPage() {
                 )}
               />
               <FormField
-                control={form.control}
+                control={passwordForm.control}
                 name="newPassword"
                 render={({ field }) => (
                   <FormItem>
@@ -206,7 +196,7 @@ export default function AuthPage() {
                 )}
               />
               <FormField
-                control={form.control}
+                control={passwordForm.control}
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
@@ -235,7 +225,7 @@ export default function AuthPage() {
                 </Button>
               </div>
             </form>
-          </Form>
+          </FormProvider>
         </CardContent>
       </Card>
     );
@@ -261,7 +251,7 @@ export default function AuthPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
+          <FormProvider {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
@@ -323,7 +313,7 @@ export default function AuthPage() {
                 </Button>
               </div>
             </form>
-          </Form>
+          </FormProvider>
         </CardContent>
       </Card>
     </div>
