@@ -130,7 +130,7 @@ export default function HomePage() {
                   </svg>
                 </Button>
               </DrawerTrigger>
-              <DrawerContent className="h-[85vh] overflow-y-auto">
+              <DrawerContent className="h-[85vh] overflow-y-auto fixed inset-0 z-50 mt-16 bg-background">
                 <DrawerHeader className="sticky top-0 bg-background z-10 border-b pb-4">
                   <DrawerTitle className="text-center text-lg font-semibold">
                     メニュー
