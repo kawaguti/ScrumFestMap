@@ -81,24 +81,34 @@ export default function AuthPage() {
   };
 
   const PasswordChangeForm = () => {
-    const [currentPassword, setCurrentPassword] = useState("");
-    const [newPassword, setNewPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [error, setError] = useState("");
-    
-    const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setError("");
-      
-      if (newPassword !== confirmPassword) {
-        setError("新しいパスワードと確認用パスワードが一致しません");
+    const form = useForm({
+      defaultValues: {
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      }
+    });
+
+    const handleSubmit = async (data: any) => {
+      if (data.newPassword !== data.confirmPassword) {
+        form.setError("confirmPassword", {
+          type: "manual",
+          message: "新しいパスワードと確認用パスワードが一致しません"
+        });
         return;
       }
 
       try {
-        const result = await changePassword({ currentPassword, newPassword });
+        const result = await changePassword({
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword
+        });
+        
         if (!result.ok) {
-          setError(result.message);
+          form.setError("root", {
+            type: "manual",
+            message: result.message
+          });
           return;
         }
         
@@ -108,7 +118,10 @@ export default function AuthPage() {
         });
         setShowPasswordChange(false);
       } catch (error) {
-        setError("パスワードの変更に失敗しました");
+        form.setError("root", {
+          type: "manual",
+          message: "パスワードの変更に失敗しました"
+        });
       }
     };
 
@@ -121,60 +134,70 @@ export default function AuthPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <FormItem>
-              <FormLabel>現在のパスワード</FormLabel>
-              <FormControl>
-                <Input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  required
-                />
-              </FormControl>
-            </FormItem>
-            <FormItem>
-              <FormLabel>新しいパスワード</FormLabel>
-              <FormControl>
-                <Input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                />
-              </FormControl>
-            </FormItem>
-            <FormItem>
-              <FormLabel>新しいパスワード（確認）</FormLabel>
-              <FormControl>
-                <Input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              </FormControl>
-            </FormItem>
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
-            <div className="space-y-2">
-              <Button type="submit" className="w-full">
-                パスワードを変更
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  setShowPasswordChange(false);
-                  setLocation('/');
-                }}
-              >
-                キャンセル
-              </Button>
-            </div>
-          </form>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="currentPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>現在のパスワード</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="newPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>新しいパスワード</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>新しいパスワード（確認）</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {form.formState.errors.root && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.root.message}
+                </p>
+              )}
+              <div className="space-y-2">
+                <Button type="submit" className="w-full">
+                  パスワードを変更
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setShowPasswordChange(false);
+                    setLocation('/');
+                  }}
+                >
+                  キャンセル
+                </Button>
+              </div>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     );
