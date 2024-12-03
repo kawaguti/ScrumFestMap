@@ -6,7 +6,8 @@ import { Link } from "wouter";
 import { JapanMap } from "@/components/JapanMap";
 import { EventForm } from "@/components/EventForm";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -39,7 +40,7 @@ async function createEvent(event: InsertEvent): Promise<Event> {
 export default function HomePage() {
   const { user, logout } = useUser();
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
-  const [selectedYears, setSelectedYears] = useState<string[]>([]);
+  const [displayPeriod, setDisplayPeriod] = useState<"all" | "upcoming">("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -48,38 +49,19 @@ export default function HomePage() {
     queryFn: fetchEvents,
   });
 
-  // 年度オプションの生成
-  const yearOptions = [
-    { id: "all", label: "全期間" },
-    { id: "2023", label: "2023" },
-    { id: "2024", label: "2024" },
-  ];
-
-  const handleYearChange = (yearId: string) => {
-    if (yearId === "all") {
-      // 全期間が選択された場合、他の選択をクリア
-      setSelectedYears(["all"]);
-    } else {
-      setSelectedYears(prev => {
-        const newSelection = prev.filter(y => y !== "all");
-        if (newSelection.includes(yearId)) {
-          return newSelection.filter(y => y !== yearId);
-        } else {
-          return [...newSelection, yearId];
-        }
-      });
-    }
-  };
-
   // イベントのフィルタリング
   const filteredEvents = useMemo(() => {
-    if (selectedYears.includes("all") || selectedYears.length === 0) return events;
+    if (displayPeriod === "all") return events;
+    
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
     
     return events.filter(event => {
-      const eventYear = new Date(event.date).getFullYear().toString();
-      return selectedYears.includes(eventYear);
+      const eventDate = new Date(event.date);
+      const now = new Date();
+      return eventDate >= now && eventDate <= oneYearFromNow;
     });
-  }, [events, selectedYears]);
+  }, [events, displayPeriod]);
 
   const createEventMutation = useMutation({
     mutationFn: createEvent,
@@ -93,23 +75,20 @@ export default function HomePage() {
       <header className="flex justify-between items-center">
         <div className="flex items-center gap-6">
           <h1 className="text-3xl font-bold">スクラムフェスマップ</h1>
-          <div className="flex items-center space-x-4">
-            {yearOptions.map(option => (
-              <div key={option.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={option.id}
-                  checked={selectedYears.includes(option.id) || (option.id === "all" && selectedYears.length === 0)}
-                  onCheckedChange={() => handleYearChange(option.id)}
-                />
-                <label
-                  htmlFor={option.id}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {option.label}
-                </label>
-              </div>
-            ))}
-          </div>
+          <RadioGroup
+            value={displayPeriod}
+            onValueChange={(value: "all" | "upcoming") => setDisplayPeriod(value)}
+            className="flex items-center space-x-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="all" id="all" />
+              <Label htmlFor="all">全期間</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="upcoming" id="upcoming" />
+              <Label htmlFor="upcoming">今後一年間</Label>
+            </div>
+          </RadioGroup>
         </div>
         <div className="flex items-center gap-4">
           {user && (
@@ -155,24 +134,7 @@ export default function HomePage() {
 
       <div className="space-y-6">
         <div className="flex justify-end">
-          {user ? (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>新規イベント登録</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>新規イベント登録</DialogTitle>
-                </DialogHeader>
-                <EventForm
-                  onSubmit={async (data) => {
-                    await createEventMutation.mutateAsync(data);
-                    setIsDialogOpen(false);  // 登録後にダイアログを閉じる
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
-          ) : (
+          {!user && (
             <Button asChild>
               <Link href="/auth">ログインしてイベントを登録</Link>
             </Button>
