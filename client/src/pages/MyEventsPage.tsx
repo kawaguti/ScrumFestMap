@@ -25,7 +25,8 @@ import { EventForm } from "@/components/EventForm";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Edit2, Trash2, Loader2 } from "lucide-react";
+import { Edit2, Trash2, Loader2, Download } from "lucide-react";
+import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
 import type { Event } from "@db/schema";
 
 export default function MyEventsPage() {
@@ -181,6 +182,20 @@ export default function MyEventsPage() {
           <Link href="/">ホームへ戻る</Link>
         </Button>
       </header>
+      {events.length > 0 && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const markdown = generateEventMarkdown(events);
+              downloadMarkdown(markdown, `my-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
+            }}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            マークダウンでダウンロード
+          </Button>
+        </div>
+      )}
 
       {events.length === 0 ? (
         <Card>

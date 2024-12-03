@@ -18,7 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2 } from "lucide-react";
+import { Loader2, Download } from "lucide-react";
+import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
 import type { Event, User } from "@db/schema";
 
 async function fetchAllUsers(): Promise<User[]> {
@@ -195,9 +196,23 @@ export default function AdminPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>イベント管理</CardTitle>
-            <CardDescription>登録済みイベント一覧</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle>イベント管理</CardTitle>
+              <CardDescription>登録済みイベント一覧</CardDescription>
+            </div>
+            {events.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const markdown = generateEventMarkdown(events);
+                  downloadMarkdown(markdown, `all-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                マークダウンでダウンロード
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {isLoadingEvents ? (
