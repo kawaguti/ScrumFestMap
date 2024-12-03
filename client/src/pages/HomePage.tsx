@@ -6,13 +6,7 @@ import { Link } from "wouter";
 import { JapanMap } from "@/components/JapanMap";
 import { EventForm } from "@/components/EventForm";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +39,7 @@ async function createEvent(event: InsertEvent): Promise<Event> {
 export default function HomePage() {
   const { user, logout } = useUser();
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
-  const [selectedYear, setSelectedYear] = useState<string>("all");
+  const [selectedYears, setSelectedYears] = useState<string[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -55,24 +49,37 @@ export default function HomePage() {
   });
 
   // 年度オプションの生成
-  const currentYear = new Date().getFullYear();
   const yearOptions = [
-    { value: "all", label: "全期間" },
-    { value: currentYear.toString(), label: `${currentYear}年度` },
-    { value: (currentYear - 1).toString(), label: `${currentYear - 1}年度` },
-    { value: (currentYear - 2).toString(), label: `${currentYear - 2}年度` },
-    { value: (currentYear - 3).toString(), label: `${currentYear - 3}年度` },
+    { id: "all", label: "全期間" },
+    { id: "2023", label: "2023" },
+    { id: "2024", label: "2024" },
   ];
+
+  const handleYearChange = (yearId: string) => {
+    if (yearId === "all") {
+      // 全期間が選択された場合、他の選択をクリア
+      setSelectedYears(["all"]);
+    } else {
+      setSelectedYears(prev => {
+        const newSelection = prev.filter(y => y !== "all");
+        if (newSelection.includes(yearId)) {
+          return newSelection.filter(y => y !== yearId);
+        } else {
+          return [...newSelection, yearId];
+        }
+      });
+    }
+  };
 
   // イベントのフィルタリング
   const filteredEvents = useMemo(() => {
-    if (selectedYear === "all") return events;
+    if (selectedYears.includes("all") || selectedYears.length === 0) return events;
     
     return events.filter(event => {
-      const eventYear = new Date(event.date).getFullYear();
-      return eventYear.toString() === selectedYear;
+      const eventYear = new Date(event.date).getFullYear().toString();
+      return selectedYears.includes(eventYear);
     });
-  }, [events, selectedYear]);
+  }, [events, selectedYears]);
 
   const createEventMutation = useMutation({
     mutationFn: createEvent,
@@ -86,21 +93,23 @@ export default function HomePage() {
       <header className="flex justify-between items-center">
         <div className="flex items-center gap-6">
           <h1 className="text-3xl font-bold">スクラムフェスマップ</h1>
-          <Select
-            value={selectedYear}
-            onValueChange={setSelectedYear}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="年度を選択" />
-            </SelectTrigger>
-            <SelectContent>
-              {yearOptions.map(option => (
-                <SelectItem key={option.value} value={option.value}>
+          <div className="flex items-center space-x-4">
+            {yearOptions.map(option => (
+              <div key={option.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={option.id}
+                  checked={selectedYears.includes(option.id) || (option.id === "all" && selectedYears.length === 0)}
+                  onCheckedChange={() => handleYearChange(option.id)}
+                />
+                <label
+                  htmlFor={option.id}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
                   {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                </label>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="flex items-center gap-4">
           {user && (
