@@ -13,28 +13,27 @@
 }
 
 @layer components {
-  .marker-pin {
-    width: 30px;
-    height: 42px;
-    border-radius: 50% 50% 50% 0;
-    position: relative;
-    transform: rotate(-45deg);
-    margin: -20px -15px;
+  .marker-container {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
-  .marker-pin::after {
-    content: '';
+  .marker-pin {
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: white;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 2px solid white;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .marker-pin:hover {
+    transform: scale(1.1);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
   }
 }

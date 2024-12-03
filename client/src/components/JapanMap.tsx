@@ -115,11 +115,11 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                       click: () => handleMarkerClick(event)
                     }}
                     icon={L.divIcon({
-                      className: `custom-div-icon`,
-                      html: `<div class="marker-pin ${markerColor}"></div>`,
-                      iconSize: [30, 42],
-                      iconAnchor: [15, 42],
-                      popupAnchor: [0, -42]
+                      className: `marker-container`,
+                      html: `<div class="marker-pin ${isFutureEvent ? 'bg-primary' : 'bg-slate-600'}"></div>`,
+                      iconSize: [30, 30],
+                      iconAnchor: [15, 30],
+                      popupAnchor: [0, -30]
                     })}
                   >
                     <Popup>
