@@ -1,24 +1,26 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "../hooks/useUser";
-import { Button } from "@/components/ui/button";
+import { Button } from "../components/ui/button";
 import { Link } from "react-router-dom";
-import { JapanMap } from "@/components/JapanMap";
-import { EventForm } from "@/components/EventForm";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
+import { JapanMap } from "../components/JapanMap";
+import { EventForm } from "../components/EventForm";
+import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
+import { Label } from "../components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "../components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
   DrawerTrigger,
-} from "@/components/ui/drawer";
+} from "../components/ui/drawer";
 import type { Event, InsertEvent } from "@db/schema";
 
 async function fetchEvents(): Promise<Event[]> {
@@ -77,21 +79,21 @@ export default function HomePage() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <header className="flex flex-col space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b p-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full sm:w-auto">
-            <h1 className="text-2xl sm:text-3xl font-bold">スクラムフェスマップ</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">スクラムフェスマップ</h1>
           </div>
           
           {/* モバイルメニューボタン */}
           <div className="sm:hidden w-full">
             <Drawer>
               <DrawerTrigger asChild>
-                <Button variant="outline" className="w-full flex items-center justify-between">
-                  <span>メニュー</span>
+                <Button variant="outline" className="w-full flex items-center justify-between px-4 py-2">
+                  <span className="font-medium">メニュー</span>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
+                    width="20"
+                    height="20"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -106,37 +108,141 @@ export default function HomePage() {
                 </Button>
               </DrawerTrigger>
               <DrawerContent>
-                <div className="p-6 space-y-6">
-                  {user ? (
-                    <>
-                      <div className="text-lg font-medium text-center border-b pb-4">
-                        {user.username}さん
-                      </div>
-                      <div className="space-y-4">
-                        <Button className="w-full" onClick={() => setIsDialogOpen(true)}>
+                <DrawerHeader>
+                  <DrawerTitle className="text-center">
+                    {user ? `${user.username}さん` : 'メニュー'}
+                  </DrawerTitle>
+                </DrawerHeader>
+                <div className="px-4 pb-6">
+                  <div className="space-y-3">
+                    {user ? (
+                      <>
+                        <Button 
+                          className="w-full flex items-center justify-center gap-2 bg-primary" 
+                          onClick={() => setIsDialogOpen(true)}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M12 5v14M5 12h14" />
+                          </svg>
                           新規イベント登録
                         </Button>
-                        <Button variant="outline" className="w-full" asChild>
-                          <Link to="/my-events">マイイベント</Link>
+                        <Button variant="outline" className="w-full flex items-center justify-center gap-2" asChild>
+                          <Link to="/my-events">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                              <polyline points="17 21 17 13 7 13 7 21" />
+                              <polyline points="7 3 7 8 15 8" />
+                            </svg>
+                            マイイベント
+                          </Link>
                         </Button>
                         {user.isAdmin && (
-                          <Button variant="outline" className="w-full" asChild>
-                            <Link to="/admin">管理者ダッシュボード</Link>
+                          <Button variant="outline" className="w-full flex items-center justify-center gap-2" asChild>
+                            <Link to="/admin">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M12 2a10 10 0 1 0 10 10H12V2z" />
+                                <path d="M12 2a10 10 0 1 1-10 10h10V2z" />
+                                <circle cx="12" cy="12" r="6" />
+                              </svg>
+                              管理者ダッシュボード
+                            </Link>
                           </Button>
                         )}
-                        <Button variant="outline" className="w-full" asChild>
-                          <Link to="/auth?change_password=true">パスワード変更</Link>
+                        <Button variant="outline" className="w-full flex items-center justify-center gap-2" asChild>
+                          <Link to="/auth?change_password=true">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                            パスワード変更
+                          </Link>
                         </Button>
-                        <Button variant="destructive" className="w-full" onClick={() => logout()}>
+                        <Button 
+                          variant="destructive" 
+                          className="w-full flex items-center justify-center gap-2" 
+                          onClick={() => logout()}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1="21" y1="12" x2="9" y2="12" />
+                          </svg>
                           ログアウト
                         </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <Button className="w-full" asChild>
-                      <Link to="/auth">ログインしてイベントを登録</Link>
-                    </Button>
-                  )}
+                      </>
+                    ) : (
+                      <Button className="w-full flex items-center justify-center gap-2" asChild>
+                        <Link to="/auth">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                            <polyline points="10 17 15 12 10 7" />
+                            <line x1="15" y1="12" x2="3" y2="12" />
+                          </svg>
+                          ログインしてイベントを登録
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </DrawerContent>
             </Drawer>
