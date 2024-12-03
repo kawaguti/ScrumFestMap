@@ -45,6 +45,7 @@ async function createEvent(event: InsertEvent): Promise<Event> {
 
 export default function HomePage() {
   const { user, logout } = useUser();
+  const [, setLocation] = useLocation();
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
   const [displayPeriod, setDisplayPeriod] = useState<"all" | "upcoming">("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
