@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-markercluster";
+import type { MarkerClusterGroupProps } from 'react-leaflet-markercluster';
 import { prefectures, prefectureCoordinates } from "@/lib/prefectures";
 import { japanGeoData } from "@/lib/japanGeoData";
 import { Card } from "@/components/ui/card";
@@ -87,7 +88,18 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
               chunkedLoading
               spiderfyOnMaxZoom
               animate
-              maxClusterRadius={40}
+              maxClusterRadius={30}
+              showCoverageOnHover={true}
+              zoomToBoundsOnClick={true}
+              removeOutsideVisibleBounds={true}
+              spiderfyDistanceMultiplier={2}
+              polygonOptions={{
+                fillColor: 'hsl(222.2 47.4% 40%)',
+                color: 'hsl(222.2 47.4% 11.2%)',
+                weight: 0.5,
+                opacity: 1,
+                fillOpacity: 0.2
+              }}
             >
               {events.map((event) => {
                 const prefecture = prefectures.find(p => p.name === event.prefecture);
