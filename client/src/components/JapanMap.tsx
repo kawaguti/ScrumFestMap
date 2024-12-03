@@ -4,13 +4,13 @@ import MarkerClusterGroup from 'react-leaflet-markercluster';
 import type { PropsWithChildren } from 'react';
 import { prefectures, prefectureCoordinates } from "@/lib/prefectures";
 
-// Import required types
-import type { MarkerClusterGroupProps as OriginalMarkerClusterGroupProps } from 'react-leaflet-markercluster';
-import type { ReactNode } from 'react';
-
-// Extend the original props type with children
-interface MarkerClusterGroupProps extends OriginalMarkerClusterGroupProps {
-  children?: ReactNode;
+// Define MarkerClusterGroup props type
+interface MarkerClusterGroupProps {
+  chunkedLoading?: boolean;
+  spiderfyOnMaxZoom?: boolean;
+  animate?: boolean;
+  maxClusterRadius?: number;
+  children?: React.ReactNode;
 }
 import { japanGeoData } from "@/lib/japanGeoData";
 import { Card } from "@/components/ui/card";
@@ -95,7 +95,6 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
               spiderfyOnMaxZoom
               animate
               maxClusterRadius={30}
-              {...({} as MarkerClusterGroupProps)}
             >
               {events.map((event) => {
                 const prefecture = prefectures.find(p => p.name === event.prefecture);
