@@ -136,6 +136,11 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                       過去のイベントです
                     </p>
                   )}
+                  {field.value instanceof Date && field.value > new Date(new Date().setFullYear(new Date().getFullYear() + 1)) && (
+                    <p className="text-sm text-orange-500 mt-2 pl-2 border-l-2 border-orange-500/50">
+                      一年以上先のイベントです
+                    </p>
+                  )}
                 </FormItem>
               )}
             />
