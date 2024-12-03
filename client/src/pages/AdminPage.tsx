@@ -33,6 +33,7 @@ import { Loader2, Download, Trash2 } from "lucide-react";
 import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { ja } from "date-fns/locale";
 import type { Event, User } from "@db/schema";
 
 async function fetchAllUsers(): Promise<User[]> {
@@ -223,7 +224,7 @@ export default function AdminPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => promoteMutation.mutate(targetUser.id)}
+                            onClick={() => promoteMutation.mutate(String(targetUser.id))}
                           >
                             管理者に昇格
                           </Button>
@@ -232,7 +233,7 @@ export default function AdminPage() {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => demoteMutation.mutate(targetUser.id)}
+                            onClick={() => demoteMutation.mutate(String(targetUser.id))}
                           >
                             管理者権限を剥奪
                           </Button>
@@ -289,7 +290,7 @@ export default function AdminPage() {
                       <TableCell>{event.name}</TableCell>
                       <TableCell>{event.prefecture}</TableCell>
                       <TableCell>
-                        {format(new Date(event.date), "yyyy年M月d日", { locale: "ja-JP" })}
+                        {format(new Date(event.date), "yyyy年M月d日", { locale: ja })}
                       </TableCell>
                       <TableCell>
                         {users.find(u => u.id === event.createdBy)?.username || event.createdBy}
