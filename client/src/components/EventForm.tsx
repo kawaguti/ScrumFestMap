@@ -127,7 +127,6 @@ export function EventForm({ onSubmit, defaultValues }: EventFormProps) {
                           field.onChange(selectedDate);
                         }
                       }}
-                      min={new Date().toISOString().slice(0, 10)}
                       className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                     />
                   </FormControl>
