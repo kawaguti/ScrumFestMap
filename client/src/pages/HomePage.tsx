@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "../hooks/useUser";
 import { Button } from "../components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { JapanMap } from "../components/JapanMap";
 import { EventForm } from "../components/EventForm";
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
@@ -145,7 +145,7 @@ export default function HomePage() {
                       <Button 
                         variant="outline" 
                         className="w-full flex items-center justify-center gap-2"
-                        onClick={handleMobileMenuItemClick(() => window.location.href = '/my-events')}
+                        onClick={handleMobileMenuItemClick(() => setLocation('/my-events'))}
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -168,7 +168,7 @@ export default function HomePage() {
                         <Button 
                           variant="outline" 
                           className="w-full flex items-center justify-center gap-2"
-                          onClick={handleMobileMenuItemClick(() => window.location.href = '/admin')}
+                          onClick={handleMobileMenuItemClick(() => setLocation('/admin'))}
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -191,7 +191,7 @@ export default function HomePage() {
                       <Button 
                         variant="outline" 
                         className="w-full flex items-center justify-center gap-2"
-                        onClick={handleMobileMenuItemClick(() => window.location.href = '/auth?change_password=true')}
+                        onClick={handleMobileMenuItemClick(() => setLocation('/auth?change_password=true'))}
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -235,7 +235,7 @@ export default function HomePage() {
                   ) : (
                     <Button 
                       className="w-full flex items-center justify-center gap-2"
-                      onClick={handleMobileMenuItemClick(() => window.location.href = '/auth')}
+                      onClick={handleMobileMenuItemClick(() => setLocation('/auth'))}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
