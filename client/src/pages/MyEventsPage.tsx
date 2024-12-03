@@ -122,8 +122,19 @@ export default function MyEventsPage() {
       
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-events", "events"] });
+    onSuccess: (_, deletedEventId) => {
+      // イベントリストから削除されたイベントを即座に除外
+      queryClient.setQueryData<Event[]>(["my-events"], (oldEvents) => {
+        if (!oldEvents) return [];
+        return oldEvents.filter((event) => event.id !== deletedEventId);
+      });
+
+      // グローバルイベントリストも更新
+      queryClient.setQueryData<Event[]>(["events"], (oldEvents) => {
+        if (!oldEvents) return [];
+        return oldEvents.filter((event) => event.id !== deletedEventId);
+      });
+
       toast({
         title: "削除完了",
         description: "イベントを削除しました。",
