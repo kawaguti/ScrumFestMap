@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, FC, PropsWithChildren } from "react";
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
 import type { Layer } from "leaflet";
 import MarkerClusterGroup from "react-leaflet-markercluster";
@@ -8,6 +8,16 @@ import { japanGeoData } from "@/lib/japanGeoData";
 import { Card } from "@/components/ui/card";
 import { EventList } from "./EventList";
 import type { Event } from "@db/schema";
+
+interface MarkerClusterGroupProps {
+  chunkedLoading?: boolean;
+  spiderfyOnMaxZoom?: boolean;
+  animate?: boolean;
+  maxClusterRadius?: number;
+}
+
+const MarkerClusterGroupWithChildren: FC<PropsWithChildren<MarkerClusterGroupProps>> = 
+  MarkerClusterGroup as any;
 
 interface JapanMapProps {
   events: Event[];
@@ -80,7 +90,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
               style={getFeatureStyle}
               onEachFeature={onEachFeature}
             />
-            <MarkerClusterGroup
+            <MarkerClusterGroupWithChildren
               chunkedLoading
               spiderfyOnMaxZoom
               animate
@@ -123,7 +133,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                   </Marker>
                 );
               })}
-            </MarkerClusterGroup>
+            </MarkerClusterGroupWithChildren>
           </MapContainer>
         </Card>
       </div>
