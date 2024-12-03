@@ -46,7 +46,7 @@
   }
 
   .past-event .marker-head {
-    background: hsl(var(--slate-600));
+    background: hsl(var(--slate-800));
     border: 2px solid white;
   }
 }
