@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
-// @ts-ignore
 import MarkerClusterGroup from 'react-leaflet-markercluster';
+import type { MarkerClusterGroupProps } from '@types/react-leaflet-markercluster';
+import type { PropsWithChildren } from 'react';
 import { prefectures, prefectureCoordinates } from "@/lib/prefectures";
 import { japanGeoData } from "@/lib/japanGeoData";
 import { Card } from "@/components/ui/card";
