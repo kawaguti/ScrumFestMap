@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useUser } from "../hooks/useUser";
+import { useUser } from "@/hooks/use-user";
 import { Button } from "../components/ui/button";
 import { Link, useLocation } from "wouter";
 import { JapanMap } from "../components/JapanMap";
@@ -44,12 +44,25 @@ async function createEvent(event: InsertEvent): Promise<Event> {
 }
 
 export default function HomePage() {
-  const { user, logout } = useUser();
+  const { user, logout, error, isLoading } = useUser();
   const [, setLocation] = useLocation();
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
   const [displayPeriod, setDisplayPeriod] = useState<"all" | "upcoming">("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (error) {
+      console.error("User data fetch error:", error);
+    }
+  }, [error]);
+
+  // ユーザー状態が変更された時の処理
+  useEffect(() => {
+    if (user) {
+      console.log("User state updated:", user.username);
+    }
+  }, [user]);
 
   const { data: events = [] } = useQuery({
     queryKey: ["events"],

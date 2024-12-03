@@ -3,6 +3,7 @@ import { useUser } from "@/hooks/use-user";
 import { useLocation } from "wouter";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { insertUserSchema, type InsertUser } from "@db/schema";
 import { validatePasswordStrength } from "@/lib/password-validation";
 import {
@@ -30,6 +31,7 @@ export default function AuthPage() {
   const { login, register, user, changePassword } = useUser();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -59,27 +61,39 @@ export default function AuthPage() {
         return;
       }
 
-      const result = isLogin
-        ? await login(data)
-        : await register(data);
+      try {
+        const result = isLogin
+          ? await login(data)
+          : await register(data);
 
-      if (!result.ok) {
+        if (!result.ok) {
+          toast({
+            title: "エラー",
+            description: result.message,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // ログイン成功後、ユーザー情報を再取得
+        await queryClient.invalidateQueries({ queryKey: ['user'] });
+        
+        toast({
+          title: isLogin ? "ログイン成功" : "登録成功",
+          description: isLogin
+            ? "ようこそ！"
+            : "アカウントが作成されました。",
+        });
+
+        setLocation("/");
+      } catch (error) {
+        console.error("Login/Register error:", error);
         toast({
           title: "エラー",
-          description: result.message,
+          description: "認証処理中にエラーが発生しました。",
           variant: "destructive",
         });
-        return;
       }
-
-      toast({
-        title: isLogin ? "ログイン成功" : "登録成功",
-        description: isLogin
-          ? "ようこそ！"
-          : "アカウントが作成されました。",
-      });
-
-      setLocation("/");
     } catch (error) {
       toast({
         title: "エラー",

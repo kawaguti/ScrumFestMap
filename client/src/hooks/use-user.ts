@@ -62,7 +62,7 @@ export function useUser() {
   const { data: user, error, isLoading } = useQuery<User | null, Error>({
     queryKey: ['user'],
     queryFn: fetchUser,
-    staleTime: Infinity,
+    staleTime: 1000 * 60 * 5, // 5分後にstaleとなり、再フェッチする可能性がある
     retry: false
   });
 
@@ -107,5 +107,5 @@ export function useUser() {
     logout: logoutMutation.mutateAsync,
     register: registerMutation.mutateAsync,
     changePassword: changePasswordMutation.mutateAsync,
-  };
+  } as const;
 }
