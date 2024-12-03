@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-user";
+import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertUserSchema, type InsertUser } from "@db/schema";
+import { validatePasswordStrength } from "@/lib/password-validation";
 import {
   Card,
   CardContent,
@@ -30,7 +31,6 @@ export default function AuthPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   
-  // URLのクエリパラメータを取得
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('change_password') === 'true' && user) {
@@ -39,12 +39,32 @@ export default function AuthPage() {
   }, [user]);
 
   const form = useForm<InsertUser>({
-    resolver: zodResolver(insertUserSchema),
+    resolver: async (values) => {
+      const zodResult = await zodResolver(insertUserSchema)(values);
+      
+      if (!isLogin && !zodResult.errors?.password) {
+        const validation = validatePasswordStrength(values.password);
+        if (!validation.isValid) {
+          return {
+            ...zodResult,
+            errors: {
+              ...zodResult.errors,
+              password: {
+                type: 'custom',
+                message: validation.errors.join('\n')
+              }
+            }
+          };
+        }
+      }
+      
+      return zodResult;
+    },
     defaultValues: {
       username: "",
       password: "",
       email: "",
-    },
+    }
   });
 
   const onSubmit = async (data: InsertUser) => {
@@ -69,7 +89,6 @@ export default function AuthPage() {
           : "アカウントが作成されました。",
       });
 
-      // ホームページへリダイレクト
       setLocation("/");
     } catch (error) {
       toast({
@@ -81,23 +100,44 @@ export default function AuthPage() {
   };
 
   const PasswordChangeForm = () => {
-    const form = useForm({
+    interface PasswordFormValues {
+      currentPassword: string;
+      newPassword: string;
+      confirmPassword: string;
+    }
+
+    const form = useForm<PasswordFormValues>({
       defaultValues: {
         currentPassword: "",
         newPassword: "",
         confirmPassword: ""
+      },
+      resolver: async (values) => {
+        const errors: Record<string, { type: string; message: string }> = {};
+        
+        const newPasswordValidation = validatePasswordStrength(values.newPassword);
+        if (!newPasswordValidation.isValid) {
+          errors.newPassword = {
+            type: 'custom',
+            message: newPasswordValidation.errors.join('\n')
+          };
+        }
+
+        if (values.confirmPassword !== values.newPassword) {
+          errors.confirmPassword = {
+            type: 'custom',
+            message: "新しいパスワードと確認用パスワードが一致しません"
+          };
+        }
+
+        return {
+          values: errors.newPassword || errors.confirmPassword ? {} : values,
+          errors
+        };
       }
     });
 
-    const handleSubmit = async (data: any) => {
-      if (data.newPassword !== data.confirmPassword) {
-        form.setError("confirmPassword", {
-          type: "manual",
-          message: "新しいパスワードと確認用パスワードが一致しません"
-        });
-        return;
-      }
-
+    const handleSubmit = async (data: PasswordFormValues) => {
       try {
         const result = await changePassword({
           currentPassword: data.currentPassword,
@@ -105,9 +145,10 @@ export default function AuthPage() {
         });
         
         if (!result.ok) {
-          form.setError("root", {
-            type: "manual",
-            message: result.message
+          toast({
+            title: "エラー",
+            description: result.message,
+            variant: "destructive",
           });
           return;
         }
@@ -117,10 +158,12 @@ export default function AuthPage() {
           description: "パスワードが変更されました",
         });
         setShowPasswordChange(false);
+        setLocation('/');
       } catch (error) {
-        form.setError("root", {
-          type: "manual",
-          message: "パスワードの変更に失敗しました"
+        toast({
+          title: "エラー",
+          description: "パスワードの変更に失敗しました",
+          variant: "destructive",
         });
       }
     };
@@ -175,11 +218,6 @@ export default function AuthPage() {
                   </FormItem>
                 )}
               />
-              {form.formState.errors.root && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.root.message}
-                </p>
-              )}
               <div className="space-y-2">
                 <Button type="submit" className="w-full">
                   パスワードを変更
@@ -283,16 +321,6 @@ export default function AuthPage() {
                     ? "新規登録はこちら"
                     : "ログインはこちら"}
                 </Button>
-                {user && (
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="w-full"
-                    onClick={() => setShowPasswordChange(true)}
-                  >
-                    パスワードを変更する
-                  </Button>
-                )}
               </div>
             </form>
           </Form>

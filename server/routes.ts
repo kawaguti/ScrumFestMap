@@ -4,6 +4,7 @@ import { users, events, insertEventSchema } from "@db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import { validatePasswordStrength } from "./password-validation";
 
 const scryptAsync = promisify(scrypt);
 const crypto = {
@@ -57,6 +58,15 @@ export function setupRoutes(app: Express) {
     }
 
     try {
+      // パスワード強度のチェック
+      const validation = validatePasswordStrength(newPassword);
+      if (!validation.isValid) {
+        return res.status(400).json({ 
+          error: "パスワードが要件を満たしていません",
+          details: validation.errors
+        });
+      }
+
       // 現在のパスワードを確認
       const [user] = await db
         .select()
