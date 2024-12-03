@@ -1,15 +1,7 @@
-import { useEffect } from "react";
-import { useLocation } from "wouter";
-import { useUser } from "@/hooks/use-user";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { useUser } from "@/hooks/use-user";
+import { useLocation } from "wouter";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +13,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -32,10 +31,14 @@ import {
 } from "@/components/ui/table";
 import { Loader2, Download, Trash2 } from "lucide-react";
 import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 import type { Event, User } from "@db/schema";
 
 async function fetchAllUsers(): Promise<User[]> {
-  const response = await fetch("/api/admin/users");
+  const response = await fetch("/api/admin/users", {
+    credentials: "include",
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch users");
   }
@@ -43,67 +46,76 @@ async function fetchAllUsers(): Promise<User[]> {
 }
 
 async function fetchAllEvents(): Promise<Event[]> {
-  const response = await fetch("/api/admin/events");
+  const response = await fetch("/api/admin/events", {
+    credentials: "include",
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch events");
   }
   return response.json();
 }
 
-import { useToast } from "@/hooks/use-toast";
-
-async function promoteToAdmin(userId: number) {
-  const response = await fetch(`/api/admin/promote/${userId}`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-  if (!response.ok) {
-    throw new Error("Failed to promote user");
-  }
-  return response.json();
-}
-
-async function demoteFromAdmin(userId: number) {
-  const response = await fetch(`/api/admin/demote/${userId}`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-  if (!response.ok) {
-    throw new Error("Failed to demote user");
-  }
-  return response.json();
-}
-
 export default function AdminPage() {
-  const { toast } = useToast();
   const { user } = useUser();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
+  // Mutations
   const promoteMutation = useMutation({
-    mutationFn: promoteToAdmin,
+    mutationFn: async (userId: string) => {
+      const response = await fetch(`/api/admin/users/${userId}/promote`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to promote user");
+      }
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       toast({
         title: "成功",
-        description: "ユーザーを管理者に昇格しました。",
+        description: "管理者権限を付与しました。",
       });
     },
     onError: () => {
       toast({
         variant: "destructive",
         title: "エラー",
-        description: "管理者への昇格に失敗しました。",
+        description: "管理者権限の付与に失敗しました。",
       });
     },
   });
 
   const demoteMutation = useMutation({
-    mutationFn: demoteFromAdmin,
+    mutationFn: async (userId: string) => {
+      const response = await fetch(`/api/admin/users/${userId}/demote`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to demote user");
+      }
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       toast({
         title: "成功",
+        description: "管理者権限を剥奪しました。",
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: "管理者権限の剥奪に失敗しました。",
+      });
+    },
+  });
+
   const deleteEventMutation = useMutation({
     mutationFn: async (eventId: number) => {
       const response = await fetch(`/api/events/${eventId}`, {
@@ -139,17 +151,6 @@ export default function AdminPage() {
         variant: "destructive",
         title: "削除エラー",
         description: error instanceof Error ? error.message : "イベントの削除に失敗しました。",
-      });
-    },
-  });
-        description: "管理者権限を剥奪しました。",
-      });
-    },
-    onError: () => {
-      toast({
-        variant: "destructive",
-        title: "エラー",
-        description: "管理者権限の剥奪に失敗しました。",
       });
     },
   });
@@ -288,7 +289,7 @@ export default function AdminPage() {
                       <TableCell>{event.name}</TableCell>
                       <TableCell>{event.prefecture}</TableCell>
                       <TableCell>
-                        {new Date(event.date).toLocaleDateString("ja-JP")}
+                        {format(new Date(event.date), "yyyy年M月d日", { locale: "ja-JP" })}
                       </TableCell>
                       <TableCell>
                         {users.find(u => u.id === event.createdBy)?.username || event.createdBy}
