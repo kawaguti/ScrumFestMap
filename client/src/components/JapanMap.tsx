@@ -139,7 +139,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                             rel="noopener noreferrer"
                             className="text-sm text-blue-500 hover:text-blue-700"
                           >
-                            詳細を見る
+                            イベントサイトへ
                           </a>
                         )}
                       </div>
