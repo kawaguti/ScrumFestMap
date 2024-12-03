@@ -96,7 +96,9 @@ export default function HomePage() {
             <Drawer>
               <DrawerTrigger asChild>
                 <Button variant="outline" className="w-full flex items-center justify-between px-4 py-2 min-h-[44px]">
-                  <span className="text-sm font-medium">メニュー</span>
+                  <span className="text-sm font-medium">
+                    {user ? `${user.username}さん` : 'メニュー'}
+                  </span>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="18"
@@ -117,8 +119,8 @@ export default function HomePage() {
               </DrawerTrigger>
               <DrawerContent className="h-[85vh] overflow-y-auto">
                 <DrawerHeader className="sticky top-0 bg-background z-10 border-b pb-4">
-                  <DrawerTitle className="text-center text-lg font-semibold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-                    {user ? `${user.username}さん` : 'メニュー'}
+                  <DrawerTitle className="text-center text-lg font-semibold">
+                    メニュー
                   </DrawerTitle>
                 </DrawerHeader>
                 <div className="px-4 py-6 space-y-3">
