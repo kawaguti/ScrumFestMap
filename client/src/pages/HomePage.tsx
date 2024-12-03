@@ -49,6 +49,7 @@ export default function HomePage() {
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
   const [displayPeriod, setDisplayPeriod] = useState<"all" | "upcoming">("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -106,7 +107,7 @@ export default function HomePage() {
           
           {/* モバイルメニュー */}
           <div className="sm:hidden w-full">
-            <Drawer>
+            <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
               <DrawerTrigger asChild>
                 <Button variant="outline" className="w-full flex items-center justify-between px-4 py-2 min-h-[44px]">
                   <span className="text-sm font-medium">
@@ -346,7 +347,7 @@ export default function HomePage() {
       </header>
 
       <div className="space-y-6">
-        {!isDialogOpen && (
+        {!isDialogOpen && !isDrawerOpen && (
           <JapanMap
             events={filteredEvents}
             selectedPrefecture={selectedPrefecture}
