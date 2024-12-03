@@ -193,7 +193,7 @@ export default function MyEventsPage() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <p>開催地: {event.prefecture}</p>
-                    <p>開催日: {format(new Date(event.date), "yyyy年M月d日(E) HH:mm", {
+                    <p>開催日: {format(new Date(event.date), "yyyy年M月d日(E)", {
                       locale: ja,
                     })}</p>
                     {event.description && (

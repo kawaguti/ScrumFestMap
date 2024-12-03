@@ -46,7 +46,7 @@ export function EventList({ events, selectedEvent }: EventListProps) {
             <CardTitle>{event.name}</CardTitle>
             <CardDescription className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              {format(new Date(event.date), "yyyy年M月d日(E) HH:mm", {
+              {format(new Date(event.date), "yyyy年M月d日(E)", {
                 locale: ja,
               })}
             </CardDescription>
