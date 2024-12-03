@@ -2,6 +2,27 @@ import { type Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { users, events, insertEventSchema } from "@db/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
+const crypto = {
+  hash: async (password: string) => {
+    const salt = randomBytes(16).toString("hex");
+    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+    return `${buf.toString("hex")}.${salt}`;
+  },
+  compare: async (suppliedPassword: string, storedPassword: string) => {
+    const [hashedPassword, salt] = storedPassword.split(".");
+    const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
+    const suppliedPasswordBuf = (await scryptAsync(
+      suppliedPassword,
+      salt,
+      64
+    )) as Buffer;
+    return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
+  },
+};
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || !req.user?.isAdmin) {
@@ -20,6 +41,54 @@ export function setupRoutes(app: Express) {
       res.json(allEvents);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch events" });
+    }
+  });
+
+  // パスワード変更エンドポイント
+  app.post("/api/change-password", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "認証されていません" });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "現在のパスワードと新しいパスワードの両方が必要です" });
+    }
+
+    try {
+      // 現在のパスワードを確認
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, req.user.id))
+        .limit(1);
+
+      const isCurrentPasswordValid = await crypto.compare(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ error: "現在のパスワードが正しくありません" });
+      }
+
+      // 新しいパスワードをハッシュ化
+      const hashedNewPassword = await crypto.hash(newPassword);
+
+      // パスワードを更新
+      const [updatedUser] = await db
+        .update(users)
+        .set({ 
+          password: hashedNewPassword,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, req.user.id))
+        .returning();
+
+      res.json({ message: "パスワードが正常に更新されました" });
+    } catch (error) {
+      console.error("Password change error:", error);
+      res.status(500).json({ 
+        error: "パスワードの変更に失敗しました",
+        details: error instanceof Error ? error.message : "不明なエラー"
+      });
     }
   });
 

@@ -87,6 +87,18 @@ export function useUser() {
     },
   });
 
+  const changePasswordMutation = useMutation<
+    RequestResult,
+    Error,
+    { currentPassword: string; newPassword: string }
+  >({
+    mutationFn: (passwordData) =>
+      handleRequest('/api/change-password', 'POST', passwordData as any),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
+
   return {
     user,
     isLoading,
@@ -94,5 +106,6 @@ export function useUser() {
     login: loginMutation.mutateAsync,
     logout: logoutMutation.mutateAsync,
     register: registerMutation.mutateAsync,
+    changePassword: changePasswordMutation.mutateAsync,
   };
 }
