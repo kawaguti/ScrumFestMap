@@ -9,7 +9,7 @@ import "react-leaflet-markercluster/dist/styles.min.css";
 import { prefectures, prefectureCoordinates } from "../lib/prefectures";
 import { japanGeoData } from "../lib/japanGeoData";
 import { EventList } from "./EventList";
-import type { Event } from "../../../db/schema";
+import type { Event } from "@db/schema";
 
 interface MarkerClusterGroupProps {
   chunkedLoading?: boolean;
@@ -31,7 +31,6 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventHistory, setEventHistory] = useState<Event[]>([]);
 
-  // 直近のイベントを取得する関数
   const getUpcomingEvent = useMemo(() => {
     const now = new Date();
     return events
@@ -39,13 +38,11 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0] || null;
   }, [events]);
 
-  // 初期表示時に直近のイベントを自動選択
   useEffect(() => {
     if (!selectedEvent && events.length > 0) {
       const upcomingEvent = getUpcomingEvent;
       if (upcomingEvent) {
         handleMarkerClick(upcomingEvent);
-        // 該当する都道府県を選択
         const prefecture = prefectures.find(p => p.name === upcomingEvent.prefecture);
         if (prefecture) {
           onPrefectureSelect(prefecture.id);
@@ -108,7 +105,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
               zoomControl={true}
               dragging={true}
               touchZoom={true}
-              tapTolerance={15}
+              doubleClickZoom={true}
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
