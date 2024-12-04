@@ -99,85 +99,85 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="md:col-span-2">
-        <Card className="p-4">
-          <MapContainer
-            center={[36.5, 138]}
-            zoom={5}
-            className="h-[70vh] md:h-[80vh] w-full pl-4 sm:pl-0"
-            zoomControl={true}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <GeoJSON
-              data={japanGeoData}
-              style={getFeatureStyle}
-              onEachFeature={onEachFeature}
-            />
-            <MarkerClusterGroupWithChildren
-              chunkedLoading
-              spiderfyOnMaxZoom
-              animate
-              maxClusterRadius={30}
+        <div className="pl-4 sm:pl-0">
+          <Card className="p-0 sm:p-4">
+            <MapContainer
+              center={[36.5, 138]}
+              zoom={5}
+              className="h-[70vh] md:h-[80vh] w-full"
+              zoomControl={true}
             >
-              {events.map((event) => {
-                const prefecture = prefectures.find(p => p.name === event.prefecture);
-                if (!prefecture) return null;
-                const coordinates = prefectureCoordinates[event.prefecture];
-                if (!coordinates) return null;
-                
-                const isFutureEvent = new Date(event.date) > new Date();
-                const markerColor = isFutureEvent ? 'bg-primary' : 'bg-muted';
-                
-                return (
-                  <Marker 
-                    key={event.id} 
-                    position={coordinates}
-                    eventHandlers={{
-                      click: () => handleMarkerClick(event)
-                    }}
-                    icon={L.divIcon({
-                      className: 'marker-container',
-                      html: `
-                        <div class="marker-pin-google ${isFutureEvent ? 'future-event' : 'past-event'}">
-                          <div class="marker-head"></div>
-                          <div class="marker-tail"></div>
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <GeoJSON
+                data={japanGeoData}
+                style={getFeatureStyle}
+                onEachFeature={onEachFeature}
+              />
+              <MarkerClusterGroupWithChildren
+                chunkedLoading
+                spiderfyOnMaxZoom
+                animate
+                maxClusterRadius={30}
+              >
+                {events.map((event) => {
+                  const prefecture = prefectures.find(p => p.name === event.prefecture);
+                  if (!prefecture) return null;
+                  const coordinates = prefectureCoordinates[event.prefecture];
+                  if (!coordinates) return null;
+                  
+                  const isFutureEvent = new Date(event.date) > new Date();
+                  
+                  return (
+                    <Marker 
+                      key={event.id} 
+                      position={coordinates}
+                      eventHandlers={{
+                        click: () => handleMarkerClick(event)
+                      }}
+                      icon={L.divIcon({
+                        className: 'marker-container',
+                        html: `
+                          <div class="marker-pin-google ${isFutureEvent ? 'future-event' : 'past-event'}">
+                            <div class="marker-head"></div>
+                            <div class="marker-tail"></div>
+                          </div>
+                        `,
+                        iconSize: [30, 42],
+                        iconAnchor: [15, 42],
+                        popupAnchor: [0, -42]
+                      })}
+                    >
+                      <Popup>
+                        <div className="space-y-2">
+                          <h3 className="font-bold text-lg">{event.name}</h3>
+                          <p className="text-sm text-muted-foreground">{event.prefecture}</p>
+                          <p className="text-sm">{new Date(event.date).toLocaleDateString('ja-JP')}</p>
+                          {event.description && (
+                            <p className="text-sm mt-2">{event.description}</p>
+                          )}
+                          {event.website && (
+                            <a
+                              href={event.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-500 hover:text-blue-700"
+                            >
+                              イベントサイトへ
+                            </a>
+                          )}
                         </div>
-                      `,
-                      iconSize: [30, 42],
-                      iconAnchor: [15, 42],
-                      popupAnchor: [0, -42]
-                    })}
-                  >
-                    <Popup>
-                      <div className="space-y-2">
-                        <h3 className="font-bold text-lg">{event.name}</h3>
-                        <p className="text-sm text-muted-foreground">{event.prefecture}</p>
-                        <p className="text-sm">{new Date(event.date).toLocaleDateString('ja-JP')}</p>
-                        {event.description && (
-                          <p className="text-sm mt-2">{event.description}</p>
-                        )}
-                        {event.website && (
-                          <a
-                            href={event.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-500 hover:text-blue-700"
-                          >
-                            イベントサイトへ
-                          </a>
-                        )}
-                      </div>
-                    </Popup>
-                  </Marker>
-                );
-              })}
-            </MarkerClusterGroupWithChildren>
-          </MapContainer>
-        </Card>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
+              </MarkerClusterGroupWithChildren>
+            </MapContainer>
+          </Card>
+        </div>
       </div>
-
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">
           {selectedEvent 
