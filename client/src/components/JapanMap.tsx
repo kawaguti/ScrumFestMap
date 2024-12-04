@@ -74,80 +74,14 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="md:col-span-2">
-        <Card className="p-2 md:p-4 overflow-hidden relative">
-          <div className="absolute bottom-4 md:bottom-6 right-2 md:right-4 z-[1000] flex flex-col gap-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                const mapContainer = document.querySelector('.leaflet-container');
-                if (mapContainer) {
-                  const map = (mapContainer as any)._leaflet;
-                  if (map) {
-                    map.getMap().zoomIn();
-                  }
-                }
-              }}
-              className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-2 rounded-lg shadow-lg touch-manipulation select-none"
-              aria-label="ズームイン"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                const mapContainer = document.querySelector('.leaflet-container');
-                if (mapContainer) {
-                  const map = (mapContainer as any)._leaflet;
-                  if (map) {
-                    map.getMap().zoomOut();
-                  }
-                }
-              }}
-              className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-2 rounded-lg shadow-lg touch-manipulation select-none"
-              aria-label="ズームアウト"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </button>
-          </div>
+        <Card className="p-4">
           <MapContainer
             center={[36.5, 138]}
             zoom={5}
-            style={{ 
-              height: "calc(60vh - env(safe-area-inset-bottom))", 
-              width: "100%",
-              touchAction: "none",
-              WebkitOverflowScrolling: "touch",
-              userSelect: "none",
-              WebkitTapHighlightColor: "transparent",
-              overscrollBehavior: "contain",
-              WebkitUserSelect: "none",
-              msUserSelect: "none",
-              cursor: "grab",
-              outline: "none"
-            }}
-            zoomControl={false}
-            scrollWheelZoom={true}
-            dragging={true}
-            doubleClickZoom={false}
-            closePopupOnClick={true}
-            attributionControl={false}
-            preferCanvas={true}
-            maxBounds={[
-              [20, 122], // Southwest coordinates
-              [46, 154]  // Northeast coordinates
-            ]}
-            minZoom={4}
-            maxZoom={10}
-            zoomSnap={0.5}
-            zoomDelta={0.5}
-            wheelDebounceTime={100}
+            style={{ height: "70vh", width: "100%" }}
+            zoomControl={true}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -198,6 +132,9 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                         <h3 className="font-bold text-lg">{event.name}</h3>
                         <p className="text-sm text-muted-foreground">{event.prefecture}</p>
                         <p className="text-sm">{new Date(event.date).toLocaleDateString('ja-JP')}</p>
+                        {event.description && (
+                          <p className="text-sm mt-2">{event.description}</p>
+                        )}
                         {event.website && (
                           <a
                             href={event.website}
@@ -218,8 +155,8 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
         </Card>
       </div>
 
-      <div className="space-y-2 md:space-y-4 overflow-y-auto overscroll-contain max-h-[calc(40vh-2rem)] md:max-h-[70vh] scroll-smooth -mx-2 px-2">
-        <h2 className="text-lg md:text-xl font-semibold sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-2 z-10">
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">
           {selectedEvent 
             ? "選択されたイベント" 
             : selectedPrefecture 
