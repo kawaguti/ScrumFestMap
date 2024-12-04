@@ -120,22 +120,27 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
             center={[36.5, 138]}
             zoom={5}
             style={{ 
-              height: "calc(60vh - env(safe-area-inset-bottom))", 
+              height: window.innerWidth < 768 
+                ? "calc(70vh - env(safe-area-inset-bottom))"
+                : "calc(80vh - env(safe-area-inset-bottom))",
               width: "100%",
-              touchAction: "none",
+              touchAction: "pan-x pan-y",
               WebkitOverflowScrolling: "touch",
+              msOverflowStyle: "-ms-autohiding-scrollbar",
+              overscrollBehavior: "none",
               userSelect: "none",
-              WebkitTapHighlightColor: "transparent",
-              overscrollBehavior: "contain",
               WebkitUserSelect: "none",
               msUserSelect: "none",
+              WebkitTapHighlightColor: "transparent",
               cursor: "grab",
               outline: "none"
             }}
             zoomControl={false}
             scrollWheelZoom={true}
             dragging={true}
-            doubleClickZoom={false}
+            touchZoom={true}
+            doubleClickZoom={true}
+            bounceAtZoomLimits={false}
             closePopupOnClick={true}
             attributionControl={false}
             preferCanvas={true}
