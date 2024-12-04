@@ -120,9 +120,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
             center={[36.5, 138]}
             zoom={5}
             style={{ 
-              height: window.innerWidth < 768 
-                ? "calc(70vh - env(safe-area-inset-bottom))"
-                : "calc(80vh - env(safe-area-inset-bottom))",
+              height: "calc(70vh - env(safe-area-inset-bottom))",
               width: "100%",
               touchAction: "pan-x pan-y",
               WebkitOverflowScrolling: "touch",
