@@ -9,7 +9,7 @@ import "react-leaflet-markercluster/dist/styles.min.css";
 import { prefectures, prefectureCoordinates } from "../lib/prefectures";
 import { japanGeoData } from "../lib/japanGeoData";
 import { EventList } from "./EventList";
-import type { Event } from "@db/schema";
+import type { Event } from "../../db/schema";
 
 interface MarkerClusterGroupProps {
   chunkedLoading?: boolean;
