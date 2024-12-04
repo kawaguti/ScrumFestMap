@@ -54,8 +54,8 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
-waitForPort = 5000
+args = "cd client && npm run dev -- --host 0.0.0.0 --port 5173"
+waitForPort = 5173
 
 [[workflows.workflow]]
 name = "React App"
@@ -84,7 +84,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "cd server && npm run dev"
 waitForPort = 5000
 
 [[workflows.workflow]]
@@ -99,5 +99,5 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd client && npm run dev"
+args = "cd client && vite --host 0.0.0.0 --port 5173"
 waitForPort = 5173
