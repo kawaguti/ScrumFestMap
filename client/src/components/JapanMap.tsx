@@ -3,13 +3,13 @@ import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
 import type { Layer } from "leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Card } from "@/components/ui/card";
+import { Card } from "../components/ui/card";
 import MarkerClusterGroup from "react-leaflet-markercluster";
 import "react-leaflet-markercluster/dist/styles.min.css";
-import { prefectures, prefectureCoordinates } from "@/lib/prefectures";
-import { japanGeoData } from "@/lib/japanGeoData";
+import { prefectures, prefectureCoordinates } from "../lib/prefectures";
+import { japanGeoData } from "../lib/japanGeoData";
 import { EventList } from "./EventList";
-import type { Event } from "@db/schema";
+import type { Event } from "../../db/schema";
 
 interface MarkerClusterGroupProps {
   chunkedLoading?: boolean;
@@ -103,7 +103,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
           <MapContainer
             center={[36.5, 138]}
             zoom={5}
-            style={{ height: "70vh", width: "100%" }}
+            className="h-[70vh] md:h-[80vh] w-full pl-4 sm:pl-0"
             zoomControl={true}
           >
             <TileLayer
