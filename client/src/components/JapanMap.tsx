@@ -9,7 +9,7 @@ import "react-leaflet-markercluster/dist/styles.min.css";
 import { prefectures, prefectureCoordinates } from "../lib/prefectures";
 import { japanGeoData } from "../lib/japanGeoData";
 import { EventList } from "./EventList";
-import type { Event } from "@db/schema";
+import type { Event } from "../../../db/schema";
 
 interface MarkerClusterGroupProps {
   chunkedLoading?: boolean;
@@ -97,7 +97,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="md:col-span-2">
         <div className="pl-4 sm:pl-0">
-          <Card className="p-0 sm:p-4">
+          <Card className="p-4">
             <MapContainer
               center={[36.5, 138]}
               zoom={5}
