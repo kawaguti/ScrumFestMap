@@ -74,7 +74,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 pl-6 pr-4 md:pl-10 md:pr-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 px-4 md:px-6">
       <div className="md:col-span-2">
         <Card className="p-4 md:p-6 overflow-hidden relative">
           <div className="absolute bottom-4 md:bottom-6 right-2 md:right-4 z-[1000] flex flex-col gap-2">
@@ -120,18 +120,8 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
             center={[36.5, 138]}
             zoom={5}
             style={{ 
-              height: "calc(70vh - env(safe-area-inset-bottom))",
-              width: "100%",
-              touchAction: "pan-x pan-y",
-              WebkitOverflowScrolling: "touch",
-              msOverflowStyle: "-ms-autohiding-scrollbar",
-              overscrollBehavior: "none",
-              userSelect: "none",
-              WebkitUserSelect: "none",
-              msUserSelect: "none",
-              WebkitTapHighlightColor: "transparent",
-              cursor: "grab",
-              outline: "none"
+              height: "calc(60vh - env(safe-area-inset-bottom))",
+              width: "100%"
             }}
             zoomControl={false}
             scrollWheelZoom={true}
