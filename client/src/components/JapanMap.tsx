@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
 import type { Layer } from "leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Card } from "../components/ui/card";
+import { Card } from "./ui/card";
 import MarkerClusterGroup from "react-leaflet-markercluster";
 import "react-leaflet-markercluster/dist/styles.min.css";
 import { prefectures, prefectureCoordinates } from "../lib/prefectures";
@@ -105,7 +105,6 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
               center={[36.5, 138]}
               zoom={5}
               className="h-[70vh] md:h-[80vh] w-full touch-manipulation"
-              zoomControl={false}
               zoomControl={true}
               dragging={true}
               tap={true}
