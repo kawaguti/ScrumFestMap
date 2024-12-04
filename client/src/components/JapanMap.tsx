@@ -104,8 +104,12 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
             <MapContainer
               center={[36.5, 138]}
               zoom={5}
-              className="h-[70vh] md:h-[80vh] w-full"
+              className="h-[70vh] md:h-[80vh] w-full touch-manipulation"
+              zoomControl={false}
               zoomControl={true}
+              dragging={true}
+              tap={true}
+              tapTolerance={15}
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
