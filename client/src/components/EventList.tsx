@@ -44,7 +44,10 @@ export function EventList({ events, selectedEvent, onEventClick }: EventListProp
             "cursor-pointer hover:border-primary transition-colors",
             selectedEvent?.id === event.id && "border-primary"
           )}
-          onClick={() => onEventClick?.(event)}>
+          onClick={(e) => {
+            e.stopPropagation();
+            onEventClick?.(event);
+          }}>
           <CardHeader>
             <CardTitle>{event.name}</CardTitle>
             <CardDescription className="flex items-center gap-2">
