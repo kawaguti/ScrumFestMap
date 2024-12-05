@@ -133,7 +133,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
                     icon={L.divIcon({
                       className: 'marker-container',
                       html: `
-                        <div class="marker-pin-google ${isFutureEvent ? 'future-event' : 'past-event'}">
+                        <div class="marker-pin-google ${isFutureEvent ? 'future-event' : 'past-event'} ${selectedEvent?.id === event.id ? 'selected' : ''}">
                           <div class="marker-head"></div>
                           <div class="marker-tail"></div>
                         </div>
