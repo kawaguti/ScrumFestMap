@@ -45,10 +45,16 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
 
   const handleMarkerClick = (event: Event) => {
     setSelectedEvent(event);
+    // イベント履歴を更新
     setEventHistory(prev => {
       const filtered = prev.filter(e => e.id !== event.id);
       return [event, ...filtered].slice(0, 3);
     });
+    // 対応する都道府県を選択
+    const prefecture = prefectures.find(p => p.name === event.prefecture);
+    if (prefecture) {
+      onPrefectureSelect(prefecture.id);
+    }
   };
 
   const prefectureEvents = useMemo(() => {
