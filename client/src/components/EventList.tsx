@@ -44,7 +44,10 @@ export function EventList({ events, selectedEvent, onEventClick }: EventListProp
             "cursor-pointer hover:border-primary/50 transition-colors group",
             selectedEvent?.id === event.id && "border-primary"
           )}
-          onClick={() => onEventClick?.(event)}
+          onClick={(e) => {
+            e.preventDefault();
+            onEventClick?.(event);
+          }}
         >
           <CardHeader>
             <CardTitle>{event.name}</CardTitle>

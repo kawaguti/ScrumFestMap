@@ -44,6 +44,12 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
   }, [initialSelectedEvent]);
 
   const handleMarkerClick = (event: Event) => {
+    // 同じイベントが選択された場合は選択を解除
+    if (selectedEvent?.id === event.id) {
+      setSelectedEvent(null);
+      return;
+    }
+
     setSelectedEvent(event);
     setEventHistory(prev => {
       const filtered = prev.filter(e => e.id !== event.id);
