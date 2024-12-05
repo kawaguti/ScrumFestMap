@@ -49,8 +49,6 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
       const filtered = prev.filter(e => e.id !== event.id);
       return [event, ...filtered].slice(0, 3);
     });
-    // マーカーのクリック時、対応する都道府県を選択しない
-    onPrefectureSelect('');
   };
 
   const prefectureEvents = useMemo(() => {
