@@ -15,6 +15,7 @@ import { ExternalLink, Calendar } from "lucide-react";
 interface EventListProps {
   events: Event[];
   selectedEvent?: Event | null;
+  onEventClick?: (event: Event) => void;
 }
 
 export function EventList({ events, selectedEvent }: EventListProps) {
@@ -40,8 +41,10 @@ export function EventList({ events, selectedEvent }: EventListProps) {
         <Card 
           key={event.id}
           className={cn(
-            selectedEvent?.id === event.id && "border-primary"
-          )}>
+            selectedEvent?.id === event.id && "border-primary",
+            "cursor-pointer hover:border-primary/50 transition-colors"
+          )}
+          onClick={() => onEventClick?.(event)}>
           <CardHeader>
             <CardTitle>{event.name}</CardTitle>
             <CardDescription className="flex items-center gap-2">
