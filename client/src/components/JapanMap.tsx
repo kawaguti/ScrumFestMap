@@ -128,6 +128,8 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                 if (!coordinates) return null;
                 
                 const isFutureEvent = new Date(event.date) > new Date();
+                const markerColor = isFutureEvent ? 'bg-primary' : 'bg-muted';
+                
                 return (
                   <Marker 
                     key={event.id} 
