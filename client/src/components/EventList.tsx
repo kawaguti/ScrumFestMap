@@ -18,7 +18,7 @@ interface EventListProps {
   onEventClick?: (event: Event) => void;
 }
 
-export function EventList({ events, selectedEvent }: EventListProps) {
+export function EventList({ events, selectedEvent, onEventClick }: EventListProps) {
   // イベント履歴の場合は並び替えを行わず、そのままの順序を維持
   // それ以外の場合（都道府県別表示など）は日付でソート
   const sortedEvents = selectedEvent
