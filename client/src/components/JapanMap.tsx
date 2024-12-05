@@ -44,21 +44,21 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
   }, [initialSelectedEvent]);
 
   const handleMarkerClick = (event: Event) => {
-    // 同じイベントが選択された場合は選択を解除
     if (selectedEvent?.id === event.id) {
       setSelectedEvent(null);
       return;
     }
 
     setSelectedEvent(event);
+    // イベント履歴を更新（最大3件まで）
     setEventHistory(prev => {
       const filtered = prev.filter(e => e.id !== event.id);
       return [event, ...filtered].slice(0, 3);
     });
-    
-    // マーカーがクリックされたとき、対応する都道府県も選択状態にする
+
+    // イベントの都道府県を選択状態にする
     const prefecture = prefectures.find(p => p.name === event.prefecture);
-    if (prefecture && prefecture.id !== selectedPrefecture) {
+    if (prefecture) {
       onPrefectureSelect(prefecture.id);
     }
   };
