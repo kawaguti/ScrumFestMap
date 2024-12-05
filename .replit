@@ -70,7 +70,6 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pkill -f 'node.*server/index.ts' || true && npm run dev"
-waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Client"
