@@ -183,7 +183,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
               ? prefectureEvents
               : eventHistory}
           selectedEvent={selectedEvent}
-          onEventClick={handleMarkerClick}
+          onEventClick={(event) => handleMarkerClick(event)}
         />
       </div>
     </div>
