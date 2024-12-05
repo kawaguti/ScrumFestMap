@@ -42,9 +42,10 @@ export function EventList({ events, selectedEvent, onEventClick }: EventListProp
           key={event.id}
           className={cn(
             selectedEvent?.id === event.id && "border-primary",
-            "cursor-pointer hover:border-primary/50 transition-colors"
+            "cursor-pointer hover:border-primary/50 transition-colors group"
           )}
-          onClick={() => onEventClick?.(event)}>
+          onClick={() => onEventClick?.(event)}
+        >
           <CardHeader>
             <CardTitle>{event.name}</CardTitle>
             <CardDescription className="flex items-center gap-2">
@@ -68,7 +69,10 @@ export function EventList({ events, selectedEvent, onEventClick }: EventListProp
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => event.website && window.open(event.website, "_blank")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(event.website, "_blank");
+                    }}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Webサイトへ
