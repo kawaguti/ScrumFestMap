@@ -14,14 +14,6 @@ run = ["npm", "run", "start"]
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 5001
-externalPort = 3000
-
-[[ports]]
-localPort = 5173
-externalPort = 5173
-
 [workflows]
 runButton = "Project"
 
@@ -54,8 +46,8 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "PORT=5001 npm run dev"
-waitForPort = 5001
+args = "npm run dev"
+waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Server"
@@ -69,7 +61,8 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pkill -f 'node.*server/index.ts' || true && npm run dev"
+args = "npm run dev"
+waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Client"
@@ -83,5 +76,5 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd client && npm run dev -- --host 0.0.0.0"
+args = "cd client && npm install && npm run dev"
 waitForPort = 5173

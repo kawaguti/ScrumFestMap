@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, FC, PropsWithChildren } from "react";
+import { useState, useMemo, FC, PropsWithChildren, useEffect } from "react";
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
 import type { Layer } from "leaflet";
 import L from "leaflet";
@@ -25,23 +25,34 @@ interface JapanMapProps {
   events: Event[];
   selectedPrefecture: string | null;
   onPrefectureSelect: (prefectureId: string) => void;
-  initialSelectedEvent?: Event | null;
 }
 
-export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initialSelectedEvent }: JapanMapProps) {
+export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: JapanMapProps) {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventHistory, setEventHistory] = useState<Event[]>([]);
 
-  // 初期表示時に直近のイベントを選択
+  // 直近のイベントを取得する関数
+  const getUpcomingEvent = useMemo(() => {
+    const now = new Date();
+    return events
+      .filter(event => new Date(event.date) >= now)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0] || null;
+  }, [events]);
+
+  // 初期表示時に直近のイベントを自動選択
   useEffect(() => {
-    if (initialSelectedEvent && !selectedEvent) {
-      handleMarkerClick(initialSelectedEvent);
-      const prefecture = prefectures.find(p => p.name === initialSelectedEvent.prefecture);
-      if (prefecture) {
-        onPrefectureSelect(prefecture.id);
+    if (!selectedEvent && events.length > 0) {
+      const upcomingEvent = getUpcomingEvent;
+      if (upcomingEvent) {
+        handleMarkerClick(upcomingEvent);
+        // 該当する都道府県を選択
+        const prefecture = prefectures.find(p => p.name === upcomingEvent.prefecture);
+        if (prefecture) {
+          onPrefectureSelect(prefecture.id);
+        }
       }
     }
-  }, [initialSelectedEvent]);
+  }, [events]);
 
   const handleMarkerClick = (event: Event) => {
     setSelectedEvent(event);
@@ -88,7 +99,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="md:col-span-2">
-        <Card className="p-4 mx-4 sm:mx-0">
+        <Card className="p-4">
           <MapContainer
             center={[36.5, 138]}
             zoom={5}
@@ -117,6 +128,8 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
                 if (!coordinates) return null;
                 
                 const isFutureEvent = new Date(event.date) > new Date();
+                const markerColor = isFutureEvent ? 'bg-primary' : 'bg-muted';
+                
                 return (
                   <Marker 
                     key={event.id} 
@@ -142,6 +155,9 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
                         <h3 className="font-bold text-lg">{event.name}</h3>
                         <p className="text-sm text-muted-foreground">{event.prefecture}</p>
                         <p className="text-sm">{new Date(event.date).toLocaleDateString('ja-JP')}</p>
+                        {event.description && (
+                          <p className="text-sm mt-2">{event.description}</p>
+                        )}
                         {event.website && (
                           <a
                             href={event.website}
@@ -177,7 +193,6 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
               ? prefectureEvents
               : eventHistory}
           selectedEvent={selectedEvent}
-          onEventClick={handleMarkerClick}
         />
       </div>
     </div>

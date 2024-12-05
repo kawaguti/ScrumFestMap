@@ -44,7 +44,7 @@ async function createEvent(event: InsertEvent): Promise<Event> {
 }
 
 export default function HomePage() {
-  const { user, logout, error } = useUser();
+  const { user, logout, error, isLoading } = useUser();
   const [, setLocation] = useLocation();
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
   const [displayPeriod, setDisplayPeriod] = useState<"all" | "upcoming">("all");
@@ -70,25 +70,18 @@ export default function HomePage() {
     queryFn: fetchEvents,
   });
 
-  // イベントのフィルタリングと直近のイベントの選択
-  const { filteredEvents, upcomingEvent } = useMemo(() => {
-    const now = new Date();
+  // イベントのフィルタリング
+  const filteredEvents = useMemo(() => {
+    if (displayPeriod === "all") return events;
+    
     const oneYearFromNow = new Date();
     oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
     
-    const filtered = displayPeriod === "all" 
-      ? events 
-      : events.filter(event => {
-          const eventDate = new Date(event.date);
-          return eventDate >= now && eventDate <= oneYearFromNow;
-        });
-
-    // 直近の未来のイベントを見つける
-    const upcoming = events
-      .filter(event => new Date(event.date) >= now)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-
-    return { filteredEvents: filtered, upcomingEvent: upcoming };
+    return events.filter(event => {
+      const eventDate = new Date(event.date);
+      const now = new Date();
+      return eventDate >= now && eventDate <= oneYearFromNow;
+    });
   }, [events, displayPeriod]);
 
   const createEventMutation = useMutation({
@@ -336,22 +329,20 @@ export default function HomePage() {
 
         {/* 表示期間選択 */}
         <div className="w-full sm:w-auto">
-          <div className="flex items-center justify-center sm:justify-start space-x-4 p-2 bg-muted/10 rounded-lg">
-            <RadioGroup
-              value={displayPeriod}
-              onValueChange={(value: "all" | "upcoming") => setDisplayPeriod(value)}
-              className="flex items-center space-x-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="all" id="all" />
-                <Label htmlFor="all">全期間</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="upcoming" id="upcoming" />
-                <Label htmlFor="upcoming">今後一年間</Label>
-              </div>
-            </RadioGroup>
-          </div>
+          <RadioGroup
+            value={displayPeriod}
+            onValueChange={(value: "all" | "upcoming") => setDisplayPeriod(value)}
+            className="flex items-center justify-center sm:justify-start space-x-4 p-2 bg-muted/10 rounded-lg"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="all" id="all" />
+              <Label htmlFor="all">全期間</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="upcoming" id="upcoming" />
+              <Label htmlFor="upcoming">今後一年間</Label>
+            </div>
+          </RadioGroup>
         </div>
       </header>
 
@@ -361,7 +352,6 @@ export default function HomePage() {
             events={filteredEvents}
             selectedPrefecture={selectedPrefecture}
             onPrefectureSelect={setSelectedPrefecture}
-            initialSelectedEvent={upcomingEvent}
           />
         )}
       </div>
