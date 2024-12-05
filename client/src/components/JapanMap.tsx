@@ -61,6 +61,12 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
     if (prefecture) {
       onPrefectureSelect(prefecture.id);
     }
+
+    // マーカーの位置までマップをパンする
+    const coordinates = prefectureCoordinates[event.prefecture];
+    if (coordinates) {
+      const map = document.querySelector('.leaflet-container')?._leaflet?.setView(coordinates, 7);
+    }
   };
 
   const prefectureEvents = useMemo(() => {
