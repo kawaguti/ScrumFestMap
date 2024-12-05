@@ -336,20 +336,22 @@ export default function HomePage() {
 
         {/* 表示期間選択 */}
         <div className="w-full sm:w-auto">
-          <RadioGroup
-            value={displayPeriod}
-            onValueChange={(value: "all" | "upcoming") => setDisplayPeriod(value)}
-            className="flex items-center justify-center sm:justify-start space-x-4 p-2 bg-muted/10 rounded-lg"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="all" id="all" />
-              <Label htmlFor="all">全期間</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="upcoming" id="upcoming" />
-              <Label htmlFor="upcoming">今後一年間</Label>
-            </div>
-          </RadioGroup>
+          <div className="flex items-center justify-center sm:justify-start space-x-4 p-2 bg-muted/10 rounded-lg">
+            <RadioGroup
+              value={displayPeriod}
+              onValueChange={(value: "all" | "upcoming") => setDisplayPeriod(value)}
+              className="flex items-center space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="all" id="all" />
+                <Label htmlFor="all">全期間</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="upcoming" id="upcoming" />
+                <Label htmlFor="upcoming">今後一年間</Label>
+              </div>
+            </RadioGroup>
+          </div>
         </div>
       </header>
 
