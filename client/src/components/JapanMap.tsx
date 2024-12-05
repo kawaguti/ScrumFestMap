@@ -1,4 +1,4 @@
-import { useState, useMemo, FC, PropsWithChildren } from "react";
+import { useState, useEffect, useMemo, FC, PropsWithChildren } from "react";
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from "react-leaflet";
 import type { Layer } from "leaflet";
 import L from "leaflet";
@@ -25,11 +25,23 @@ interface JapanMapProps {
   events: Event[];
   selectedPrefecture: string | null;
   onPrefectureSelect: (prefectureId: string) => void;
+  initialSelectedEvent?: Event | null;
 }
 
-export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: JapanMapProps) {
+export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initialSelectedEvent }: JapanMapProps) {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventHistory, setEventHistory] = useState<Event[]>([]);
+
+  // 初期表示時に直近のイベントを選択
+  useEffect(() => {
+    if (initialSelectedEvent && !selectedEvent) {
+      handleMarkerClick(initialSelectedEvent);
+      const prefecture = prefectures.find(p => p.name === initialSelectedEvent.prefecture);
+      if (prefecture) {
+        onPrefectureSelect(prefecture.id);
+      }
+    }
+  }, [initialSelectedEvent]);
 
   const handleMarkerClick = (event: Event) => {
     setSelectedEvent(event);

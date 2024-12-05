@@ -70,18 +70,25 @@ export default function HomePage() {
     queryFn: fetchEvents,
   });
 
-  // イベントのフィルタリング
-  const filteredEvents = useMemo(() => {
-    if (displayPeriod === "all") return events;
-    
+  // イベントのフィルタリングと直近のイベントの選択
+  const { filteredEvents, upcomingEvent } = useMemo(() => {
+    const now = new Date();
     const oneYearFromNow = new Date();
     oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
     
-    return events.filter(event => {
-      const eventDate = new Date(event.date);
-      const now = new Date();
-      return eventDate >= now && eventDate <= oneYearFromNow;
-    });
+    const filtered = displayPeriod === "all" 
+      ? events 
+      : events.filter(event => {
+          const eventDate = new Date(event.date);
+          return eventDate >= now && eventDate <= oneYearFromNow;
+        });
+
+    // 直近の未来のイベントを見つける
+    const upcoming = events
+      .filter(event => new Date(event.date) >= now)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
+    return { filteredEvents: filtered, upcomingEvent: upcoming };
   }, [events, displayPeriod]);
 
   const createEventMutation = useMutation({
@@ -352,6 +359,7 @@ export default function HomePage() {
             events={filteredEvents}
             selectedPrefecture={selectedPrefecture}
             onPrefectureSelect={setSelectedPrefecture}
+            initialSelectedEvent={upcomingEvent}
           />
         )}
       </div>
