@@ -21,7 +21,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "../components/ui/drawer";
-import type { Event, InsertEvent } from "../../db/schema";
+import type { Event, InsertEvent } from "@db/schema";
 
 async function fetchEvents(): Promise<Event[]> {
   const response = await fetch("/api/events");

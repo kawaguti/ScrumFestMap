@@ -9,7 +9,7 @@ import "react-leaflet-markercluster/dist/styles.min.css";
 import { prefectures, prefectureCoordinates } from "../lib/prefectures";
 import { japanGeoData } from "../lib/japanGeoData";
 import { EventList } from "./EventList";
-import type { Event } from "../../../db/schema";
+import type { Event } from "@db/schema";
 
 interface MarkerClusterGroupProps {
   chunkedLoading?: boolean;
@@ -96,16 +96,17 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="md:col-span-2">
-        <div className="pl-4 sm:pl-0">
+        <div className="pl-6 sm:pl-0">
           <Card className="p-4">
             <MapContainer
               center={[36.5, 138]}
               zoom={5}
               className="h-[70vh] md:h-[80vh] w-full touch-manipulation"
+              zoomControl={false}
               zoomControl={true}
               dragging={true}
-              touchZoom={true}
-              doubleClickZoom={true}
+              tap={true}
+              tapTolerance={15}
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
