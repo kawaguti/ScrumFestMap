@@ -177,7 +177,14 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
               ? prefectureEvents
               : eventHistory}
           selectedEvent={selectedEvent}
-          onEventClick={handleMarkerClick}
+          onEventClick={(event) => {
+            handleMarkerClick(event);
+            // 対応する都道府県を選択
+            const prefecture = prefectures.find(p => p.name === event.prefecture);
+            if (prefecture) {
+              onPrefectureSelect(prefecture.id);
+            }
+          }}
         />
       </div>
     </div>
