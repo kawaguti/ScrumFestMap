@@ -44,9 +44,17 @@ export function EventList({ events, selectedEvent, onEventClick }: EventListProp
             "cursor-pointer hover:border-primary transition-colors",
             selectedEvent?.id === event.id && "border-primary"
           )}
-          onClick={(e) => {
-            e.stopPropagation();
-            onEventClick?.(event);
+          onClick={() => {
+            if (onEventClick) {
+              onEventClick(event);
+              // スムーズスクロール
+              setTimeout(() => {
+                const element = document.querySelector('.leaflet-container');
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }, 100);
+            }
           }}>
           <CardHeader>
             <CardTitle>{event.name}</CardTitle>
