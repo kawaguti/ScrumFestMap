@@ -41,8 +41,8 @@ export function EventList({ events, selectedEvent, onEventClick }: EventListProp
         <Card 
           key={event.id}
           className={cn(
-            selectedEvent?.id === event.id && "border-primary",
-            "cursor-pointer hover:border-primary/50 transition-colors group"
+            "cursor-pointer hover:border-primary/50 transition-colors group",
+            selectedEvent?.id === event.id && "border-primary"
           )}
           onClick={() => onEventClick?.(event)}
         >

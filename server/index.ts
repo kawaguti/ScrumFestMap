@@ -74,7 +74,7 @@ app.use((req, res, next) => {
   }
 
   // Get port from environment variable or use default
-  const PORT = process.env.PORT || 5000;
+  const PORT = 5000;
   server.listen(PORT, "0.0.0.0", () => {
     log(`serving on port ${PORT}`);
   });
