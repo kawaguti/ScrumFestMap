@@ -49,18 +49,4 @@
     background: rgba(30, 41, 59, 0.95);  /* slate-800の値を直接rgba指定で不透明度を上げる */
     border: 2.5px solid white;  /* ボーダーを少し太くして存在感を出す */
   }
-
-  .marker-pin-google.selected .marker-head {
-    border: 3px solid hsl(var(--primary));
-    box-shadow: 0 0 0 4px hsl(var(--primary) / 0.3);
-    transform: rotate(-45deg) scale(1.2);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .marker-pin-google.selected .marker-tail {
-    background: hsl(var(--primary));
-    height: 14px;
-    width: 3px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
 }

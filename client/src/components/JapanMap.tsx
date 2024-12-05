@@ -44,32 +44,11 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
   }, [initialSelectedEvent]);
 
   const handleMarkerClick = (event: Event) => {
-    // 同じイベントを選択した場合は選択を解除
-    if (selectedEvent?.id === event.id) {
-      setSelectedEvent(null);
-      return;
-    }
-
     setSelectedEvent(event);
-    // イベント履歴を更新
     setEventHistory(prev => {
       const filtered = prev.filter(e => e.id !== event.id);
       return [event, ...filtered].slice(0, 3);
     });
-    // 対応する都道府県を選択
-    const prefecture = prefectures.find(p => p.name === event.prefecture);
-    if (prefecture) {
-      onPrefectureSelect(prefecture.id);
-    }
-
-    // マップの中心をイベントの位置に移動
-    const coordinates = prefectureCoordinates[event.prefecture];
-    if (coordinates) {
-      const map = document.querySelector('.leaflet-container')?._leafletRef;
-      if (map) {
-        map.setView(coordinates, 7);
-      }
-    }
   };
 
   const prefectureEvents = useMemo(() => {
@@ -148,7 +127,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
                     icon={L.divIcon({
                       className: 'marker-container',
                       html: `
-                        <div class="marker-pin-google ${isFutureEvent ? 'future-event' : 'past-event'} ${selectedEvent?.id === event.id ? 'selected' : ''}">
+                        <div class="marker-pin-google ${isFutureEvent ? 'future-event' : 'past-event'}">
                           <div class="marker-head"></div>
                           <div class="marker-tail"></div>
                         </div>
@@ -198,7 +177,6 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect, initi
               ? prefectureEvents
               : eventHistory}
           selectedEvent={selectedEvent}
-          onEventClick={(event) => handleMarkerClick(event)}
         />
       </div>
     </div>
