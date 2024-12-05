@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useUser } from "../hooks/use-user";
+import { useUser } from "@/hooks/use-user";
 import { Button } from "../components/ui/button";
 import { Link, useLocation } from "wouter";
 import { JapanMap } from "../components/JapanMap";
