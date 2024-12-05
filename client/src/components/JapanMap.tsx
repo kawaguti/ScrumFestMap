@@ -76,7 +76,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="md:col-span-2">
-        <Card className="p-4 mx-4 sm:mx-0">
+        <Card className="p-4 ml-4 mr-4 sm:mx-0">
           <MapContainer
             center={[36.5, 138]}
             zoom={5}
@@ -105,8 +105,6 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                 if (!coordinates) return null;
                 
                 const isFutureEvent = new Date(event.date) > new Date();
-                const markerColor = isFutureEvent ? 'bg-primary' : 'bg-muted';
-                
                 return (
                   <Marker 
                     key={event.id} 
