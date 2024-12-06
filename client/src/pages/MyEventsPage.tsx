@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +21,7 @@ import {
 } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EventForm } from "@/components/EventForm";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -35,15 +35,13 @@ export default function MyEventsPage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [showAllEvents, setShowAllEvents] = useState(false);
 
-  // useEffectを使用してリダイレクト処理を行う
   useEffect(() => {
     if (!user) {
       setLocation("/auth");
     }
   }, [user, setLocation]);
-
-  const [showAllEvents, setShowAllEvents] = useState(false);
 
   const { data: myEvents = [], isLoading: isLoadingMyEvents, error: myEventsError } = useQuery({
     queryKey: ["my-events"],
@@ -105,7 +103,6 @@ export default function MyEventsPage() {
       return response.json();
     },
     onSuccess: (updatedEvent) => {
-      // Immediately update the cache with the new data
       queryClient.setQueryData<Event[]>(["my-events"], (oldEvents) => {
         if (!oldEvents) return [updatedEvent];
         return oldEvents.map((event) =>
@@ -113,7 +110,6 @@ export default function MyEventsPage() {
         );
       });
       
-      // Also invalidate the events query to ensure global list is updated
       queryClient.invalidateQueries({ queryKey: ["events"] });
       
       toast({
@@ -147,13 +143,11 @@ export default function MyEventsPage() {
       return response.json();
     },
     onSuccess: (_, deletedEventId) => {
-      // イベントリストから削除されたイベントを即座に除外
       queryClient.setQueryData<Event[]>(["my-events"], (oldEvents) => {
         if (!oldEvents) return [];
         return oldEvents.filter((event) => event.id !== deletedEventId);
       });
 
-      // グローバルイベントリストも更新
       queryClient.setQueryData<Event[]>(["events"], (oldEvents) => {
         if (!oldEvents) return [];
         return oldEvents.filter((event) => event.id !== deletedEventId);
@@ -298,27 +292,29 @@ export default function MyEventsPage() {
                               削除
                             </Button>
                           </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-background/95 backdrop-blur-sm border-destructive/20">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-xl font-bold bg-gradient-to-r from-destructive to-destructive/80 bg-clip-text text-transparent">
-                            イベントの削除
-                          </AlertDialogTitle>
-                          <AlertDialogDescription className="text-base">
-                            このイベントを削除してもよろしいですか？<br />
-                            この操作は取り消すことができません。
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="bg-background/50 border-input/20">キャンセル</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteEventMutation.mutate(event.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            削除する
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                          <AlertDialogContent className="bg-background/95 backdrop-blur-sm border-destructive/20">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-xl font-bold bg-gradient-to-r from-destructive to-destructive/80 bg-clip-text text-transparent">
+                                イベントの削除
+                              </AlertDialogTitle>
+                              <AlertDialogDescription className="text-base">
+                                このイベントを削除してもよろしいですか？<br />
+                                この操作は取り消すことができません。
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="bg-background/50 border-input/20">キャンセル</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteEventMutation.mutate(event.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                削除する
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -342,6 +338,7 @@ export default function MyEventsPage() {
                 date: new Date(editingEvent.date),
                 website: editingEvent.website || "",
                 description: editingEvent.description || "",
+                youtubePlaylist: editingEvent.youtubePlaylist || "",
               }}
               onSubmit={async (data) => {
                 try {
