@@ -75,7 +75,7 @@ export function EventList({ events, selectedEvent }: EventListProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(event.youtubePlaylist, "_blank")}
+                    onClick={() => event.youtubePlaylist && window.open(event.youtubePlaylist, "_blank")}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     録画一覧へ
