@@ -72,15 +72,11 @@ export function EventList({ events, selectedEvent }: EventListProps) {
                   </Button>
                 )}
                 {event.youtubePlaylist && event.youtubePlaylist.trim() !== "" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(event.youtubePlaylist, "_blank")}
-                    className="hover:text-primary hover:border-primary/50 transition-colors"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    録画を見る
-                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    <a href={event.youtubePlaylist} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      録画を見る
+                    </a>
+                  </p>
                 )}
               </div>
             </div>
