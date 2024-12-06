@@ -60,16 +60,13 @@ export function EventList({ events, selectedEvent }: EventListProps) {
                   </p>
                 )}
               </div>
-              <div className="flex gap-2">
+              <div className="space-y-2">
                 {event.website && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => event.website && window.open(event.website, "_blank")}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Webサイトへ
-                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    <a href={event.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      Webサイトを開く
+                    </a>
+                  </p>
                 )}
                 {event.youtubePlaylist && event.youtubePlaylist.trim() !== "" && (
                   <p className="text-sm text-muted-foreground">
