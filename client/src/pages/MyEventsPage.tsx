@@ -36,7 +36,7 @@ export default function MyEventsPage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [showAllEvents, setShowAllEvents] = useState(false);
+  const [showAllEvents, setShowAllEvents] = useState(true);
 
   // ログインしていない場合は全イベント表示を強制
   useEffect(() => {
@@ -204,7 +204,7 @@ export default function MyEventsPage() {
               variant={showAllEvents ? "default" : "outline"}
               onClick={() => setShowAllEvents(true)}
             >
-              イベント一覧
+              すべてのイベント
             </Button>
             {user && (
               <Button
