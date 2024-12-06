@@ -253,6 +253,13 @@ export default function MyEventsPage() {
                         </a>
                       </p>
                     )}
+                    {event.youtubePlaylist && event.youtubePlaylist.trim() !== "" && (
+                      <p className="text-sm text-muted-foreground">
+                        <a href={event.youtubePlaylist} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          録画を見る
+                        </a>
+                      </p>
+                    )}
                   </div>
                   {user && (event.createdBy === user.id) && (
                     <div className="flex gap-2">
