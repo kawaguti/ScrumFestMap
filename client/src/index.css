@@ -50,3 +50,10 @@
     border: 2.5px solid white;  /* ボーダーを少し太くして存在感を出す */
   }
 }
+  .popup-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 7;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }

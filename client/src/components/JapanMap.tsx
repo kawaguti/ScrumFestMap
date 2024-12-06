@@ -155,7 +155,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                         <p className="text-sm text-muted-foreground">{event.prefecture}</p>
                         <p className="text-sm">{new Date(event.date).toLocaleDateString('ja-JP')}</p>
                         {event.description && (
-                          <p className="text-sm mt-2">{event.description}</p>
+                          <p className="text-sm mt-2 popup-description">{event.description}</p>
                         )}
                         {event.website && (
                           <a
