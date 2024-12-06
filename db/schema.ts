@@ -21,6 +21,7 @@ export const events = pgTable("events", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   isArchived: boolean("is_archived").default(false),
+  youtubePlaylist: text("youtube_playlist"),
 });
 
 export const insertUserSchema = createInsertSchema(users);

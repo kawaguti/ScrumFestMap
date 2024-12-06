@@ -71,6 +71,16 @@ export function EventList({ events, selectedEvent }: EventListProps) {
                     Webサイトへ
                   </Button>
                 )}
+                {event.youtubePlaylist && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => event.youtubePlaylist && window.open(event.youtubePlaylist, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    YouTubeプレイリスト
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
