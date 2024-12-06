@@ -75,13 +75,10 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
               control={form.control}
               name="name"
               render={({ field }) => (
-                <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
-                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">イベント名</FormLabel>
+                <FormItem>
+                  <FormLabel className="text-base font-semibold">イベント名</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
-                    />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -92,11 +89,11 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
               control={form.control}
               name="prefecture"
               render={({ field }) => (
-                <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
-                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">開催都道府県</FormLabel>
+                <FormItem>
+                  <FormLabel className="text-base font-semibold">開催都道府県</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20">
+                      <SelectTrigger>
                         <SelectValue placeholder="都道府県を選択" />
                       </SelectTrigger>
                     </FormControl>
@@ -117,15 +114,15 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
               control={form.control}
               name="date"
               render={({ field }) => (
-                <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
-                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">開催日</FormLabel>
+                <FormItem>
+                  <FormLabel className="text-base font-semibold">開催日</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
                           variant={"outline"}
                           className={cn(
-                            "w-full pl-3 text-left font-normal bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20",
+                            "w-full pl-3 text-left font-normal",
                             !field.value && "text-muted-foreground"
                           )}
                         >
@@ -156,13 +153,12 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
               control={form.control}
               name="website"
               render={({ field }) => (
-                <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
-                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">WebサイトURL（任意）</FormLabel>
+                <FormItem>
+                  <FormLabel className="text-base font-semibold">WebサイトURL（任意）</FormLabel>
                   <FormControl>
                     <Input
                       type="url"
                       {...field}
-                      className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                       value={field.value || ""}
                     />
                   </FormControl>
@@ -175,13 +171,12 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
               control={form.control}
               name="youtubePlaylist"
               render={({ field }) => (
-                <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
-                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">YouTubeプレイリストURL（任意）</FormLabel>
+                <FormItem>
+                  <FormLabel className="text-base font-semibold">YouTubeプレイリストURL（任意）</FormLabel>
                   <FormControl>
                     <Input
                       type="url"
                       {...field}
-                      className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                       value={field.value || ""}
                       placeholder="https://www.youtube.com/playlist?list=..."
                     />
@@ -195,12 +190,12 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
               control={form.control}
               name="description"
               render={({ field }) => (
-                <FormItem className="group transition-all duration-200 hover:scale-[1.01]">
-                  <FormLabel className="text-base font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">イベント説明（任意）</FormLabel>
+                <FormItem>
+                  <FormLabel className="text-base font-semibold">イベント説明（任意）</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      className="bg-background/50 backdrop-blur-sm border-primary/20 shadow-sm transition-all duration-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 min-h-[100px] resize-y"
+                      className="min-h-[100px] resize-y"
                       value={field.value || ""}
                     />
                   </FormControl>
