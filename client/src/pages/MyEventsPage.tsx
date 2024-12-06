@@ -43,7 +43,9 @@ export default function MyEventsPage() {
     }
   }, [user, setLocation]);
 
-  const { data: events = [], isLoading, error } = useQuery({
+  const [showAllEvents, setShowAllEvents] = useState(false);
+
+  const { data: myEvents = [], isLoading: isLoadingMyEvents, error: myEventsError } = useQuery({
     queryKey: ["my-events"],
     queryFn: async () => {
       const response = await fetch("/api/my-events", {
@@ -58,6 +60,26 @@ export default function MyEventsPage() {
     enabled: !!user,
     retry: 1,
   });
+
+  const { data: allEvents = [], isLoading: isLoadingAllEvents, error: allEventsError } = useQuery({
+    queryKey: ["events"],
+    queryFn: async () => {
+      const response = await fetch("/api/events", {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "全イベントの取得に失敗しました");
+      }
+      return response.json();
+    },
+    enabled: !!user,
+    retry: 1,
+  });
+
+  const events = showAllEvents ? allEvents : myEvents;
+  const isLoading = showAllEvents ? isLoadingAllEvents : isLoadingMyEvents;
+  const error = showAllEvents ? allEventsError : myEventsError;
 
   const updateEventMutation = useMutation({
     mutationFn: async (data: Event) => {
@@ -177,26 +199,45 @@ export default function MyEventsPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <header className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">マイイベント</h1>
-        <Button variant="outline" asChild>
-          <Link href="/">ホームへ戻る</Link>
-        </Button>
-      </header>
-      {events.length > 0 && (
-        <div className="flex justify-end">
-          <Button
-            variant="outline"
-            onClick={() => {
-              const markdown = generateEventMarkdown(events);
-              downloadMarkdown(markdown, `my-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
-            }}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            マークダウンでダウンロード
+      <header className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">
+            {showAllEvents ? "全てのイベント" : "マイイベント"}
+          </h1>
+          <Button variant="outline" asChild>
+            <Link href="/">ホームへ戻る</Link>
           </Button>
         </div>
-      )}
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            <Button
+              variant={!showAllEvents ? "default" : "outline"}
+              onClick={() => setShowAllEvents(false)}
+            >
+              マイイベント
+            </Button>
+            <Button
+              variant={showAllEvents ? "default" : "outline"}
+              onClick={() => setShowAllEvents(true)}
+            >
+              全てのイベント
+            </Button>
+          </div>
+          {events.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                const markdown = generateEventMarkdown(events);
+                const prefix = showAllEvents ? "all" : "my";
+                downloadMarkdown(markdown, `${prefix}-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              マークダウンでダウンロード
+            </Button>
+          )}
+        </div>
+      </header>
 
       {events.length === 0 ? (
         <Card>
@@ -235,26 +276,28 @@ export default function MyEventsPage() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingEvent(event)}
-                      className="hover:border-primary/50 hover:text-primary transition-colors"
-                    >
-                      <Edit2 className="h-4 w-4 mr-2" />
-                      編集
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
+                    {(!showAllEvents || event.createdBy === user?.id) && (
+                      <>
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           size="sm"
-                          className="hover:bg-destructive/90 transition-colors"
+                          onClick={() => setEditingEvent(event)}
+                          className="hover:border-primary/50 hover:text-primary transition-colors"
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          削除
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          編集
                         </Button>
-                      </AlertDialogTrigger>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="hover:bg-destructive/90 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              削除
+                            </Button>
+                          </AlertDialogTrigger>
                       <AlertDialogContent className="bg-background/95 backdrop-blur-sm border-destructive/20">
                         <AlertDialogHeader>
                           <AlertDialogTitle className="text-xl font-bold bg-gradient-to-r from-destructive to-destructive/80 bg-clip-text text-transparent">
