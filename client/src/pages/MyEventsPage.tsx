@@ -23,6 +23,8 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EventForm } from "@/components/EventForm";
 import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -206,12 +208,20 @@ export default function MyEventsPage() {
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
             {user && (
-              <Button
-                variant="outline"
-                onClick={() => setShowAllEvents(!showAllEvents)}
+              <RadioGroup
+                defaultValue={showAllEvents ? "all" : "my"}
+                onValueChange={(value) => setShowAllEvents(value === "all")}
+                className="flex items-center space-x-4"
               >
-                {showAllEvents ? "自分のイベントのみ表示" : "全てのイベントを表示"}
-              </Button>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="all" id="all-events" />
+                  <Label htmlFor="all-events">全てのイベント</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="my" id="my-events" />
+                  <Label htmlFor="my-events">自分のイベントのみ</Label>
+                </div>
+              </RadioGroup>
             )}
             {events.length > 0 && (
               <Button
