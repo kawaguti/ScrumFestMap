@@ -75,10 +75,11 @@ export function EventList({ events, selectedEvent }: EventListProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => event.youtubePlaylist && window.open(event.youtubePlaylist, "_blank")}
+                    onClick={() => window.open(event.youtubePlaylist, "_blank")}
+                    className="hover:text-primary hover:border-primary/50 transition-colors"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    録画一覧へ
+                    録画を見る
                   </Button>
                 )}
               </div>
