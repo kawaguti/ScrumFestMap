@@ -11,13 +11,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+// 日付入力用のインポートを削除
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -115,35 +109,27 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
               name="date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base font-semibold">開催日</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP", { locale: ja })
-                          ) : (
-                            <span>日付を選択</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        locale={ja}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <FormLabel className="text-base font-semibold">開催日 (YYYYMMDD)</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="20250101"
+                      value={field.value ? format(field.value, "yyyyMMdd") : ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.length === 8) {
+                          const year = parseInt(value.substring(0, 4));
+                          const month = parseInt(value.substring(4, 6)) - 1;
+                          const day = parseInt(value.substring(6, 8));
+                          const date = new Date(year, month, day);
+                          if (!isNaN(date.getTime())) {
+                            field.onChange(date);
+                          }
+                        }
+                      }}
+                      maxLength={8}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
