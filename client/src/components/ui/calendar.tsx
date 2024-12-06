@@ -52,22 +52,20 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ onClick, ...props }) => (
+        IconLeft: ({ ...props }) => (
           <Button
             variant="ghost"
-            onClick={onClick}
-            className="h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
             {...props}
+            className="h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
         ),
-        IconRight: ({ onClick, ...props }) => (
+        IconRight: ({ ...props }) => (
           <Button
             variant="ghost"
-            onClick={onClick}
-            className="h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
             {...props}
+            className="h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
