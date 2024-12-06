@@ -1,4 +1,5 @@
 import { useForm } from "react-hook-form";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEventSchema } from "@db/schema";
 import {
@@ -107,32 +108,41 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
             <FormField
               control={form.control}
               name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base font-semibold">開催日 (YYYYMMDD)</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="20250101"
-                      value={field.value ? format(field.value, "yyyyMMdd") : ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value.length === 8) {
-                          const year = parseInt(value.substring(0, 4));
-                          const month = parseInt(value.substring(4, 6)) - 1;
-                          const day = parseInt(value.substring(6, 8));
-                          const date = new Date(year, month, day);
-                          if (!isNaN(date.getTime())) {
-                            field.onChange(date);
+              render={({ field }) => {
+                const [inputValue, setInputValue] = useState(
+                  field.value ? format(field.value, "yyyyMMdd") : ""
+                );
+
+                return (
+                  <FormItem>
+                    <FormLabel className="text-base font-semibold">開催日 (YYYYMMDD)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="20250101"
+                        value={inputValue}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 8);
+                          setInputValue(value);
+                          
+                          if (value.length === 8) {
+                            const year = parseInt(value.substring(0, 4));
+                            const month = parseInt(value.substring(4, 6)) - 1;
+                            const day = parseInt(value.substring(6, 8));
+                            const date = new Date(year, month, day);
+                            
+                            if (!isNaN(date.getTime()) && date.getMonth() === month) {
+                              field.onChange(date);
+                            }
+                          } else {
+                            field.onChange(undefined);
                           }
-                        }
-                      }}
-                      maxLength={8}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
