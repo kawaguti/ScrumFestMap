@@ -199,22 +199,7 @@ export default function MyEventsPage() {
           </Button>
         </div>
         <div className="flex justify-between items-center">
-          <div className="flex gap-2">
-            <Button
-              variant={showAllEvents ? "default" : "outline"}
-              onClick={() => setShowAllEvents(true)}
-            >
-              すべてのイベント
-            </Button>
-            {user && (
-              <Button
-                variant={!showAllEvents ? "default" : "outline"}
-                onClick={() => setShowAllEvents(false)}
-              >
-                マイイベント
-              </Button>
-            )}
-          </div>
+          
           {events.length > 0 && (
             <Button
               variant="outline"
