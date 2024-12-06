@@ -157,26 +157,28 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                         {event.description && (
                           <p className="text-sm mt-2 popup-description">{event.description}</p>
                         )}
-                        {event.website && (
-                          <a
-                            href={event.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-500 hover:text-blue-700 block"
-                          >
-                            イベントサイトへ
-                          </a>
-                        )}
-                        {event.youtubePlaylist && event.youtubePlaylist.trim() !== "" && (
-                          <a
-                            href={event.youtubePlaylist}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-500 hover:text-blue-700 mt-1 block"
-                          >
-                            録画を見る
-                          </a>
-                        )}
+                        <div className="flex gap-4 mt-2">
+                          {event.website && (
+                            <a
+                              href={event.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-500 hover:text-blue-700"
+                            >
+                              イベントサイトへ
+                            </a>
+                          )}
+                          {event.youtubePlaylist && event.youtubePlaylist.trim() !== "" && (
+                            <a
+                              href={event.youtubePlaylist}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-500 hover:text-blue-700"
+                            >
+                              録画を見る
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </Popup>
                   </Marker>
