@@ -19,6 +19,10 @@ export function generateEventMarkdown(events: Event[]): string {
       markdown += `- Webサイト: ${event.website}\n`;
     }
     
+    if (event.youtubePlaylist && event.youtubePlaylist.trim() !== "") {
+      markdown += `- 録画一覧: ${event.youtubePlaylist}\n`;
+    }
+    
     return markdown;
   }).join('\n---\n\n');
   
