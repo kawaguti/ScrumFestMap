@@ -162,9 +162,19 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                             href={event.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm text-blue-500 hover:text-blue-700"
+                            className="text-sm text-blue-500 hover:text-blue-700 block"
                           >
                             イベントサイトへ
+                          </a>
+                        )}
+                        {event.youtubePlaylist && event.youtubePlaylist.trim() !== "" && (
+                          <a
+                            href={event.youtubePlaylist}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-500 hover:text-blue-700 mt-1 block"
+                          >
+                            録画を見る
                           </a>
                         )}
                       </div>
