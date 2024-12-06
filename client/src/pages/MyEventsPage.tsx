@@ -18,6 +18,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EventForm } from "@/components/EventForm";
@@ -72,7 +73,7 @@ export default function MyEventsPage() {
       }
       return response.json();
     },
-    enabled: !!user,
+    enabled: true,
     retry: 1,
   });
 
@@ -169,10 +170,6 @@ export default function MyEventsPage() {
     },
   });
 
-  if (!user) {
-    return null;
-  }
-
   if (isLoading) {
     return (
       <div className="container mx-auto py-6 flex justify-center items-center min-h-[50vh]">
@@ -238,9 +235,11 @@ export default function MyEventsPage() {
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <p>登録されているイベントはありません。</p>
-            <Button variant="outline" asChild className="mt-4">
-              <Link href="/">新しいイベントを登録する</Link>
-            </Button>
+            {user && (
+              <Button variant="outline" asChild className="mt-4">
+                <Link href="/">新しいイベントを登録する</Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -270,53 +269,51 @@ export default function MyEventsPage() {
                       </p>
                     )}
                   </div>
-                  <div className="flex gap-2">
-                    {(!showAllEvents || event.createdBy === user?.id) && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditingEvent(event)}
-                          className="hover:border-primary/50 hover:text-primary transition-colors"
-                        >
-                          <Edit2 className="h-4 w-4 mr-2" />
-                          編集
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="hover:bg-destructive/90 transition-colors"
+                  {user && (event.createdBy === user.id) && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingEvent(event)}
+                        className="hover:border-primary/50 hover:text-primary transition-colors"
+                      >
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        編集
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="hover:bg-destructive/90 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            削除
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-background/95 backdrop-blur-sm border-destructive/20">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-xl font-bold bg-gradient-to-r from-destructive to-destructive/80 bg-clip-text text-transparent">
+                              イベントの削除
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-base">
+                              このイベントを削除してもよろしいですか？<br />
+                              この操作は取り消すことができません。
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="bg-background/50 border-input/20">キャンセル</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteEventMutation.mutate(event.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              削除
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="bg-background/95 backdrop-blur-sm border-destructive/20">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle className="text-xl font-bold bg-gradient-to-r from-destructive to-destructive/80 bg-clip-text text-transparent">
-                                イベントの削除
-                              </AlertDialogTitle>
-                              <AlertDialogDescription className="text-base">
-                                このイベントを削除してもよろしいですか？<br />
-                                この操作は取り消すことができません。
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel className="bg-background/50 border-input/20">キャンセル</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteEventMutation.mutate(event.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                削除する
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </>
-                    )}
-                  </div>
+                              削除する
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
