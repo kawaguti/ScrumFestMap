@@ -37,11 +37,12 @@ export default function MyEventsPage() {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [showAllEvents, setShowAllEvents] = useState(false);
 
+  // ログインしていない場合は全イベント表示を強制
   useEffect(() => {
     if (!user) {
-      setLocation("/auth");
+      setShowAllEvents(true);
     }
-  }, [user, setLocation]);
+  }, [user]);
 
   const { data: myEvents = [], isLoading: isLoadingMyEvents, error: myEventsError } = useQuery({
     queryKey: ["my-events"],
@@ -195,9 +196,7 @@ export default function MyEventsPage() {
     <div className="container mx-auto py-6 space-y-6">
       <header className="space-y-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">
-            {showAllEvents ? "全てのイベント" : "マイイベント"}
-          </h1>
+          <h1 className="text-3xl font-bold">イベント一覧</h1>
           <Button variant="outline" asChild>
             <Link href="/">ホームへ戻る</Link>
           </Button>
@@ -205,17 +204,19 @@ export default function MyEventsPage() {
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
             <Button
-              variant={!showAllEvents ? "default" : "outline"}
-              onClick={() => setShowAllEvents(false)}
-            >
-              マイイベント
-            </Button>
-            <Button
               variant={showAllEvents ? "default" : "outline"}
               onClick={() => setShowAllEvents(true)}
             >
-              全てのイベント
+              イベント一覧
             </Button>
+            {user && (
+              <Button
+                variant={!showAllEvents ? "default" : "outline"}
+                onClick={() => setShowAllEvents(false)}
+              >
+                マイイベント
+              </Button>
+            )}
           </div>
           {events.length > 0 && (
             <Button
