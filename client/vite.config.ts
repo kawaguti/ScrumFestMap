@@ -22,7 +22,16 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    host: true,
+    host: "0.0.0.0",
+    hmr: {
+      clientPort: 443,
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      }
+    }
   },
   build: {
     outDir: "../dist/public",
