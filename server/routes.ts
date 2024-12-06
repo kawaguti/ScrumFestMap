@@ -299,6 +299,7 @@ export function setupRoutes(app: Express) {
         .update(events)
         .set({
           ...result.data,
+          youtubePlaylist: req.body.youtubePlaylist || "",
           updatedAt: new Date(),
         })
         .where(eq(events.id, eventId))

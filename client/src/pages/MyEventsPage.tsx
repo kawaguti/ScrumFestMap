@@ -70,6 +70,7 @@ export default function MyEventsPage() {
           date: data.date,
           website: data.website || "",
           description: data.description || "",
+          youtubePlaylist: data.youtubePlaylist || "",
         }),
         credentials: "include",
       });
