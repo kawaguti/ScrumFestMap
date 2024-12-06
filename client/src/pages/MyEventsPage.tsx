@@ -199,20 +199,29 @@ export default function MyEventsPage() {
           </Button>
         </div>
         <div className="flex justify-between items-center">
-          
-          {events.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                const markdown = generateEventMarkdown(events);
-                const prefix = showAllEvents ? "all" : "my";
-                downloadMarkdown(markdown, `${prefix}-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
-              }}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              マークダウンでダウンロード
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {user && (
+              <Button
+                variant="outline"
+                onClick={() => setShowAllEvents(!showAllEvents)}
+              >
+                {showAllEvents ? "自分のイベントのみ表示" : "全てのイベントを表示"}
+              </Button>
+            )}
+            {events.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const markdown = generateEventMarkdown(events);
+                  const prefix = showAllEvents ? "all" : "my";
+                  downloadMarkdown(markdown, `${prefix}-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                マークダウンでダウンロード
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
