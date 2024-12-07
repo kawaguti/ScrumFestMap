@@ -4,8 +4,51 @@ import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { Label } from "../../components/ui/label";
 import type { Event } from "@db/schema";
 
-// 静的なイベントデータ（後でJSONファイルとして分離）
-const staticEvents: Event[] = [];
+// 静的なイベントデータ（サンプル）
+const staticEvents: Event[] = [
+  {
+    id: 1,
+    name: "Regional Scrum Gathering Tokyo 2024",
+    description: "日本最大級のスクラムイベント",
+    date: "2024-01-15",
+    prefecture: "東京都",
+    venue: "ベルサール汐留",
+    organizer: "Scrum Inc. Japan",
+    url: "https://scrumgatheringtokyo.org",
+    videoUrl: "https://youtube.com/example",
+    createdAt: new Date("2023-12-01").toISOString(),
+    updatedAt: new Date("2023-12-01").toISOString(),
+    userId: "system"
+  },
+  {
+    id: 2,
+    name: "Scrum Fest Sapporo 2024",
+    description: "北海道のスクラムコミュニティイベント",
+    date: "2024-02-20",
+    prefecture: "北海道",
+    venue: "札幌コンベンションセンター",
+    organizer: "Scrum Fest Sapporo 実行委員会",
+    url: "https://example.com/sapporo",
+    videoUrl: "https://youtube.com/example2",
+    createdAt: new Date("2023-12-01").toISOString(),
+    updatedAt: new Date("2023-12-01").toISOString(),
+    userId: "system"
+  },
+  {
+    id: 3,
+    name: "Scrum Fest Fukuoka 2024",
+    description: "九州のスクラムコミュニティイベント",
+    date: "2024-03-15",
+    prefecture: "福岡県",
+    venue: "福岡国際会議場",
+    organizer: "Scrum Fest Fukuoka 実行委員会",
+    url: "https://example.com/fukuoka",
+    videoUrl: "https://youtube.com/example3",
+    createdAt: new Date("2023-12-01").toISOString(),
+    updatedAt: new Date("2023-12-01").toISOString(),
+    userId: "system"
+  }
+];
 
 export default function StaticHomePage() {
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
