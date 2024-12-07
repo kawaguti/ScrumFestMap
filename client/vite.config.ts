@@ -31,23 +31,10 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
       }
-    },
-    fs: {
-      strict: false,
-      allow: ['..']
     }
   },
   build: {
     outDir: "../dist/public",
     emptyOutDir: true,
-    rollupOptions: {
-      input: {
-        main: path.resolve(__dirname, 'index.html'),
-        static: path.resolve(__dirname, 'static.html')
-      },
-      output: {
-        manualChunks: undefined
-      }
-    }
-  }
+  },
 });

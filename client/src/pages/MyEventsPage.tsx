@@ -18,7 +18,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  
+  CardDescription,
 } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EventForm } from "@/components/EventForm";
