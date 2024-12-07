@@ -33,6 +33,11 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
       }
+    },
+    open: false,
+    fs: {
+      strict: false,
+      allow: ['.']
     }
   },
   preview: {
@@ -45,8 +50,8 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: './index.html',
-        static: './static.html'
+        main: path.resolve(__dirname, 'index.html'),
+        static: path.resolve(__dirname, 'static.html')
       },
     },
   },
