@@ -5,13 +5,14 @@ import checker from "vite-plugin-checker";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
+  root: path.resolve(__dirname),
   base: '/',
   plugins: [
     react(),
     checker({ typescript: true, overlay: false }),
     runtimeErrorOverlay(),
   ],
-  publicDir: 'public',
+  publicDir: path.resolve(__dirname, 'public'),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
@@ -49,9 +50,12 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, 'index.html'),
-        static: path.resolve(__dirname, 'static.html')
+        main: path.resolve(__dirname, './index.html'),
+        static: path.resolve(__dirname, './static.html')
       }
     }
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom']
   }
 });
