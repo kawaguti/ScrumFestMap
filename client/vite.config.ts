@@ -38,7 +38,10 @@ export default defineConfig({
     fs: {
       strict: false,
       allow: ['..']
-    }
+    },
+    middlewareMode: false,
+    // Viteの開発サーバーがindex.htmlとstatic.htmlを直接提供できるように設定
+    open: '/index.html'
   },
   preview: {
     port: 5173,
@@ -50,8 +53,8 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, './index.html'),
-        static: path.resolve(__dirname, './static.html')
+        main: path.resolve(__dirname, 'index.html'),
+        static: path.resolve(__dirname, 'static.html')
       }
     }
   },
