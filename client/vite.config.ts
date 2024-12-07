@@ -34,7 +34,6 @@ export default defineConfig({
         changeOrigin: true,
       }
     },
-    open: false,
     fs: {
       strict: false,
       allow: ['..']
