@@ -5,11 +5,13 @@ import checker from "vite-plugin-checker";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
+  base: '/',
   plugins: [
     react(),
     checker({ typescript: true, overlay: false }),
     runtimeErrorOverlay(),
   ],
+  publicDir: 'public',
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
