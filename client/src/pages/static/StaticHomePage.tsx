@@ -40,7 +40,7 @@ function convertToEvent(data: ExportedEvent): Event {
 }
 
 // 静的イベントデータの変換
-const staticEvents: Event[] = (eventsData as ExportedEvent[]).map(convertToEvent);
+const staticEvents: Event[] = (eventsData as unknown as ExportedEvent[]).map(convertToEvent);
 
 export default function StaticHomePage() {
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);

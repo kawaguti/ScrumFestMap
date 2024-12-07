@@ -47,6 +47,9 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, 'index.html'),
         static: path.resolve(__dirname, 'static.html')
+      },
+      output: {
+        manualChunks: undefined
       }
     }
   },
