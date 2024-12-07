@@ -46,6 +46,14 @@ args = "Client"
 task = "workflow.run"
 args = "Client Dev"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Backend Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Frontend Dev"
+
 [[workflows.workflow]]
 name = "Start Application"
 author = "agent"
@@ -93,6 +101,36 @@ waitForPort = 5173
 
 [[workflows.workflow]]
 name = "Client Dev"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd client && npm run dev"
+waitForPort = 5173
+
+[[workflows.workflow]]
+name = "Backend Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "tsx watch --clear-screen=false server/index.ts"
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Frontend Dev"
 author = "agent"
 
 [workflows.workflow.metadata]
