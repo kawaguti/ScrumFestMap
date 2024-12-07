@@ -4,51 +4,43 @@ import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { Label } from "../../components/ui/label";
 import type { Event } from "@db/schema";
 
-// 静的なイベントデータ（サンプル）
-const staticEvents: Event[] = [
-  {
-    id: 1,
-    name: "Regional Scrum Gathering Tokyo 2024",
-    description: "日本最大級のスクラムイベント",
-    date: "2024-01-15",
-    prefecture: "東京都",
-    venue: "ベルサール汐留",
-    organizer: "Scrum Inc. Japan",
-    url: "https://scrumgatheringtokyo.org",
-    videoUrl: "https://youtube.com/example",
-    createdAt: new Date("2023-12-01").toISOString(),
-    updatedAt: new Date("2023-12-01").toISOString(),
-    userId: "system"
-  },
-  {
-    id: 2,
-    name: "Scrum Fest Sapporo 2024",
-    description: "北海道のスクラムコミュニティイベント",
-    date: "2024-02-20",
-    prefecture: "北海道",
-    venue: "札幌コンベンションセンター",
-    organizer: "Scrum Fest Sapporo 実行委員会",
-    url: "https://example.com/sapporo",
-    videoUrl: "https://youtube.com/example2",
-    createdAt: new Date("2023-12-01").toISOString(),
-    updatedAt: new Date("2023-12-01").toISOString(),
-    userId: "system"
-  },
-  {
-    id: 3,
-    name: "Scrum Fest Fukuoka 2024",
-    description: "九州のスクラムコミュニティイベント",
-    date: "2024-03-15",
-    prefecture: "福岡県",
-    venue: "福岡国際会議場",
-    organizer: "Scrum Fest Fukuoka 実行委員会",
-    url: "https://example.com/fukuoka",
-    videoUrl: "https://youtube.com/example3",
-    createdAt: new Date("2023-12-01").toISOString(),
-    updatedAt: new Date("2023-12-01").toISOString(),
-    userId: "system"
-  }
-];
+// 静的なイベントデータをインポート
+import eventsData from '../../data/events.json';
+
+// データベースからエクスポートされたJSONデータの型を定義
+interface ExportedEvent {
+  id: number;
+  name: string;
+  prefecture: string;
+  date: string;
+  website: string | null;
+  description: string | null;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string;
+  is_archived: boolean;
+  youtube_playlist: string | null;
+}
+
+// JSONデータをイベント型に変換する関数
+function convertToEvent(data: ExportedEvent): Event {
+  return {
+    id: data.id,
+    name: data.name,
+    prefecture: data.prefecture,
+    date: new Date(data.date),
+    website: data.website,
+    description: data.description,
+    createdBy: data.created_by,
+    createdAt: new Date(data.created_at),
+    updatedAt: new Date(data.updated_at),
+    isArchived: data.is_archived,
+    youtubePlaylist: data.youtube_playlist
+  };
+}
+
+// 静的イベントデータの変換
+const staticEvents: Event[] = (eventsData as ExportedEvent[]).map(convertToEvent);
 
 export default function StaticHomePage() {
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
