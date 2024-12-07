@@ -38,15 +38,7 @@ export default defineConfig({
     fs: {
       strict: false,
       allow: ['..']
-    },
-    middlewareMode: false,
-    // Viteの開発サーバーがindex.htmlとstatic.htmlを直接提供できるように設定
-    open: '/index.html'
-  },
-  preview: {
-    port: 5173,
-    strictPort: true,
-    host: "0.0.0.0",
+    }
   },
   build: {
     outDir: "../dist/public",
