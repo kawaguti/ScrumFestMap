@@ -65,20 +65,13 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // 開発環境の場合はViteサーバーを使用
+  // importantly only setup vite in development and after
+  // setting up all the other routes so the catch-all route
+  // doesn't interfere with the other routes
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
-    // 本番環境では静的ファイルを配信
-    const publicPath = path.resolve(__dirname, "../dist/public");
-    app.use(express.static(publicPath));
-    
-    // HTML5フォールバック: すべてのリクエストをindex.htmlまたはstatic.htmlにルーティング
-    app.get("*", (req, res) => {
-      const isStatic = req.path.startsWith("/static");
-      const htmlFile = isStatic ? "static.html" : "index.html";
-      res.sendFile(path.join(publicPath, htmlFile));
-    });
+    serveStatic(app);
   }
 
   // ALWAYS serve the app on port 5000
