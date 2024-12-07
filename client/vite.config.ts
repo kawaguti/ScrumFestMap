@@ -37,7 +37,7 @@ export default defineConfig({
     open: false,
     fs: {
       strict: false,
-      allow: ['.']
+      allow: ['..']
     }
   },
   preview: {
@@ -50,8 +50,8 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, 'index.html'),
-        static: path.resolve(__dirname, 'static.html')
+        main: path.resolve(__dirname, './index.html'),
+        static: path.resolve(__dirname, './static.html')
       },
     },
   },
