@@ -27,29 +27,42 @@ export default defineConfig({
     strictPort: true,
     host: "0.0.0.0",
     hmr: {
-      clientPort: 443,
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173,
+      clientPort: 5173,
     },
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
+        secure: false,
       }
     },
     fs: {
       strict: false,
       allow: ['..']
+    },
+    watch: {
+      usePolling: true,
+      interval: 1000,
     }
   },
   build: {
     outDir: "../dist/public",
     emptyOutDir: true,
+    assetsDir: "assets",
+    manifest: true,
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
         static: path.resolve(__dirname, 'static.html')
       },
       output: {
-        manualChunks: undefined
+        manualChunks: undefined,
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js'
       }
     }
   },

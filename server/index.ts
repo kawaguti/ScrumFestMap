@@ -3,6 +3,7 @@ import { setupRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import { createServer } from "http";
 import { setupAuth } from "./auth";
+import path from "path";
 
 function log(message: string) {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -64,13 +65,20 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // 開発環境の場合はViteサーバーを使用
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
-    serveStatic(app);
+    // 本番環境では静的ファイルを配信
+    const publicPath = path.resolve(__dirname, "../dist/public");
+    app.use(express.static(publicPath));
+    
+    // HTML5フォールバック: すべてのリクエストをindex.htmlまたはstatic.htmlにルーティング
+    app.get("*", (req, res) => {
+      const isStatic = req.path.startsWith("/static");
+      const htmlFile = isStatic ? "static.html" : "index.html";
+      res.sendFile(path.join(publicPath, htmlFile));
+    });
   }
 
   // ALWAYS serve the app on port 5000
