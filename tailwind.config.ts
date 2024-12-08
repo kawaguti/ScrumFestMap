@@ -5,8 +5,6 @@ export default {
   content: [
     "./client/src/**/*.{js,jsx,ts,tsx}",
     "./client/index.html",
-    "./client/src/pages/**/*.{js,jsx,ts,tsx}",
-    "./client/src/components/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
     container: {

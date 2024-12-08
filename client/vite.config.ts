@@ -6,20 +6,25 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
   plugins: [
-    react(),
+    react({
+      jsxRuntime: 'automatic',
+      jsxImportSource: 'react',
+      babel: {
+        plugins: [
+          ['@babel/plugin-transform-react-jsx', { runtime: 'automatic' }]
+        ]
+      }
+    }),
     checker({ typescript: true, overlay: false }),
     runtimeErrorOverlay(),
   ],
   css: {
-    postcss: {
-      plugins: {
-        'postcss-import': {},
-        'tailwindcss/nesting': {},
-        'tailwindcss': {},
-        'autoprefixer': {},
-      }
-    },
+    postcss: path.resolve(__dirname, 'postcss.config.cjs'),
     devSourcemap: true,
+    modules: {
+      localsConvention: 'camelCase',
+      generateScopedName: '[name]__[local]__[hash:base64:5]'
+    }
   },
   resolve: {
     alias: {
@@ -36,8 +41,10 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': 'http://localhost:5000'
-    }
+    },
+    origin: 'http://localhost:3000'
   },
+  base: '/',
   build: {
     outDir: "../dist/public",
     emptyOutDir: true,
