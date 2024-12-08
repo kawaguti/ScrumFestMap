@@ -11,7 +11,7 @@ export default defineConfig({
     runtimeErrorOverlay(),
   ],
   css: {
-    postcss: '../postcss.config.cjs',
+    postcss: true,
   },
   resolve: {
     alias: {
