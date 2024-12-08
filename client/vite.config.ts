@@ -6,22 +6,10 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
   plugins: [
-    react({
-      jsxRuntime: 'automatic',
-      jsxImportSource: 'react',
-      babel: {
-        plugins: [
-          ['@babel/plugin-transform-react-jsx', { runtime: 'automatic' }]
-        ]
-      }
-    }),
+    react(),
     checker({ typescript: true, overlay: false }),
     runtimeErrorOverlay(),
   ],
-  css: {
-    postcss: './postcss.config.cjs',
-    devSourcemap: true,
-  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
@@ -32,15 +20,19 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
-    host: "0.0.0.0",
+    port: 5173,
     strictPort: true,
-    proxy: {
-      '/api': 'http://localhost:5000'
+    host: "0.0.0.0",
+    hmr: {
+      clientPort: 443,
     },
-    origin: 'http://localhost:3000'
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      }
+    }
   },
-  base: '/',
   build: {
     outDir: "../dist/public",
     emptyOutDir: true,
