@@ -11,7 +11,14 @@ export default defineConfig({
     runtimeErrorOverlay(),
   ],
   css: {
-    postcss: './postcss.config.cjs',
+    postcss: {
+      plugins: {
+        'postcss-import': {},
+        'tailwindcss/nesting': {},
+        'tailwindcss': {},
+        'autoprefixer': {},
+      }
+    },
     devSourcemap: true,
   },
   resolve: {
