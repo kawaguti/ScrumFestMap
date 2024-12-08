@@ -11,7 +11,7 @@ export default defineConfig({
     runtimeErrorOverlay(),
   ],
   css: {
-    postcss: '../postcss.config.cjs',
+    postcss: './postcss.config.cjs',
   },
   resolve: {
     alias: {
@@ -24,18 +24,9 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    strictPort: true,
-    host: true,
-    hmr: {
-      host: "0.0.0.0",
-      port: 3000,
-      clientPort: 3000
-    },
+    host: "0.0.0.0",
     proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      }
+      '/api': 'http://localhost:5000'
     }
   },
   build: {

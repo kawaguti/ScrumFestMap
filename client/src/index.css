@@ -8,7 +8,7 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased bg-white dark:bg-slate-950 text-black dark:text-white;
   }
 }
 
