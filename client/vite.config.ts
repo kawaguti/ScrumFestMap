@@ -19,12 +19,8 @@ export default defineConfig({
     runtimeErrorOverlay(),
   ],
   css: {
-    postcss: path.resolve(__dirname, 'postcss.config.cjs'),
+    postcss: './postcss.config.cjs',
     devSourcemap: true,
-    modules: {
-      localsConvention: 'camelCase',
-      generateScopedName: '[name]__[local]__[hash:base64:5]'
-    }
   },
   resolve: {
     alias: {
