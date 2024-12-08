@@ -10,6 +10,9 @@ export default defineConfig({
     checker({ typescript: true, overlay: false }),
     runtimeErrorOverlay(),
   ],
+  css: {
+    postcss: '../postcss.config.cjs',
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
