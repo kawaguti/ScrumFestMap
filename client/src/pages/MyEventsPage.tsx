@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { useLocation } from "wouter";
 import {
@@ -7,13 +7,21 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Loader2 } from "lucide-react";
+import { Loader2, Edit, Save, X } from "lucide-react";
 import type { Event } from "@db/schema";
+import { EventForm } from "@/components/EventForm";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 async function fetchAllEvents(): Promise<Event[]> {
   const response = await fetch("/api/events", {
@@ -29,12 +37,48 @@ export default function MyEventsPage() {
   const { user } = useUser();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
   const { data: events = [], isLoading, error } = useQuery({
     queryKey: ["events"],
     queryFn: fetchAllEvents,
     enabled: true,
     retry: 1,
+  });
+
+  const updateEventMutation = useMutation({
+    mutationFn: async (updatedEvent: Event) => {
+      const response = await fetch(`/api/events/${updatedEvent.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedEvent),
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to update event");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      toast({
+        title: "更新完了",
+        description: "イベント情報を更新しました。",
+      });
+      setEditingEvent(null);
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: "イベントの更新に失敗しました。",
+      });
+    },
   });
 
   // ローディング中の表示
@@ -72,6 +116,31 @@ export default function MyEventsPage() {
         </Button>
       </header>
 
+      <Dialog open={!!editingEvent} onOpenChange={(open) => !open && setEditingEvent(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>イベントの編集</DialogTitle>
+          </DialogHeader>
+          {editingEvent && (
+            <EventForm
+              defaultValues={{
+                name: editingEvent.name,
+                prefecture: editingEvent.prefecture,
+                date: new Date(editingEvent.date),
+                website: editingEvent.website || "",
+                description: editingEvent.description || "",
+                youtubePlaylist: editingEvent.youtubePlaylist || "",
+              }}
+              onSubmit={async (data) => {
+                await updateEventMutation.mutateAsync({
+                  ...editingEvent,
+                  ...data,
+                });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
       {sortedEvents.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
@@ -83,31 +152,53 @@ export default function MyEventsPage() {
           {sortedEvents.map((event) => (
             <Card key={event.id}>
               <CardHeader>
-                <CardTitle>{event.name}</CardTitle>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>{event.name}</CardTitle>
+                    <CardDescription>
+                      {format(new Date(event.date), "yyyy年M月d日(E)", {
+                        locale: ja,
+                      })}
+                    </CardDescription>
+                  </div>
+                  {event.createdBy === user?.id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingEvent(event)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      編集
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   <p>開催地: {event.prefecture}</p>
-                  <p>開催日: {format(new Date(event.date), "yyyy年M月d日(E)", {
-                    locale: ja,
-                  })}</p>
                   {event.description && (
                     <p className="text-sm text-muted-foreground mt-2">{event.description}</p>
                   )}
-                  {event.website && (
-                    <p className="text-sm text-muted-foreground">
-                      <a href={event.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  <div className="flex gap-2 mt-4">
+                    {event.website && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(event.website, "_blank")}
+                      >
                         Webサイトを開く
-                      </a>
-                    </p>
-                  )}
-                  {event.youtubePlaylist && event.youtubePlaylist.trim() !== "" && (
-                    <p className="text-sm text-muted-foreground">
-                      <a href={event.youtubePlaylist} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      </Button>
+                    )}
+                    {event.youtubePlaylist && event.youtubePlaylist.trim() !== "" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(event.youtubePlaylist, "_blank")}
+                      >
                         録画を見る
-                      </a>
-                    </p>
-                  )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
