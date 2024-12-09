@@ -3,8 +3,12 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --border: 219 13% 91%;
+  }
+
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
 
   body {
