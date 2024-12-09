@@ -9,7 +9,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 export const db = drizzle({
-  connectionString: process.env.DATABASE_URL,
+  connection: process.env.DATABASE_URL,
   schema,
-  websockets: ws,
+  ws: ws,
 });
