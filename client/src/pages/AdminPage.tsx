@@ -296,38 +296,19 @@ export default function AdminPage() {
                         {users.find(u => u.id === event.createdBy)?.username || event.createdBy}
                       </TableCell>
                       <TableCell>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="hover:bg-destructive/90 transition-colors"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              削除
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="bg-background/95 backdrop-blur-sm border-destructive/20">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle className="text-xl font-bold bg-gradient-to-r from-destructive to-destructive/80 bg-clip-text text-transparent">
-                                イベントの削除
-                              </AlertDialogTitle>
-                              <AlertDialogDescription className="text-base">
-                                このイベントを削除してもよろしいですか？<br />
-                                この操作は取り消すことができません。
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel className="bg-background/50 border-input/20">キャンセル</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteEventMutation.mutate(event.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                削除する
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="hover:bg-destructive/90 transition-colors"
+                          onClick={() => {
+                            if (confirm("このイベントを削除してもよろしいですか？\nこの操作は取り消すことができません。")) {
+                              deleteEventMutation.mutate(event.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          削除
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
