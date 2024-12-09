@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { Link, useLocation } from "wouter";
@@ -77,14 +77,6 @@ export default function MyEventsPage() {
     enabled: true,
     retry: 1,
   });
-
-  // イベントを日付の降順（最新が最初）でソート
-  const events = showAllEvents ? allEvents : myEvents;
-  const sortedEvents = useMemo(() => {
-    return [...events].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [events]);
-  const isLoading = showAllEvents ? isLoadingAllEvents : isLoadingMyEvents;
-  const error = showAllEvents ? allEventsError : myEventsError;
 
   const updateEventMutation = useMutation({
     mutationFn: async (data: Event) => {
@@ -175,7 +167,8 @@ export default function MyEventsPage() {
     },
   });
 
-  if (isLoading) {
+  // ローディング中の表示
+  if (isLoadingAllEvents || (user && isLoadingMyEvents)) {
     return (
       <div className="container mx-auto py-6 flex justify-center items-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -183,7 +176,8 @@ export default function MyEventsPage() {
     );
   }
 
-  if (error) {
+  // エラー時の表示
+  if (allEventsError || (user && myEventsError)) {
     return (
       <div className="container mx-auto py-6 text-center text-destructive">
         <p>エラーが発生しました。再度お試しください。</p>
@@ -194,31 +188,12 @@ export default function MyEventsPage() {
     );
   }
 
-  // ログインしていない場合は全イベント表示を強制
-  useEffect(() => {
-    if (!user) {
-      setShowAllEvents(true);
-    }
-  }, [user]);
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto py-6 flex justify-center items-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto py-6 text-center text-destructive">
-        <p>エラーが発生しました。再度お試しください。</p>
-        <Button variant="outline" className="mt-4" onClick={() => setLocation("/")}>
-          ホームへ戻る
-        </Button>
-      </div>
-    );
-  }
+  // イベントデータの準備
+  const events = showAllEvents ? allEvents : myEvents;
+  // 日付でソート（新しい順）
+  const sortedEvents = [...events].sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -247,11 +222,11 @@ export default function MyEventsPage() {
                 </div>
               </RadioGroup>
             )}
-            {events.length > 0 && (
+            {sortedEvents.length > 0 && (
               <Button
                 variant="outline"
                 onClick={() => {
-                  const markdown = generateEventMarkdown(events);
+                  const markdown = generateEventMarkdown(sortedEvents);
                   const prefix = showAllEvents ? "all" : "my";
                   downloadMarkdown(markdown, `${prefix}-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
                 }}
@@ -264,7 +239,7 @@ export default function MyEventsPage() {
         </div>
       </header>
 
-      {events.length === 0 ? (
+      {sortedEvents.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <p>登録されているイベントはありません。</p>
@@ -277,7 +252,7 @@ export default function MyEventsPage() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {events.map((event: Event) => (
+          {sortedEvents.map((event) => (
             <Card key={event.id} className="group hover:shadow-lg transition-all duration-200">
               <CardHeader>
                 <CardTitle className="group-hover:text-primary transition-colors">
