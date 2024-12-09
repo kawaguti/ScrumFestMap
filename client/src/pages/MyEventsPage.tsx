@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Loader2, Edit, Download } from "lucide-react";
+import { Loader2, Edit, Download, Trash2 } from "lucide-react";
 import type { Event } from "@db/schema";
 import { EventForm } from "@/components/EventForm";
 import {
@@ -22,6 +22,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
 
 async function fetchAllEvents(): Promise<Event[]> {
@@ -86,6 +97,40 @@ export default function MyEventsPage() {
         variant: "destructive",
         title: "エラー",
         description: error instanceof Error ? error.message : "イベントの更新に失敗しました。",
+      });
+    },
+  });
+
+  const deleteEventMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "イベントの削除に失敗しました");
+      }
+      
+      return response.json();
+    },
+    onSuccess: (_, deletedEventId) => {
+      queryClient.setQueryData<Event[]>(["events"], (oldEvents) => {
+        if (!oldEvents) return [];
+        return oldEvents.filter((event) => event.id !== deletedEventId);
+      });
+      toast({
+        title: "削除完了",
+        description: "イベントを削除しました。",
+      });
+    },
+    onError: (error) => {
+      console.error("Delete error:", error);
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: error instanceof Error ? error.message : "イベントの削除に失敗しました。",
       });
     },
   });
@@ -225,6 +270,42 @@ export default function MyEventsPage() {
                       >
                         録画を見る
                       </Button>
+                    )}
+                    {event.createdBy === user?.id && (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingEvent(event)}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          編集
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              削除
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>イベントの削除</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                このイベントを削除してもよろしいですか？この操作は取り消すことができません。
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteEventMutation.mutate(event.id)}
+                              >
+                                削除する
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     )}
                   </div>
                 </div>
