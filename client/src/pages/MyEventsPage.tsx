@@ -110,11 +110,15 @@ export default function MyEventsPage() {
     );
   }
 
-  // 自分のイベントのみをフィルタリング
-  const myEvents = events.filter((event) => event.createdBy === user?.id);
-  const sortedEvents = [...myEvents].sort(
+  // イベントのソート
+  const sortedEvents = [...events].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
+
+  // ログインユーザーの場合は自分のイベントのみをフィルタリング
+  const displayEvents = user
+    ? sortedEvents.filter((event) => event.createdBy === user.id)
+    : sortedEvents;
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -150,15 +154,15 @@ export default function MyEventsPage() {
           )}
         </DialogContent>
       </Dialog>
-      {sortedEvents.length === 0 ? (
+      {displayEvents.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            <p>登録されているイベントはありません。</p>
+            <p>表示できるイベントはありません。</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {sortedEvents.map((event) => (
+          {displayEvents.map((event) => (
             <Card key={event.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">
