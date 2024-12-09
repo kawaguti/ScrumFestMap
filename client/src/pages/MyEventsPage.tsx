@@ -24,9 +24,7 @@ import {
 } from "@/components/ui/dialog";
 
 async function fetchAllEvents(): Promise<Event[]> {
-  const response = await fetch("/api/events", {
-    credentials: "include",
-  });
+  const response = await fetch("/api/events");
   if (!response.ok) {
     throw new Error("Failed to fetch events");
   }
