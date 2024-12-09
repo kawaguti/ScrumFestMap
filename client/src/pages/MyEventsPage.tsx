@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Loader2, Edit, Save, X } from "lucide-react";
+import { Loader2, Edit } from "lucide-react";
 import type { Event } from "@db/schema";
 import { EventForm } from "@/components/EventForm";
 import {
@@ -49,17 +49,27 @@ export default function MyEventsPage() {
 
   const updateEventMutation = useMutation({
     mutationFn: async (updatedEvent: Event) => {
+      const updateData = {
+        name: updatedEvent.name,
+        prefecture: updatedEvent.prefecture,
+        date: updatedEvent.date,
+        website: updatedEvent.website,
+        description: updatedEvent.description,
+        youtubePlaylist: updatedEvent.youtubePlaylist,
+      };
+
       const response = await fetch(`/api/events/${updatedEvent.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(updatedEvent),
+        body: JSON.stringify(updateData),
         credentials: "include",
       });
       
       if (!response.ok) {
-        throw new Error("Failed to update event");
+        const error = await response.json();
+        throw new Error(error.error || "イベントの更新に失敗しました");
       }
       
       return response.json();
@@ -72,11 +82,12 @@ export default function MyEventsPage() {
       });
       setEditingEvent(null);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Update error:", error);
       toast({
         variant: "destructive",
         title: "エラー",
-        description: "イベントの更新に失敗しました。",
+        description: error instanceof Error ? error.message : "イベントの更新に失敗しました。",
       });
     },
   });
@@ -84,7 +95,7 @@ export default function MyEventsPage() {
   // ローディング中の表示
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 flex justify-center items-center min-h-[50vh]">
+      <div className="flex justify-center items-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -93,24 +104,25 @@ export default function MyEventsPage() {
   // エラー時の表示
   if (error) {
     return (
-      <div className="container mx-auto py-6 text-center text-destructive">
-        <p>エラーが発生しました。再度お試しください。</p>
-        <Button variant="outline" className="mt-4" onClick={() => setLocation("/")}>
-          ホームへ戻る
-        </Button>
+      <div className="container mx-auto py-6">
+        <div className="text-center text-destructive">
+          <p>エラーが発生しました。</p>
+          <p className="text-sm">{error instanceof Error ? error.message : "Unknown error"}</p>
+        </div>
       </div>
     );
   }
 
-  // 日付でソート（新しい順）
-  const sortedEvents = [...events].sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
+  // 自分のイベントのみをフィルタリング
+  const myEvents = events.filter((event) => event.createdBy === user?.id);
+  const sortedEvents = [...myEvents].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
   return (
     <div className="container mx-auto py-6 space-y-6">
       <header className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">イベント一覧</h1>
+        <h1 className="text-3xl font-bold">マイイベント一覧</h1>
         <Button variant="outline" onClick={() => setLocation("/")}>
           ホームへ戻る
         </Button>
@@ -184,7 +196,7 @@ export default function MyEventsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(event.website, "_blank")}
+                        onClick={() => event.website && window.open(event.website, "_blank")}
                       >
                         Webサイトを開く
                       </Button>
@@ -193,7 +205,7 @@ export default function MyEventsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(event.youtubePlaylist, "_blank")}
+                        onClick={() => event.youtubePlaylist && window.open(event.youtubePlaylist, "_blank")}
                       >
                         録画を見る
                       </Button>
