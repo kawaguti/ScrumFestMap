@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { useLocation } from "wouter";
@@ -23,7 +23,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
-import { format } from "date-fns";
 
 async function fetchAllEvents(): Promise<Event[]> {
   const response = await fetch("/api/events");
