@@ -161,10 +161,8 @@ export default function MyEventsPage() {
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  // ログインユーザーの場合は自分のイベントのみをフィルタリング
-  const displayEvents = user
-    ? sortedEvents.filter((event) => event.createdBy === user.id)
-    : sortedEvents;
+  // 全てのイベントを表示
+  const displayEvents = sortedEvents;
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -234,16 +232,6 @@ export default function MyEventsPage() {
                       })}
                     </CardDescription>
                   </div>
-                  {event.createdBy === user?.id && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingEvent(event)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      編集
-                    </Button>
-                  )}
                 </div>
               </CardHeader>
               <CardContent>
