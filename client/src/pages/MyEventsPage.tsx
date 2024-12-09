@@ -79,10 +79,10 @@ export default function MyEventsPage() {
   });
 
   // イベントを日付の降順（最新が最初）でソート
-  const events = useMemo(() => {
-    const targetEvents = showAllEvents ? allEvents : myEvents;
-    return [...targetEvents].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [showAllEvents, allEvents, myEvents]);
+  const events = showAllEvents ? allEvents : myEvents;
+  const sortedEvents = useMemo(() => {
+    return [...events].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [events]);
   const isLoading = showAllEvents ? isLoadingAllEvents : isLoadingMyEvents;
   const error = showAllEvents ? allEventsError : myEventsError;
 
@@ -174,6 +174,32 @@ export default function MyEventsPage() {
       });
     },
   });
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-6 flex justify-center items-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-6 text-center text-destructive">
+        <p>エラーが発生しました。再度お試しください。</p>
+        <Button variant="outline" className="mt-4" onClick={() => setLocation("/")}>
+          ホームへ戻る
+        </Button>
+      </div>
+    );
+  }
+
+  // ログインしていない場合は全イベント表示を強制
+  useEffect(() => {
+    if (!user) {
+      setShowAllEvents(true);
+    }
+  }, [user]);
 
   if (isLoading) {
     return (
