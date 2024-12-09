@@ -41,7 +41,6 @@ export default function MyEventsPage() {
   const { data: events = [], isLoading, error } = useQuery({
     queryKey: ["events"],
     queryFn: fetchAllEvents,
-    enabled: true,
     retry: 1,
   });
 
