@@ -5,7 +5,7 @@ import { prefectureCoordinates } from "./prefectures";
 
 export function generateEventMarkdown(events: Event[]): string {
   const now = new Date();
-  const header = `# イベント一覧\n\n作成日時: ${format(now, "yyyy年MM月dd日 HH:mm", { locale: ja })}\n\n---\n\n`;
+  const header = `# スクラムフェスマップ\n\n作成日時: ${format(now, "yyyy年MM月dd日 HH:mm", { locale: ja })}\n\n---\n\n`;
   
   const eventsList = events.map(event => {
     const coordinates = prefectureCoordinates[event.prefecture] || [0, 0];
