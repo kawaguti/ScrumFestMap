@@ -11,7 +11,7 @@ export function generateEventMarkdown(events: Event[]): string {
     const coordinates = prefectureCoordinates[event.prefecture];
     let markdown = `## ${event.name}\n\n`;
     markdown += `- 開催地: ${event.prefecture}\n`;
-    markdown += `- 座標: [${coordinates[0]}, ${coordinates[1]}]\n`;
+    markdown += `- 座標: \`[${coordinates[1]}, ${coordinates[0]}]\` (Leaflet形式)\n`;
     markdown += `- 開催日: ${format(new Date(event.date), "yyyy年MM月dd日(E)", { locale: ja })}\n`;
     
     if (event.description) {
