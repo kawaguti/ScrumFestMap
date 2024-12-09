@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Loader2, Edit } from "lucide-react";
+import { Loader2, Edit, Download } from "lucide-react";
 import type { Event } from "@db/schema";
 import { EventForm } from "@/components/EventForm";
 import {
@@ -22,6 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
+import { format } from "date-fns";
 
 async function fetchAllEvents(): Promise<Event[]> {
   const response = await fetch("/api/events");
@@ -122,8 +124,22 @@ export default function MyEventsPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <header className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">マイイベント一覧</h1>
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold">マイイベント一覧</h1>
+          {displayEvents.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                const markdown = generateEventMarkdown(displayEvents);
+                downloadMarkdown(markdown, `my-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              マークダウンでダウンロード
+            </Button>
+          )}
+        </div>
         <Button variant="outline" onClick={() => setLocation("/")}>
           ホームへ戻る
         </Button>
