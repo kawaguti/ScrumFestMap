@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { Link, useLocation } from "wouter";
@@ -79,11 +79,10 @@ export default function MyEventsPage() {
   });
 
   // イベントを日付の降順（最新が最初）でソート
-  const sortEvents = (events: Event[]) => {
-    return [...events].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  };
-
-  const events = sortEvents(showAllEvents ? allEvents : myEvents);
+  const events = useMemo(() => {
+    const targetEvents = showAllEvents ? allEvents : myEvents;
+    return [...targetEvents].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [showAllEvents, allEvents, myEvents]);
   const isLoading = showAllEvents ? isLoadingAllEvents : isLoadingMyEvents;
   const error = showAllEvents ? allEventsError : myEventsError;
 
