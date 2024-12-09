@@ -281,30 +281,18 @@ export default function MyEventsPage() {
                           <Edit className="h-4 w-4 mr-2" />
                           編集
                         </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              削除
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>イベントの削除</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                このイベントを削除してもよろしいですか？この操作は取り消すことができません。
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteEventMutation.mutate(event.id)}
-                              >
-                                削除する
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            if (confirm("このイベントを削除してもよろしいですか？\nこの操作は取り消すことができません。")) {
+                              deleteEventMutation.mutate(event.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          削除
+                        </Button>
                       </div>
                     )}
                   </div>
