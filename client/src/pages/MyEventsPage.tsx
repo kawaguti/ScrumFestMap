@@ -125,13 +125,13 @@ export default function MyEventsPage() {
     <div className="container mx-auto py-6 space-y-6">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold">マイイベント一覧</h1>
+          <h1 className="text-3xl font-bold">イベント一覧</h1>
           {displayEvents.length > 0 && (
             <Button
               variant="outline"
               onClick={() => {
                 const markdown = generateEventMarkdown(displayEvents);
-                downloadMarkdown(markdown, `my-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
+                downloadMarkdown(markdown, `all-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
               }}
             >
               <Download className="h-4 w-4 mr-2" />
