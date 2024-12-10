@@ -54,7 +54,6 @@ export default function MyEventsPage() {
     queryKey: ["events"],
     queryFn: fetchAllEvents,
     retry: 1,
-    suspense: false,
   });
 
   const updateEventMutation = useMutation({
