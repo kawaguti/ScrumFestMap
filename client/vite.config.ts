@@ -10,6 +10,17 @@ export default defineConfig({
     checker({ typescript: true, overlay: false }),
     runtimeErrorOverlay(),
   ],
+  optimizeDeps: {
+    exclude: ['@tanstack/react-query'],
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'wouter',
+      '@hookform/resolvers',
+      'zod'
+    ]
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
