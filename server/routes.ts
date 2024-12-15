@@ -290,6 +290,11 @@ export function setupRoutes(app: Express) {
         return res.status(404).json({ error: "Event not found" });
       }
 
+      // 権限チェック：管理者または作成者のみ編集可能
+      if (existingEvent.createdBy !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ error: "このイベントを編集する権限がありません" });
+      }
+
       // 変更されたフィールドを検出して履歴を記録
       const changedFields = Object.entries(result.data).filter(([key, value]) => {
         if (key === 'date') {

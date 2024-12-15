@@ -253,14 +253,16 @@ export default function MyEventsPage() {
                     )}
                     {user && (
                       <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditingEvent(event)}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          編集
-                        </Button>
+                        {(user.isAdmin || event.createdBy === user.id) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingEvent(event)}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            編集
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
