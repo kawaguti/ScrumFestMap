@@ -31,6 +31,14 @@ function Router() {
           </React.Suspense>
         );
       }} />
+      <Route path="/events/:eventId/history" component={() => {
+        const EventHistoryPage = React.lazy(() => import('./pages/EventHistoryPage'));
+        return (
+          <React.Suspense fallback={<div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
+            <EventHistoryPage />
+          </React.Suspense>
+        );
+      }} />
       <Route>404 Page Not Found</Route>
     </Switch>
   );
