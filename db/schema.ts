@@ -37,3 +37,18 @@ export const insertEventSchema = createInsertSchema(events, {
 export const selectEventSchema = createSelectSchema(events);
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Event = z.infer<typeof selectEventSchema>;
+
+export const eventHistory = pgTable("event_history", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  eventId: integer("event_id").notNull().references(() => events.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  modifiedAt: timestamp("modified_at").defaultNow().notNull(),
+  modifiedColumn: text("modified_column").notNull(),
+  oldValue: text("old_value"),
+  newValue: text("new_value").notNull(),
+});
+
+export const insertEventHistorySchema = createInsertSchema(eventHistory);
+export const selectEventHistorySchema = createSelectSchema(eventHistory);
+export type InsertEventHistory = z.infer<typeof insertEventHistorySchema>;
+export type EventHistory = z.infer<typeof selectEventHistorySchema>;

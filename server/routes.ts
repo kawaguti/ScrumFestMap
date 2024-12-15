@@ -1,6 +1,6 @@
 import { type Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { users, events, insertEventSchema } from "@db/schema";
+import { users, events, eventHistory, insertEventSchema } from "@db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -279,7 +279,7 @@ export function setupRoutes(app: Express) {
         });
       }
 
-      // イベントの存在確認と権限チェック
+      // イベントの存在確認
       const [existingEvent] = await db
         .select()
         .from(events)
@@ -290,8 +290,19 @@ export function setupRoutes(app: Express) {
         return res.status(404).json({ error: "Event not found" });
       }
 
-      if (existingEvent.createdBy !== req.user.id && !req.user.isAdmin) {
-        return res.status(403).json({ error: "Not authorized to update this event" });
+      // 変更されたフィールドを検出して履歴を記録
+      const changedFields = Object.entries(result.data).filter(([key, value]) => {
+        if (key === 'date') {
+          const newDate = value instanceof Date ? value : new Date(value);
+          const oldDate = existingEvent[key] instanceof Date ? existingEvent[key] : new Date(existingEvent[key]);
+          return newDate.toISOString() !== oldDate.toISOString();
+        }
+        // @ts-ignore - 動的なキーアクセスを許可
+        return value !== existingEvent[key];
+      });
+
+      if (req.body.youtubePlaylist !== existingEvent.youtubePlaylist) {
+        changedFields.push(['youtubePlaylist', req.body.youtubePlaylist || '']);
       }
 
       // イベントの更新
@@ -305,11 +316,59 @@ export function setupRoutes(app: Express) {
         .where(eq(events.id, eventId))
         .returning();
 
+      // 変更履歴の記録
+      if (changedFields.length > 0) {
+        await Promise.all(
+          changedFields.map(([column, newValue]) =>
+            db.insert(eventHistory).values({
+              eventId,
+              userId: req.user.id,
+              modifiedColumn: column,
+              oldValue: String(existingEvent[column] || ''),
+              newValue: String(newValue),
+            })
+          )
+        );
+      }
+
       res.json(updatedEvent);
     } catch (error) {
       console.error("Event update error:", error);
       res.status(500).json({
         error: "Failed to update event",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  // イベント履歴取得エンドポイント
+  app.get("/api/events/:eventId/history", async (req, res) => {
+    const eventId = parseInt(req.params.eventId);
+
+    try {
+      const history = await db
+        .select({
+          id: eventHistory.id,
+          eventId: eventHistory.eventId,
+          userId: eventHistory.userId,
+          modifiedAt: eventHistory.modifiedAt,
+          modifiedColumn: eventHistory.modifiedColumn,
+          oldValue: eventHistory.oldValue,
+          newValue: eventHistory.newValue,
+          username: users.username,
+          eventName: events.name,
+        })
+        .from(eventHistory)
+        .innerJoin(users, eq(eventHistory.userId, users.id))
+        .innerJoin(events, eq(eventHistory.eventId, events.id))
+        .where(eq(eventHistory.eventId, eventId))
+        .orderBy(desc(eventHistory.modifiedAt));
+
+      res.json(history);
+    } catch (error) {
+      console.error("History fetch error:", error);
+      res.status(500).json({
+        error: "Failed to fetch event history",
         details: error instanceof Error ? error.message : "Unknown error",
       });
     }
