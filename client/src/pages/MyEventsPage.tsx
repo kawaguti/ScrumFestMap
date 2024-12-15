@@ -271,14 +271,23 @@ export default function MyEventsPage() {
                           </Button>
                         )}
                         {/* 編集ボタンはログインしているユーザーなら誰でも表示 */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditingEvent(event)}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          編集
-                        </Button>
+                        <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditingEvent(event)}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              編集
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setLocation(`/events/${event.id}/history`)}
+                            >
+                              履歴を見る
+                            </Button>
+                          </>
                       </div>
                     )}
                   </div>
