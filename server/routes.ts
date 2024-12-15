@@ -290,20 +290,16 @@ export function setupRoutes(app: Express) {
         return res.status(404).json({ error: "Event not found" });
       }
 
-      // 権限チェック：管理者または作成者のみ編集可能
-      if (existingEvent.createdBy !== req.user.id && !req.user.isAdmin) {
-        return res.status(403).json({ error: "このイベントを編集する権限がありません" });
-      }
-
       // 変更されたフィールドを検出して履歴を記録
+      type EventKey = keyof typeof existingEvent;
       const changedFields = Object.entries(result.data).filter(([key, value]) => {
+        const typedKey = key as EventKey;
         if (key === 'date') {
-          const newDate = value instanceof Date ? value : new Date(value);
-          const oldDate = existingEvent[key] instanceof Date ? existingEvent[key] : new Date(existingEvent[key]);
+          const newDate = new Date(value as string | number | Date);
+          const oldDate = new Date(existingEvent[typedKey] as string | number | Date);
           return newDate.toISOString() !== oldDate.toISOString();
         }
-        // @ts-ignore - 動的なキーアクセスを許可
-        return value !== existingEvent[key];
+        return value !== existingEvent[typedKey];
       });
 
       if (req.body.youtubePlaylist !== existingEvent.youtubePlaylist) {
@@ -329,7 +325,7 @@ export function setupRoutes(app: Express) {
               eventId,
               userId: req.user.id,
               modifiedColumn: column,
-              oldValue: String(existingEvent[column] || ''),
+              oldValue: String((existingEvent as any)[column] || ''),
               newValue: String(newValue),
             })
           )

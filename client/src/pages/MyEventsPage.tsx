@@ -182,24 +182,26 @@ export default function MyEventsPage() {
           <DialogHeader>
             <DialogTitle>イベントの編集</DialogTitle>
           </DialogHeader>
-          <div className="max-h-[80vh] overflow-y-auto">
+          <div className="grid gap-4">
             {editingEvent && (
-              <EventForm
-                defaultValues={{
-                  name: editingEvent.name,
-                  prefecture: editingEvent.prefecture,
-                  date: new Date(editingEvent.date),
-                  website: editingEvent.website || "",
-                  description: editingEvent.description || "",
-                  youtubePlaylist: editingEvent.youtubePlaylist || "",
-                }}
-                onSubmit={async (data) => {
-                  await updateEventMutation.mutateAsync({
-                    ...editingEvent,
-                    ...data,
-                  });
-                }}
-              />
+              <div className="max-h-[calc(100vh-20rem)] overflow-y-auto pr-4">
+                <EventForm
+                  defaultValues={{
+                    name: editingEvent.name,
+                    prefecture: editingEvent.prefecture,
+                    date: new Date(editingEvent.date),
+                    website: editingEvent.website || "",
+                    description: editingEvent.description || "",
+                    youtubePlaylist: editingEvent.youtubePlaylist || "",
+                  }}
+                  onSubmit={async (data) => {
+                    await updateEventMutation.mutateAsync({
+                      ...editingEvent,
+                      ...data,
+                    });
+                  }}
+                />
+              </div>
             )}
           </div>
         </DialogContent>
@@ -253,39 +255,8 @@ export default function MyEventsPage() {
                     )}
                     {user && (
                       <div className="flex gap-2">
-                        {(user.isAdmin || event.createdBy === user.id) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingEvent(event)}
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            編集
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setLocation(`/events/${event.id}/history`)}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4 mr-2"
-                          >
-                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                            <path d="M3 3v5h5"/>
-                          </svg>
-                          編集履歴
-                        </Button>
-                        {(user.isAdmin || event.createdBy === user.id) && (
+                        {/* 削除ボタンは管理者と作成者のみ表示 */}
+                        {user && (user.isAdmin || event.createdBy === user.id) && (
                           <Button
                             variant="destructive"
                             size="sm"
@@ -299,6 +270,15 @@ export default function MyEventsPage() {
                             削除
                           </Button>
                         )}
+                        {/* 編集ボタンはログインしているユーザーなら誰でも表示 */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingEvent(event)}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          編集
+                        </Button>
                       </div>
                     )}
                   </div>
