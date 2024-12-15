@@ -182,24 +182,26 @@ export default function MyEventsPage() {
           <DialogHeader>
             <DialogTitle>イベントの編集</DialogTitle>
           </DialogHeader>
-          {editingEvent && (
-            <EventForm
-              defaultValues={{
-                name: editingEvent.name,
-                prefecture: editingEvent.prefecture,
-                date: new Date(editingEvent.date),
-                website: editingEvent.website || "",
-                description: editingEvent.description || "",
-                youtubePlaylist: editingEvent.youtubePlaylist || "",
-              }}
-              onSubmit={async (data) => {
-                await updateEventMutation.mutateAsync({
-                  ...editingEvent,
-                  ...data,
-                });
-              }}
-            />
-          )}
+          <div className="max-h-[80vh] overflow-y-auto">
+            {editingEvent && (
+              <EventForm
+                defaultValues={{
+                  name: editingEvent.name,
+                  prefecture: editingEvent.prefecture,
+                  date: new Date(editingEvent.date),
+                  website: editingEvent.website || "",
+                  description: editingEvent.description || "",
+                  youtubePlaylist: editingEvent.youtubePlaylist || "",
+                }}
+                onSubmit={async (data) => {
+                  await updateEventMutation.mutateAsync({
+                    ...editingEvent,
+                    ...data,
+                  });
+                }}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
       {displayEvents.length === 0 ? (
