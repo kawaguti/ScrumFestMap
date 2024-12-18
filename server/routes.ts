@@ -336,11 +336,11 @@ export function setupRoutes(app: Express) {
         for (const [column, newValue] of changedFields) {
           const oldValue = (existingEvent as any)[column];
           await db.insert(eventHistory).values({
-            event_id: eventId,
-            user_id: req.user.id,
-            modified_column: column,
-            old_value: oldValue ? String(oldValue) : null,
-            new_value: String(newValue || ""),
+            eventId: eventId,
+            userId: req.user.id,
+            modifiedColumn: column,
+            oldValue: oldValue ? String(oldValue) : null,
+            newValue: String(newValue || ""),
           });
         }
       }
@@ -374,20 +374,20 @@ export function setupRoutes(app: Express) {
       const history = await db
         .select({
           id: eventHistory.id,
-          eventId: eventHistory.event_id,
-          userId: eventHistory.user_id,
-          modifiedAt: eventHistory.modified_at,
-          modifiedColumn: eventHistory.modified_column,
-          oldValue: eventHistory.old_value,
-          newValue: eventHistory.new_value,
+          eventId: eventHistory.eventId,
+          userId: eventHistory.userId,
+          modifiedAt: eventHistory.modifiedAt,
+          modifiedColumn: eventHistory.modifiedColumn,
+          oldValue: eventHistory.oldValue,
+          newValue: eventHistory.newValue,
           username: users.username,
           eventName: events.name,
         })
         .from(eventHistory)
-        .innerJoin(users, eq(eventHistory.user_id, users.id))
-        .innerJoin(events, eq(eventHistory.event_id, events.id))
-        .where(eq(eventHistory.event_id, eventId))
-        .orderBy(desc(eventHistory.modified_at));
+        .leftJoin(users, eq(eventHistory.userId, users.id))
+        .leftJoin(events, eq(eventHistory.eventId, events.id))
+        .where(eq(eventHistory.eventId, eventId))
+        .orderBy(desc(eventHistory.modifiedAt));
 
       // 履歴が空でも空の配列を返す
       res.json(history || []);
