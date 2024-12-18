@@ -389,13 +389,8 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 最新の更新情報 */}
-        <div className="w-full">
-          <LatestUpdate />
-        </div>
-
-        {/* 表示期間選択 */}
-        <div className="w-full sm:w-auto">
+        {/* 表示期間選択と最新の更新情報 */}
+        <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <RadioGroup
             value={displayPeriod}
             onValueChange={(value: "all" | "upcoming") => setDisplayPeriod(value)}
@@ -410,6 +405,7 @@ export default function HomePage() {
               <Label htmlFor="upcoming">今後一年間</Label>
             </div>
           </RadioGroup>
+          <LatestUpdate />
         </div>
       </header>
 
