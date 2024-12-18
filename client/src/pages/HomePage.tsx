@@ -5,8 +5,7 @@ import { Button } from "../components/ui/button";
 import { Link, useLocation } from "wouter";
 import { JapanMap } from "../components/JapanMap";
 import { EventForm } from "../components/EventForm";
-import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
-import { Label } from "../components/ui/label";
+
 import {
   Dialog,
   DialogContent,
@@ -394,20 +393,24 @@ export default function HomePage() {
 
         {/* 表示期間選択と最新の更新情報 */}
         <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <RadioGroup
-            value={displayPeriod}
-            onValueChange={(value: "all" | "upcoming") => setDisplayPeriod(value)}
-            className="flex items-center justify-center sm:justify-start space-x-4 p-2 bg-muted/10 rounded-lg"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="past" id="past" />
-              <Label htmlFor="past">これまで</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="upcoming" id="upcoming" />
-              <Label htmlFor="upcoming">これから</Label>
-            </div>
-          </RadioGroup>
+          <div className="flex items-center justify-center sm:justify-start space-x-2 p-1 bg-muted/10 rounded-lg">
+            <Button
+              variant={displayPeriod === "past" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setDisplayPeriod("past")}
+              className="min-w-[100px]"
+            >
+              これまで
+            </Button>
+            <Button
+              variant={displayPeriod === "upcoming" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setDisplayPeriod("upcoming")}
+              className="min-w-[100px]"
+            >
+              これから
+            </Button>
+          </div>
           <LatestUpdate />
         </div>
       </header>
