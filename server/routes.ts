@@ -360,6 +360,17 @@ export function setupRoutes(app: Express) {
     const eventId = parseInt(req.params.eventId);
 
     try {
+      // まずイベントの存在確認
+      const [event] = await db
+        .select()
+        .from(events)
+        .where(eq(events.id, eventId))
+        .limit(1);
+
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
       const history = await db
         .select({
           id: eventHistory.id,
@@ -373,12 +384,13 @@ export function setupRoutes(app: Express) {
           eventName: events.name,
         })
         .from(eventHistory)
-        .innerJoin(users, eq(eventHistory.userId, users.id))
-        .innerJoin(events, eq(eventHistory.eventId, events.id))
-        .where(eq(eventHistory.eventId, eventId))
-        .orderBy(desc(eventHistory.modifiedAt));
+        .innerJoin(users, eq(eventHistory.user_id, users.id))
+        .innerJoin(events, eq(eventHistory.event_id, events.id))
+        .where(eq(eventHistory.event_id, eventId))
+        .orderBy(desc(eventHistory.modified_at));
 
-      res.json(history);
+      // 履歴が空でも空の配列を返す
+      res.json(history || []);
     } catch (error) {
       console.error("History fetch error:", error);
       res.status(500).json({

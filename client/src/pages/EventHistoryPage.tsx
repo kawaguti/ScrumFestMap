@@ -57,11 +57,23 @@ export default function EventHistoryPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto py-6">
-        <div className="text-center text-destructive">
-          <p>エラーが発生しました。</p>
-          <p className="text-sm">{error instanceof Error ? error.message : "Unknown error"}</p>
-        </div>
+      <div className="container mx-auto py-6 space-y-6">
+        <header className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">編集履歴</h1>
+          <Button variant="outline" onClick={() => setLocation("/my-events")}>
+            イベント一覧へ戻る
+          </Button>
+        </header>
+        <Card>
+          <CardContent className="py-8">
+            <div className="text-center text-destructive space-y-2">
+              <p className="font-medium">エラーが発生しました</p>
+              <p className="text-sm text-muted-foreground">
+                {error instanceof Error ? error.message : "編集履歴の取得に失敗しました"}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
