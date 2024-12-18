@@ -294,16 +294,30 @@ export function setupRoutes(app: Express) {
       type EventKey = keyof typeof existingEvent;
       const changedFields = Object.entries(result.data).filter(([key, value]) => {
         const typedKey = key as EventKey;
+        
+        // 日付の比較
         if (key === 'date') {
           const newDate = new Date(value as string | number | Date);
           const oldDate = new Date(existingEvent[typedKey] as string | number | Date);
           return newDate.toISOString() !== oldDate.toISOString();
         }
+        
+        // その他のフィールドの比較（nullと空文字列を同等として扱う）
+        const oldValue = existingEvent[typedKey];
+        if (typeof value === 'string' && typeof oldValue === 'string') {
+          const normalizedOld = oldValue.trim() || null;
+          const normalizedNew = (value as string).trim() || null;
+          return normalizedOld !== normalizedNew;
+        }
+        
         return value !== existingEvent[typedKey];
       });
 
-      if (req.body.youtubePlaylist !== existingEvent.youtubePlaylist) {
-        changedFields.push(['youtubePlaylist', req.body.youtubePlaylist || '']);
+      // YouTubeプレイリストの変更を検出
+      const newYoutubePlaylist = (req.body.youtubePlaylist || '').trim();
+      const oldYoutubePlaylist = (existingEvent.youtubePlaylist || '').trim();
+      if (newYoutubePlaylist !== oldYoutubePlaylist && (newYoutubePlaylist || oldYoutubePlaylist)) {
+        changedFields.push(['youtubePlaylist', newYoutubePlaylist || null]);
       }
 
       // イベントの更新
@@ -320,15 +334,16 @@ export function setupRoutes(app: Express) {
       // 変更履歴の記録
       if (changedFields.length > 0) {
         await Promise.all(
-          changedFields.map(([column, newValue]) =>
-            db.insert(eventHistory).values({
+          changedFields.map(([column, newValue]) => {
+            const oldValue = (existingEvent as any)[column];
+            return db.insert(eventHistory).values({
               eventId,
               userId: req.user.id,
               modifiedColumn: column,
-              oldValue: String((existingEvent as any)[column] || ''),
-              newValue: String(newValue),
-            })
-          )
+              oldValue: oldValue ? String(oldValue) : null,
+              newValue: newValue ? String(newValue) : null,
+            });
+          })
         );
       }
 
