@@ -78,7 +78,7 @@ export default function HomePage() {
   const { user, logout, error } = useUser();
   const [, setLocation] = useLocation();
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
-  const [displayPeriod, setDisplayPeriod] = useState<"all" | "upcoming">("all");
+  const [displayPeriod, setDisplayPeriod] = useState<"past" | "upcoming">("upcoming");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -103,15 +103,18 @@ export default function HomePage() {
 
   // イベントのフィルタリング
   const filteredEvents = useMemo(() => {
-    if (displayPeriod === "all") return events;
-    
-    const oneYearFromNow = new Date();
-    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
     return events.filter(event => {
       const eventDate = new Date(event.date);
-      const now = new Date();
-      return eventDate >= now && eventDate <= oneYearFromNow;
+      eventDate.setHours(0, 0, 0, 0);
+      
+      if (displayPeriod === "past") {
+        return eventDate < today;
+      } else {
+        return eventDate >= today;
+      }
     });
   }, [events, displayPeriod]);
 
@@ -397,12 +400,12 @@ export default function HomePage() {
             className="flex items-center justify-center sm:justify-start space-x-4 p-2 bg-muted/10 rounded-lg"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="all" id="all" />
-              <Label htmlFor="all">全期間</Label>
+              <RadioGroupItem value="past" id="past" />
+              <Label htmlFor="past">これまで</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="upcoming" id="upcoming" />
-              <Label htmlFor="upcoming">今後一年間</Label>
+              <Label htmlFor="upcoming">これから</Label>
             </div>
           </RadioGroup>
           <LatestUpdate />
