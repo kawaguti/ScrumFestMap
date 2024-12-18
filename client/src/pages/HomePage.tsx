@@ -393,12 +393,12 @@ export default function HomePage() {
 
         {/* 表示期間選択と最新の更新情報 */}
         <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center justify-center sm:justify-start space-x-2 p-1 bg-muted/10 rounded-lg">
+          <div className="inline-flex items-center justify-center bg-muted p-1 rounded-md">
             <Button
               variant={displayPeriod === "past" ? "default" : "ghost"}
               size="sm"
               onClick={() => setDisplayPeriod("past")}
-              className="min-w-[100px]"
+              className="relative min-w-[100px] rounded-r-none border-r"
             >
               これまで
             </Button>
@@ -406,7 +406,7 @@ export default function HomePage() {
               variant={displayPeriod === "upcoming" ? "default" : "ghost"}
               size="sm"
               onClick={() => setDisplayPeriod("upcoming")}
-              className="min-w-[100px]"
+              className="relative min-w-[100px] rounded-l-none"
             >
               これから
             </Button>
