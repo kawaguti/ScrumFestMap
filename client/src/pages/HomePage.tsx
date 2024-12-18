@@ -411,7 +411,9 @@ export default function HomePage() {
               これから
             </Button>
           </div>
-          <LatestUpdate />
+          <div className="hidden sm:block">
+            <LatestUpdate />
+          </div>
         </div>
       </header>
 
