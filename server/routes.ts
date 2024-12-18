@@ -333,18 +333,16 @@ export function setupRoutes(app: Express) {
 
       // 変更履歴の記録
       if (changedFields.length > 0) {
-        await Promise.all(
-          changedFields.map(([column, newValue]) => {
-            const oldValue = (existingEvent as any)[column];
-            return db.insert(eventHistory).values({
-              eventId,
-              userId: req.user.id,
-              modifiedColumn: column,
-              oldValue: oldValue ? String(oldValue) : null,
-              newValue: newValue ? String(newValue) : null,
-            });
-          })
-        );
+        for (const [column, newValue] of changedFields) {
+          const oldValue = (existingEvent as any)[column];
+          await db.insert(eventHistory).values({
+            eventId,
+            userId: req.user.id,
+            modifiedColumn: column,
+            oldValue: oldValue ? String(oldValue) : null,
+            newValue: newValue ? String(newValue) : null,
+          });
+        }
       }
 
       res.json(updatedEvent);

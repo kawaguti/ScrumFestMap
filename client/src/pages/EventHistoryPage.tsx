@@ -43,6 +43,8 @@ export default function EventHistoryPage() {
     queryKey: ["eventHistory", eventId],
     queryFn: () => fetchEventHistory(eventId!),
     enabled: !!eventId,
+    refetchInterval: 1000, // 1秒ごとに自動更新
+    refetchOnWindowFocus: true, // ウィンドウにフォーカスが当たった時に更新
   });
 
   if (isLoading) {
