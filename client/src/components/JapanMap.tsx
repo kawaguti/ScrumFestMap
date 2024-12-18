@@ -36,19 +36,18 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const past = events.filter(event => {
+    return events.reduce((acc, event) => {
       const eventDate = new Date(event.date);
       eventDate.setHours(0, 0, 0, 0);
-      return eventDate < today;
-    });
-
-    const upcoming = events.filter(event => {
-      const eventDate = new Date(event.date);
-      eventDate.setHours(0, 0, 0, 0);
-      return eventDate >= today;
-    });
-
-    return { past, upcoming };
+      
+      if (eventDate < today) {
+        acc.past.push(event);
+      } else {
+        acc.upcoming.push(event);
+      }
+      
+      return acc;
+    }, { past: [] as Event[], upcoming: [] as Event[] });
   }, [events]);
 
   // 初期表示時に当日以降の最初のイベントを自動選択
@@ -62,7 +61,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
         onPrefectureSelect(prefecture.id);
       }
     }
-  }, [events]);
+  }, [events, categorizedEvents.upcoming, selectedEvent]);
 
   const handleMarkerClick = (event: Event) => {
     setSelectedEvent(event);
