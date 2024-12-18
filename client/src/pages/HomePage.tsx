@@ -22,6 +22,8 @@ import {
   DrawerTrigger,
 } from "../components/ui/drawer";
 import type { Event, InsertEvent } from "@db/schema";
+import { formatDistanceToNow } from "date-fns";
+import { ja } from "date-fns/locale"; // Added import for 'ja' locale
 
 async function fetchEvents(): Promise<Event[]> {
   const response = await fetch("/api/events");
@@ -43,6 +45,35 @@ async function createEvent(event: InsertEvent): Promise<Event> {
   return response.json();
 }
 
+
+// 最新の更新情報を表示するコンポーネント
+function LatestUpdate() {
+  const { data: latestUpdate } = useQuery({
+    queryKey: ["latestUpdate"],
+    queryFn: async () => {
+      const response = await fetch("/api/latest-update");
+      if (!response.ok) {
+        throw new Error("Failed to fetch latest update");
+      }
+      return response.json();
+    },
+    refetchInterval: 30000, // 30秒ごとに更新
+  });
+
+  if (!latestUpdate) return null;
+
+  const timeAgo = formatDistanceToNow(new Date(latestUpdate.modifiedAt), { locale: ja, addSuffix: true });
+
+  return (
+    <div className="text-sm text-muted-foreground bg-muted/20 px-4 py-2 rounded-md">
+      <span>{timeAgo}、</span>
+      <span className="font-medium text-foreground">{latestUpdate.username}</span>
+      <span>さんが</span>
+      <span className="font-medium text-foreground">「{latestUpdate.eventName}」</span>
+      <span>を更新しました</span>
+    </div>
+  );
+}
 export default function HomePage() {
   const { user, logout, error } = useUser();
   const [, setLocation] = useLocation();
@@ -356,6 +387,11 @@ export default function HomePage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* 最新の更新情報 */}
+        <div className="w-full">
+          <LatestUpdate />
         </div>
 
         {/* 表示期間選択 */}

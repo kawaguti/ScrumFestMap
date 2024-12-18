@@ -33,6 +33,35 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 export function setupRoutes(app: Express) {
+  // 最新の更新履歴を1件取得するエンドポイント
+  app.get("/api/latest-update", async (req, res) => {
+    try {
+      const [latestUpdate] = await db
+        .select({
+          id: eventHistory.id,
+          eventId: eventHistory.eventId,
+          userId: eventHistory.userId,
+          modifiedAt: eventHistory.modifiedAt,
+          modifiedColumn: eventHistory.modifiedColumn,
+          username: users.username,
+          eventName: events.name,
+        })
+        .from(eventHistory)
+        .leftJoin(users, eq(eventHistory.userId, users.id))
+        .leftJoin(events, eq(eventHistory.eventId, events.id))
+        .orderBy(desc(eventHistory.modifiedAt))
+        .limit(1);
+
+      res.json(latestUpdate || null);
+    } catch (error) {
+      console.error("Latest update fetch error:", error);
+      res.status(500).json({
+        error: "Failed to fetch latest update",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
   app.get("/api/events", async (req, res) => {
     try {
       const allEvents = await db
