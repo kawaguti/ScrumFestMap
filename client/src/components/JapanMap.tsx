@@ -31,25 +31,35 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventHistory, setEventHistory] = useState<Event[]>([]);
 
-  // 直近のイベントを取得する関数
-  const getUpcomingEvent = useMemo(() => {
-    const now = new Date();
-    return events
-      .filter(event => new Date(event.date) >= now)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0] || null;
+  // イベントを「前日まで」と「当日以降」に分類する関数
+  const categorizedEvents = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const past = events.filter(event => {
+      const eventDate = new Date(event.date);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate < today;
+    });
+
+    const upcoming = events.filter(event => {
+      const eventDate = new Date(event.date);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate >= today;
+    });
+
+    return { past, upcoming };
   }, [events]);
 
-  // 初期表示時に直近のイベントを自動選択
+  // 初期表示時に当日以降の最初のイベントを自動選択
   useEffect(() => {
-    if (!selectedEvent && events.length > 0) {
-      const upcomingEvent = getUpcomingEvent;
-      if (upcomingEvent) {
-        handleMarkerClick(upcomingEvent);
-        // 該当する都道府県を選択
-        const prefecture = prefectures.find(p => p.name === upcomingEvent.prefecture);
-        if (prefecture) {
-          onPrefectureSelect(prefecture.id);
-        }
+    if (!selectedEvent && events.length > 0 && categorizedEvents.upcoming.length > 0) {
+      const upcomingEvent = categorizedEvents.upcoming[0];
+      handleMarkerClick(upcomingEvent);
+      // 該当する都道府県を選択
+      const prefecture = prefectures.find(p => p.name === upcomingEvent.prefecture);
+      if (prefecture) {
+        onPrefectureSelect(prefecture.id);
       }
     }
   }, [events]);
@@ -190,21 +200,45 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">
-          {selectedEvent 
-            ? "選択されたイベント" 
-            : selectedPrefecture 
-              ? `${prefectures.find(p => p.id === selectedPrefecture)?.name}のイベント`
-              : "最近選択したイベント"}
-        </h2>
-        <EventList
-          events={selectedEvent 
-            ? eventHistory
-            : selectedPrefecture
-              ? prefectureEvents
-              : eventHistory}
-          selectedEvent={selectedEvent}
-        />
+        {selectedEvent ? (
+          <>
+            <h2 className="text-xl font-semibold">選択されたイベント</h2>
+            <EventList
+              events={eventHistory}
+              selectedEvent={selectedEvent}
+            />
+          </>
+        ) : selectedPrefecture ? (
+          <>
+            <h2 className="text-xl font-semibold">{prefectures.find(p => p.id === selectedPrefecture)?.name}のイベント</h2>
+            {categorizedEvents.upcoming.length > 0 && (
+              <>
+                <h3 className="text-lg font-medium mt-6 mb-2">これから</h3>
+                <EventList
+                  events={prefectureEvents.filter(event => categorizedEvents.upcoming.includes(event))}
+                  selectedEvent={null}
+                />
+              </>
+            )}
+            {categorizedEvents.past.length > 0 && (
+              <>
+                <h3 className="text-lg font-medium mt-6 mb-2">これまで</h3>
+                <EventList
+                  events={prefectureEvents.filter(event => categorizedEvents.past.includes(event))}
+                  selectedEvent={null}
+                />
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <h2 className="text-xl font-semibold">最近選択したイベント</h2>
+            <EventList
+              events={eventHistory}
+              selectedEvent={selectedEvent}
+            />
+          </>
+        )}
       </div>
     </div>
   );
