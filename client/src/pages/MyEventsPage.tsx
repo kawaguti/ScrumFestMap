@@ -287,7 +287,7 @@ export default function MyEventsPage() {
                             >
                               履歴を見る
                             </Button>
-                          </>
+                        </>
                       </div>
                     )}
                   </div>
