@@ -4,6 +4,10 @@ import path from "path";
 import checker from "vite-plugin-checker";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
+// Determine if we're running on Replit
+const isReplit = !!process.env.REPL_SLUG && !!process.env.REPL_OWNER;
+const replitUrl = isReplit ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : undefined;
+
 export default defineConfig({
   plugins: [
     react(),
@@ -31,16 +35,19 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: parseInt(process.env.PORT || '3001', 10),
     strictPort: true,
     host: "0.0.0.0",
     hmr: {
-      clientPort: 443,
+      clientPort: isReplit ? 443 : undefined,
+      host: isReplit ? replitUrl : undefined,
+      protocol: isReplit ? 'wss' : 'ws'
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: isReplit ? `https://${replitUrl}` : 'http://localhost:3000',
         changeOrigin: true,
+        secure: isReplit
       }
     }
   },
