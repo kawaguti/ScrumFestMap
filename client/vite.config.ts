@@ -63,15 +63,30 @@ export default defineConfig({
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
             console.log('Proxy Request:', req.method, req.url);
+            if (!req.url?.startsWith('/api')) {
+              console.log('Non-API request detected:', req.url);
+            }
             console.log('Target URL:', proxyReq.path);
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
             console.log('Proxy Response:', proxyRes.statusCode, req.url);
             if (proxyRes.statusCode >= 400) {
               console.log('Error Response Headers:', proxyRes.headers);
+              console.log('Response Type:', proxyRes.headers['content-type']);
             }
           });
         }
+      },
+      '/my-events': {
+        target: isReplit 
+          ? process.env.NODE_ENV === 'production'
+            ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+            : 'http://0.0.0.0:5000'
+          : 'http://localhost:5000',
+        changeOrigin: true,
+        secure: isReplit && process.env.NODE_ENV === 'production',
+        ws: true,
+        rewrite: (path) => path.replace(/^\/my-events/, '/api/my-events')
       }
     }
   },
@@ -90,7 +105,9 @@ export default defineConfig({
           ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-toast'],
           utils: ['@tanstack/react-query', 'zod', '@hookform/resolvers']
         },
-        assetFileNames: 'assets/[name].[hash][extname]',
+        assetFileNames: (assetInfo) => {
+          return `assets/[name].[hash][extname]`;
+        },
         chunkFileNames: 'assets/[name].[hash].js',
         entryFileNames: 'assets/[name].[hash].js'
       }
@@ -102,5 +119,5 @@ export default defineConfig({
       localsConvention: 'camelCase',
       generateScopedName: isReplit ? '[hash:base64:5]' : '[local]_[hash:base64:5]'
     }
-  },
+  }
 });
