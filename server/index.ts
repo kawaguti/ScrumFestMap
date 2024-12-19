@@ -100,7 +100,7 @@ app.use((req, res, next) => {
 
   // Use the standard port provided by Replit in production
   const PORT = process.env.PORT || 5000;
-  const HOST = '0.0.0.0'; // Allow external connections
+  const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
 
   server.listen(Number(PORT), HOST, () => {
     log(`Server started in ${process.env.NODE_ENV} mode`);
