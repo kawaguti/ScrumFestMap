@@ -86,8 +86,8 @@ app.use((req, res, next) => {
     });
   }
 
-  // In production, always use port 443 for HTTPS traffic
-  const PORT = process.env.NODE_ENV === 'production' ? 443 : 5000;
+  // In production, use the standard port provided by Replit
+  const PORT = process.env.PORT || 5000;
   const HOST = '0.0.0.0';  // Always use 0.0.0.0 to allow external connections
 
   server.listen(Number(PORT), HOST, () => {
