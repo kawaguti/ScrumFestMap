@@ -38,7 +38,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: process.env.NODE_ENV === 'production' ? 3000 : 3001,
     strictPort: true,
     host: true,
     hmr: {
@@ -77,7 +77,7 @@ export default defineConfig({
           });
         }
       },
-      '/my-events': {
+      '/api/my-events': {
         target: isReplit 
           ? process.env.NODE_ENV === 'production'
             ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
@@ -85,8 +85,7 @@ export default defineConfig({
           : 'http://localhost:5000',
         changeOrigin: true,
         secure: isReplit && process.env.NODE_ENV === 'production',
-        ws: true,
-        rewrite: (path) => path.replace(/^\/my-events/, '/api/my-events')
+        ws: true
       }
     }
   },
