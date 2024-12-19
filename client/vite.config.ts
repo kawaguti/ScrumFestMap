@@ -51,16 +51,21 @@ export default defineConfig({
         target: isReplit ? 'http://0.0.0.0:5000' : 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        ws: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api'),
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
-            console.log('proxy error', err);
+            console.log('Proxy Error:', err);
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Request:', req.method, req.url);
+            console.log('Proxy Request:', req.method, req.url);
+            console.log('Target URL:', proxyReq.path);
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('Received Response:', proxyRes.statusCode, req.url);
+            console.log('Proxy Response:', proxyRes.statusCode, req.url);
+            if (proxyRes.statusCode >= 400) {
+              console.log('Error Response Headers:', proxyRes.headers);
+            }
           });
         }
       }
