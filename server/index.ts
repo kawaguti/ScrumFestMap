@@ -85,10 +85,11 @@ app.use((req, res, next) => {
 
   // Use PORT environment variable or fallback to 5000 for all environments
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
+  const HOST = process.env.REPL_SLUG ? "0.0.0.0" : "localhost";
 
-  server.listen(PORT, "0.0.0.0", () => {
+  server.listen(PORT, HOST, () => {
     log(`Server started in ${process.env.NODE_ENV} mode`);
-    log(`Listening on port ${PORT}`);
+    log(`Listening on ${HOST}:${PORT}`);
     if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
       const replitUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
       log(`Replit URL: ${replitUrl}`);
