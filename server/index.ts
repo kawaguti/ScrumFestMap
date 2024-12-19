@@ -75,20 +75,32 @@ app.use((req, res, next) => {
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
-    app.use(express.static(path.resolve(__dirname, "../dist/public")));
-    // This should only handle non-API routes
-    app.use("*", (req, res, next) => {
+    // Serve static files from the dist/public directory
+    const staticPath = path.resolve(__dirname, "../dist/public");
+    app.use(express.static(staticPath, {
+      index: false, // Don't serve index.html for the root path automatically
+      maxAge: '1d' // Cache static assets for 1 day
+    }));
+
+    // Handle all non-API routes by serving index.html
+    app.get('*', (req, res, next) => {
       if (req.path.startsWith('/api')) {
         next();
       } else {
-        res.sendFile(path.resolve(__dirname, "../dist/public/index.html"));
+        const indexPath = path.join(staticPath, 'index.html');
+        res.sendFile(indexPath, (err) => {
+          if (err) {
+            console.error(`Error sending index.html: ${err.message}`);
+            next(err);
+          }
+        });
       }
     });
   }
 
-  // In production, use the standard port provided by Replit
+  // Use the standard port provided by Replit in production
   const PORT = process.env.PORT || 5000;
-  const HOST = '0.0.0.0';  // Always use 0.0.0.0 to allow external connections
+  const HOST = '0.0.0.0'; // Allow external connections
 
   server.listen(Number(PORT), HOST, () => {
     log(`Server started in ${process.env.NODE_ENV} mode`);
