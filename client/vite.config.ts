@@ -42,9 +42,10 @@ export default defineConfig({
     strictPort: true,
     host: true,
     hmr: {
-      clientPort: process.env.NODE_ENV === 'production' ? 443 : 3001,
+      clientPort: isReplit && process.env.NODE_ENV === 'production' ? 443 : 3001,
       host: isReplit ? replitUrl : 'localhost',
-      protocol: isReplit && process.env.NODE_ENV === 'production' ? 'wss' : 'ws'
+      protocol: isReplit && process.env.NODE_ENV === 'production' ? 'wss' : 'ws',
+      path: '/_hmr'
     },
     proxy: {
       '/api': {

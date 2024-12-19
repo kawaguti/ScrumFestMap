@@ -86,8 +86,8 @@ app.use((req, res, next) => {
     });
   }
 
-  // In production, use the PORT environment variable or fallback to 80
-  const PORT = process.env.NODE_ENV === 'production' ? (process.env.PORT || 80) : 5000;
+  // In production, always use port 443 for HTTPS traffic
+  const PORT = process.env.NODE_ENV === 'production' ? 443 : 5000;
   const HOST = '0.0.0.0';  // Always use 0.0.0.0 to allow external connections
 
   server.listen(Number(PORT), HOST, () => {
@@ -95,7 +95,7 @@ app.use((req, res, next) => {
     log(`Listening on port ${PORT}`);
     if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
       const replitUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
-      log(`Replit URL: ${replitUrl}`);
+      log(`Replit production URL: ${replitUrl}`);
     }
   });
 })();
