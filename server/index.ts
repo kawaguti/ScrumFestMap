@@ -74,13 +74,18 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use the PORT environment variable for Replit deployment compatibility
-  // Fall back to port 3000 if not specified
-  const PORT = parseInt(process.env.PORT || "3000", 10);
+  // Standard port configuration:
+  // Development: Always use port 3000
+  // Production: Use PORT environment variable or fallback to 80
+  const isDev = process.env.NODE_ENV === "development";
+  const PORT = isDev ? 3000 : (process.env.PORT ? parseInt(process.env.PORT, 10) : 80);
+
   server.listen(PORT, "0.0.0.0", () => {
-    log(`serving on port ${PORT}`);
+    log(`Server started in ${process.env.NODE_ENV} mode`);
+    log(`Listening on port ${PORT}`);
     if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-      log(`Replit URL: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
+      const replitUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+      log(`Replit URL: ${replitUrl}`);
     }
   });
 })();
