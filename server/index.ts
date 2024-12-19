@@ -3,6 +3,12 @@ import { setupRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import { createServer } from "http";
 import { setupAuth } from "./auth";
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 function log(message: string) {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -71,13 +77,17 @@ app.use((req, res, next) => {
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
-    serveStatic(app);
+    app.use(express.static(path.resolve(__dirname, "../dist/public")));
+    app.use("*", (_req, res) => {
+      res.sendFile(path.resolve(__dirname, "../dist/public/index.html"));
+    });
   }
 
   // Port configuration for different environments:
-  // Development: Always use port 3000
+  // Development: Use port 3000
   // Production: Use PORT environment variable or fallback to 5000
-  const PORT = process.env.NODE_ENV === "development" ? 3000 : process.env.PORT ? parseInt(process.env.PORT) : 5000;
+  const isDev = process.env.NODE_ENV === "development";
+  const PORT = isDev ? 3000 : (process.env.PORT ? parseInt(process.env.PORT, 10) : 5000);
 
   server.listen(PORT, "0.0.0.0", () => {
     log(`Server started in ${process.env.NODE_ENV} mode`);

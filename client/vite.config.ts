@@ -45,7 +45,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: isReplit ? `https://${replitUrl}` : 'http://localhost:3000',
+        target: isReplit ? `https://${replitUrl}` : 'http://localhost:5000',
         changeOrigin: true,
         secure: isReplit ? true : false,
         rewrite: (path) => path.replace(/^\/api/, '')

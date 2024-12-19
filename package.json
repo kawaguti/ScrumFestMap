@@ -84,6 +84,7 @@
     "recharts": "^2.13.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
+    "terser": "^5.37.0",
     "topojson-client": "^3.1.0",
     "ts-node": "^10.9.2",
     "vaul": "^1.1.0",
