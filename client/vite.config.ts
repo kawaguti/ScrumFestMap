@@ -1,4 +1,4 @@
-import { defineConfig, type PluginOption } from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import checker from "vite-plugin-checker";
@@ -8,8 +8,8 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 const isReplit = !!process.env.REPL_SLUG && !!process.env.REPL_OWNER;
 const replitUrl = isReplit ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : undefined;
 
-// Configure plugins with proper typing
-const plugins: PluginOption[] = [
+// Configure plugins
+const plugins = [
   react(),
   checker({ typescript: true, overlay: false }),
   runtimeErrorOverlay(),
@@ -42,17 +42,21 @@ export default defineConfig({
     strictPort: true,
     host: true,
     hmr: {
-      clientPort: isReplit ? 443 : 3000,
+      clientPort: process.env.NODE_ENV === 'production' ? 443 : 3001,
       host: isReplit ? replitUrl : 'localhost',
-      protocol: isReplit ? 'wss' : 'ws'
+      protocol: isReplit && process.env.NODE_ENV === 'production' ? 'wss' : 'ws'
     },
     proxy: {
       '/api': {
-        target: isReplit ? 'http://0.0.0.0:5000' : 'http://localhost:5000',
+        target: isReplit 
+          ? process.env.NODE_ENV === 'production'
+            ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+            : 'http://0.0.0.0:5000'
+          : 'http://localhost:5000',
         changeOrigin: true,
-        secure: false,
+        secure: isReplit && process.env.NODE_ENV === 'production',
         ws: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api'),
+        rewrite: (path) => path.replace(/^\/api/, ''),
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
             console.log('Proxy Error:', err);

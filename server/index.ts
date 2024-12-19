@@ -83,13 +83,13 @@ app.use((req, res, next) => {
     });
   }
 
-  // Use PORT environment variable or fallback to 5000 for all environments
-  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
-  const HOST = process.env.REPL_SLUG ? "0.0.0.0" : "localhost";
+  // In production, use the PORT environment variable or fallback to 80
+  const PORT = process.env.NODE_ENV === 'production' ? (process.env.PORT || 80) : 5000;
+  const HOST = '0.0.0.0';  // Always use 0.0.0.0 to allow external connections
 
-  server.listen(PORT, HOST, () => {
+  server.listen(Number(PORT), HOST, () => {
     log(`Server started in ${process.env.NODE_ENV} mode`);
-    log(`Listening on ${HOST}:${PORT}`);
+    log(`Listening on port ${PORT}`);
     if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
       const replitUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
       log(`Replit URL: ${replitUrl}`);
