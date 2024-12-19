@@ -98,6 +98,7 @@ export default defineConfig({
     sourcemap: !isReplit,
     cssCodeSplit: true,
     assetsDir: 'assets',
+    manifest: true,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -105,13 +106,12 @@ export default defineConfig({
           ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-toast'],
           utils: ['@tanstack/react-query', 'zod', '@hookform/resolvers']
         },
-        assetFileNames: (assetInfo) => {
-          return `assets/[name].[hash][extname]`;
-        },
+        assetFileNames: 'assets/[name].[hash][extname]',
         chunkFileNames: 'assets/[name].[hash].js',
         entryFileNames: 'assets/[name].[hash].js'
       }
-    }
+    },
+    base: isReplit ? `https://${replitUrl}/` : '/'
   },
   css: {
     devSourcemap: true,
