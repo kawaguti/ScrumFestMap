@@ -45,9 +45,9 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: isReplit ? `https://${replitUrl}` : 'http://localhost:3000',
         changeOrigin: true,
-        secure: false,
+        secure: isReplit ? true : false,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
@@ -55,12 +55,15 @@ export default defineConfig({
   build: {
     outDir: "../dist/public",
     emptyOutDir: true,
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1500,
+    minify: 'terser',
+    sourcemap: !isReplit,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu']
+          vendor: ['react', 'react-dom', 'react-router-dom', 'wouter'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-toast'],
+          utils: ['@tanstack/react-query', 'zod', '@hookform/resolvers']
         }
       }
     }

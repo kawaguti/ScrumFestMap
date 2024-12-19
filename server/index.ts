@@ -74,11 +74,10 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Standard port configuration:
+  // Port configuration for different environments:
   // Development: Always use port 3000
-  // Production: Use PORT environment variable or fallback to 80
-  const isDev = process.env.NODE_ENV === "development";
-  const PORT = isDev ? 3000 : (process.env.PORT ? parseInt(process.env.PORT, 10) : 80);
+  // Production: Use PORT environment variable or fallback to 5000
+  const PORT = process.env.NODE_ENV === "development" ? 3000 : process.env.PORT ? parseInt(process.env.PORT) : 5000;
 
   server.listen(PORT, "0.0.0.0", () => {
     log(`Server started in ${process.env.NODE_ENV} mode`);
