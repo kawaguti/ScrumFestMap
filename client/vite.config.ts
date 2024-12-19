@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import checker from "vite-plugin-checker";
@@ -8,12 +8,15 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 const isReplit = !!process.env.REPL_SLUG && !!process.env.REPL_OWNER;
 const replitUrl = isReplit ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : undefined;
 
+// Configure plugins with proper typing
+const plugins: PluginOption[] = [
+  react(),
+  checker({ typescript: true, overlay: false }),
+  runtimeErrorOverlay(),
+];
+
 export default defineConfig({
-  plugins: [
-    react(),
-    checker({ typescript: true, overlay: false }),
-    runtimeErrorOverlay(),
-  ],
+  plugins,
   optimizeDeps: {
     exclude: ['@tanstack/react-query'],
     include: [
