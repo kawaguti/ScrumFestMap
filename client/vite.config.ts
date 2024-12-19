@@ -35,19 +35,19 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3001,
+    port: 3000,
     strictPort: true,
     host: "0.0.0.0",
     hmr: {
-      clientPort: isReplit ? 443 : 3001,
+      clientPort: isReplit ? 443 : 3000,
       host: isReplit ? replitUrl : 'localhost',
       protocol: isReplit ? 'wss' : 'ws'
     },
     proxy: {
       '/api': {
-        target: isReplit ? `https://${replitUrl}` : 'http://localhost:5000',
+        target: 'http://localhost:5000',
         changeOrigin: true,
-        secure: isReplit ? true : false,
+        secure: false,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
