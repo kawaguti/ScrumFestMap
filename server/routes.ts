@@ -68,9 +68,14 @@ export function setupRoutes(app: Express) {
         .select()
         .from(events)
         .where(eq(events.isArchived, false));
+      
+      // エラーログを追加
+      console.log("Fetched events:", allEvents);
+      
       res.json(allEvents);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch events" });
+      console.error("Error fetching events:", error);
+      res.status(500).json({ error: "Failed to fetch events", details: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
