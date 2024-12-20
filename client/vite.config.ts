@@ -47,7 +47,7 @@ export default defineConfig({
       host: 'localhost',
     },
     proxy: {
-      '/api': {
+      '^/api/.*': {
         target: isReplit 
           ? isProduction
             ? `https://${replitUrl}`
@@ -57,7 +57,12 @@ export default defineConfig({
         secure: isReplit && isProduction,
         ws: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
-      },
+        configure: (proxy, _options) => {
+          proxy.on('error', (err) => {
+            console.warn('Proxy error:', err);
+          });
+        }
+      }
     }
   },
   build: {
