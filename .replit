@@ -8,7 +8,7 @@ channel = "stable-24_05"
 [deployment]
 deploymentTarget = "cloudrun"
 build = ["npm", "run", "build"]
-run = ["sh", "-c", "NODE_ENV=production node dist/index.js"]
+run = ["sh", "-c", "NODE_ENV=development tsx watch --clear-screen=false server/index.ts"]
 ignorePorts = false
 
 [[ports]]
@@ -22,6 +22,7 @@ externalPort = 3001
 [[ports]]
 localPort = 5000
 externalPort = 80
+exposeLocalhost = true
 
 [[ports]]
 localPort = 5173
