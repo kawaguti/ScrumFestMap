@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, boolean, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -22,6 +22,8 @@ export const events = pgTable("events", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   isArchived: boolean("is_archived").default(false),
   youtubePlaylist: text("youtube_playlist"),
+  latitude: doublePrecision("latitude"),
+  longitude: doublePrecision("longitude"),
 });
 
 export const insertUserSchema = createInsertSchema(users);
@@ -33,6 +35,8 @@ export const insertEventSchema = createInsertSchema(events, {
   name: z.string().min(1, "イベント名を入力してください"),
   prefecture: z.string().min(1, "開催都道府県を選択してください"),
   date: z.coerce.date(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
 });
 export const selectEventSchema = createSelectSchema(events);
 export type InsertEvent = z.infer<typeof insertEventSchema>;
