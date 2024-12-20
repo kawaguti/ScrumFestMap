@@ -135,10 +135,10 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                 if (!prefecture) return null;
 
                 // データベースの coordinates を使用
-                let coordinates;
+                let coordinates: [number, number];
                 if (event.coordinates) {
                   const [lat, lng] = event.coordinates.split(',').map(coord => parseFloat(coord.trim()));
-                  coordinates = [lat, lng];
+                  coordinates = [lat, lng] as [number, number];
                 } else {
                   coordinates = prefectureCoordinates[event.prefecture];
                 }
