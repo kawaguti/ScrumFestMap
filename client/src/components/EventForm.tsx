@@ -32,6 +32,7 @@ interface EventFormProps {
     website?: string;
     description?: string;
     youtubePlaylist?: string;
+    coordinates?: string;
   };
   onSubmit: (data: any) => Promise<void>;
 }
@@ -56,6 +57,7 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
       website: "",
       description: "",
       youtubePlaylist: "",
+      coordinates: "",
     },
   });
 
@@ -212,12 +214,7 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
                         <Input
                           placeholder="35.255086694192784, 139.15577749578438"
                           value={field.value || ""}
-                          onChange={(e) => {
-                            field.onChange(e.target.value);
-                            const [lat, lng] = e.target.value.split(',').map(s => s.trim());
-                            form.setValue('latitude', lat);
-                            form.setValue('longitude', lng);
-                          }}
+                          onChange={field.onChange}
                         />
                       </FormControl>
                       <FormMessage />

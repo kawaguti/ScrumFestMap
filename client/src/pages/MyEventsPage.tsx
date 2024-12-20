@@ -55,6 +55,7 @@ export default function MyEventsPage() {
         website: updatedEvent.website,
         description: updatedEvent.description,
         youtubePlaylist: updatedEvent.youtubePlaylist,
+        coordinates: updatedEvent.coordinates,
       };
 
       const response = await fetch(`/api/events/${updatedEvent.id}`, {
@@ -65,12 +66,12 @@ export default function MyEventsPage() {
         body: JSON.stringify(updateData),
         credentials: "include",
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || "イベントの更新に失敗しました");
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -97,12 +98,12 @@ export default function MyEventsPage() {
         method: "DELETE",
         credentials: "include",
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || "イベントの削除に失敗しました");
       }
-      
+
       return response.json();
     },
     onSuccess: (_, deletedEventId) => {

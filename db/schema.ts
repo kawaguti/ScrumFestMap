@@ -34,8 +34,7 @@ export const insertEventSchema = createInsertSchema(events, {
   name: z.string().min(1, "イベント名を入力してください"),
   prefecture: z.string().min(1, "開催都道府県を選択してください"),
   date: z.coerce.date(),
-  latitude: z.string().optional(),
-  longitude: z.string().optional(),
+  coordinates: z.string().optional(),
 });
 export const selectEventSchema = createSelectSchema(events);
 export type InsertEvent = z.infer<typeof insertEventSchema>;
