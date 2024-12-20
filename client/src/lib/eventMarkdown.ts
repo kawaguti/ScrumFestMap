@@ -14,7 +14,13 @@ export function generateEventMarkdown(events: Event[]): string {
       const [lat, lng] = event.coordinates.split(',').map(coord => coord.trim());
       markdown += `- 座標: \`[${lng}, ${lat}]\` (Leaflet形式)\n`;
     } else {
-      markdown += `- 座標: 未設定\n`;
+      const prefCoords = prefectureCoordinates[event.prefecture];
+      if (prefCoords) {
+        const [lat, lng] = prefCoords;
+        markdown += `- 座標: \`[${lng}, ${lat}]\` (Leaflet形式・都道府県の代表地点)\n`;
+      } else {
+        markdown += `- 座標: 未設定\n`;
+      }
     }
     markdown += `- 開催日: ${format(new Date(event.date), "yyyy年MM月dd日(E)", { locale: ja })}\n\n`;
 
