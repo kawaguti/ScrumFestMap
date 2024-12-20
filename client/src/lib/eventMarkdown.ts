@@ -8,12 +8,14 @@ export function generateEventMarkdown(events: Event[]): string {
   const header = `# スクラムフェスマップ\n\n作成日時: ${format(now, "yyyy年MM月dd日 HH:mm", { locale: ja })}\n\n---\n\n`;
 
   const eventsList = events.map(event => {
-    const coordinates = prefectureCoordinates[event.prefecture] || [0, 0];
     let markdown = `## ${event.name}\n\n`;
     markdown += `- 開催地: ${event.prefecture}\n`;
-    markdown += coordinates[0] === 0 && coordinates[1] === 0
-      ? `- 座標: 未設定\n`
-      : `- 座標: \`[${coordinates[1]}, ${coordinates[0]}]\` (Leaflet形式)\n`;
+    if (event.coordinates) {
+      const [lat, lng] = event.coordinates.split(',').map(coord => coord.trim());
+      markdown += `- 座標: \`[${lng}, ${lat}]\` (Leaflet形式)\n`;
+    } else {
+      markdown += `- 座標: 未設定\n`;
+    }
     markdown += `- 開催日: ${format(new Date(event.date), "yyyy年MM月dd日(E)", { locale: ja })}\n\n`;
 
     if (event.description) {
