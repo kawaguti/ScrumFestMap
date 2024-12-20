@@ -133,7 +133,15 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
               {events.map((event) => {
                 const prefecture = prefectures.find(p => p.name === event.prefecture);
                 if (!prefecture) return null;
-                const coordinates = prefectureCoordinates[event.prefecture];
+
+                // データベースの coordinates を使用
+                let coordinates;
+                if (event.coordinates) {
+                  const [lat, lng] = event.coordinates.split(',').map(coord => parseFloat(coord.trim()));
+                  coordinates = [lat, lng];
+                } else {
+                  coordinates = prefectureCoordinates[event.prefecture];
+                }
                 if (!coordinates) return null;
                 
                 const isFutureEvent = new Date(event.date) > new Date();
