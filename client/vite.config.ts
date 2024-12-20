@@ -9,15 +9,12 @@ const isReplit = !!process.env.REPL_SLUG && !!process.env.REPL_OWNER;
 const replitUrl = isReplit ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : undefined;
 const isProduction = isReplit || process.env.NODE_ENV === 'production';
 
-// Configure plugins
-const plugins = [
-  react(),
-  checker({ typescript: true, overlay: false }),
-  runtimeErrorOverlay(),
-];
-
 export default defineConfig({
-  plugins,
+  plugins: [
+    react(),
+    checker({ typescript: true, overlay: false }),
+    runtimeErrorOverlay(),
+  ],
   optimizeDeps: {
     exclude: ['@tanstack/react-query'],
     include: [
@@ -39,15 +36,15 @@ export default defineConfig({
     },
   },
   server: {
-    port: isProduction ? 3000 : 3001,
+    port: 3001,
     strictPort: true,
     host: true,
-    hmr: isProduction ? false : {
+    hmr: {
+      port: 3001,
       clientPort: 3001,
-      host: 'localhost',
     },
     proxy: {
-      '^/api/.*': {
+      '/api': {
         target: isReplit 
           ? isProduction
             ? `https://${replitUrl}`
@@ -56,12 +53,6 @@ export default defineConfig({
         changeOrigin: true,
         secure: isReplit && isProduction,
         ws: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-        configure: (proxy, _options) => {
-          proxy.on('error', (err) => {
-            console.warn('Proxy error:', err);
-          });
-        }
       }
     }
   },
@@ -70,14 +61,14 @@ export default defineConfig({
     emptyOutDir: true,
     chunkSizeWarningLimit: 1500,
     minify: 'terser',
-    sourcemap: false,
+    sourcemap: !isProduction,
     cssCodeSplit: true,
     assetsDir: 'assets',
     manifest: true,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom', 'wouter'],
+          vendor: ['react', 'react-dom', 'wouter'],
           ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-toast'],
           utils: ['@tanstack/react-query', 'zod', '@hookform/resolvers']
         },
