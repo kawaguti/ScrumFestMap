@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+// 日付入力用のインポートを削除
 import { format } from "date-fns";
 import { prefectures } from "@/lib/constants";
 import {
@@ -31,8 +32,6 @@ interface EventFormProps {
     website?: string;
     description?: string;
     youtubePlaylist?: string;
-    latitude?: number;
-    longitude?: number;
   };
   onSubmit: (data: any) => Promise<void>;
 }
@@ -57,8 +56,6 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
       website: "",
       description: "",
       youtubePlaylist: "",
-      latitude: undefined,
-      longitude: undefined,
     },
   });
 
@@ -67,7 +64,6 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="space-y-2">
           <div className="grid gap-4">
-            {/* 既存のフィールドは変更なし */}
             <FormField
               control={form.control}
               name="name"
@@ -125,13 +121,13 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '').slice(0, 8);
                           setInputValue(value);
-
+                          
                           if (value.length === 8) {
                             const year = parseInt(value.substring(0, 4));
                             const month = parseInt(value.substring(4, 6)) - 1;
                             const day = parseInt(value.substring(6, 8));
                             const date = new Date(year, month, day);
-
+                            
                             if (!isNaN(date.getTime()) && date.getMonth() === month) {
                               field.onChange(date);
                             }
@@ -146,57 +142,6 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
                 );
               }}
             />
-
-            {/* 位置情報フィールドの追加 */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="latitude"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base font-semibold">緯度</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="any"
-                        placeholder="35.6895"
-                        {...field}
-                        onChange={(e) => {
-                          const value = e.target.value ? parseFloat(e.target.value) : undefined;
-                          field.onChange(value);
-                        }}
-                        value={field.value ?? ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="longitude"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base font-semibold">経度</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="any"
-                        placeholder="139.6917"
-                        {...field}
-                        onChange={(e) => {
-                          const value = e.target.value ? parseFloat(e.target.value) : undefined;
-                          field.onChange(value);
-                        }}
-                        value={field.value ?? ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
 
             <FormField
               control={form.control}
