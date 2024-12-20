@@ -198,6 +198,50 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
               )}
             />
 
+            {defaultValues && (
+              <div className="grid gap-4">
+                <FormField
+                  control={form.control}
+                  name="latitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-semibold">緯度（編集時のみ）</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.000001"
+                          placeholder="35.689488"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="longitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-semibold">経度（編集時のみ）</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.000001"
+                          placeholder="139.691706"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
             <div className="flex justify-end pt-6">
               <Button
                 type="submit"
