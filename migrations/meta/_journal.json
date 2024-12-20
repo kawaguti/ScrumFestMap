@@ -15,6 +15,13 @@
       "when": 1733444959399,
       "tag": "0001_event_history",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1734695427429,
+      "tag": "0002_nervous_amazoness",
+      "breakpoints": true
     }
   ]
 }
