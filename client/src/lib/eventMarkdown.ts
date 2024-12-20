@@ -17,7 +17,7 @@ export function generateEventMarkdown(events: Event[]): string {
       const prefCoords = prefectureCoordinates[event.prefecture];
       if (prefCoords) {
         const [lat, lng] = prefCoords;
-        markdown += `- 座標: \`[${lng}, ${lat}]\` (Leaflet形式・都道府県の代表地点)\n`;
+        markdown += `- 座標: \`[${lng}, ${lat}]\` (Leaflet形式)\n`;
       } else {
         markdown += `- 座標: 未設定\n`;
       }
