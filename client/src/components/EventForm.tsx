@@ -202,40 +202,28 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
               <div className="grid gap-4">
                 <FormField
                   control={form.control}
-                  name="latitude"
+                  name="coordinates"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-base font-semibold">緯度（編集時のみ）</FormLabel>
+                      <FormLabel className="text-base font-semibold">
+                        座標（編集時のみ）
+                      </FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          step="0.000001"
-                          placeholder="35.689488"
-                          {...field}
+                          placeholder="35.255086694192784, 139.15577749578438"
                           value={field.value || ""}
+                          onChange={(e) => {
+                            field.onChange(e.target.value);
+                            const [lat, lng] = e.target.value.split(',').map(s => s.trim());
+                            form.setValue('latitude', lat);
+                            form.setValue('longitude', lng);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="longitude"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-base font-semibold">経度（編集時のみ）</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.000001"
-                          placeholder="139.691706"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
+                      <p className="text-sm text-muted-foreground">
+                        Googleマップからコピーした座標をそのまま貼り付けできます
+                      </p>
                     </FormItem>
                   )}
                 />
