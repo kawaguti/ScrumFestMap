@@ -55,7 +55,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "NODE_ENV=production tsx watch --clear-screen=false server/index.ts"
+args = "tsx watch --clear-screen=false server/index.ts"
 waitForPort = 5000
 
 [[workflows.workflow]]
@@ -70,5 +70,5 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd client && NODE_ENV=production npm run dev"
+args = "cd client && npm run dev"
 waitForPort = 3000

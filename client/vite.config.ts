@@ -4,9 +4,10 @@ import path from "path";
 import checker from "vite-plugin-checker";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-// Determine if we're running on Replit
+// Determine if we're running on Replit and in production
 const isReplit = !!process.env.REPL_SLUG && !!process.env.REPL_OWNER;
 const replitUrl = isReplit ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : undefined;
+const isProduction = isReplit || process.env.NODE_ENV === 'production';
 
 // Configure plugins
 const plugins = [
@@ -38,22 +39,22 @@ export default defineConfig({
     },
   },
   server: {
-    port: process.env.NODE_ENV === 'production' ? 3000 : 3001,
+    port: isProduction ? 3000 : 3001,
     strictPort: true,
     host: true,
-    hmr: process.env.NODE_ENV === 'production' ? false : {
+    hmr: isProduction ? false : {
       clientPort: 3001,
       host: 'localhost',
     },
     proxy: {
       '/api': {
         target: isReplit 
-          ? process.env.NODE_ENV === 'production'
+          ? isProduction
             ? `https://${replitUrl}`
             : 'http://0.0.0.0:5000'
           : 'http://localhost:5000',
         changeOrigin: true,
-        secure: isReplit && process.env.NODE_ENV === 'production',
+        secure: isReplit && isProduction,
         ws: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
@@ -82,7 +83,7 @@ export default defineConfig({
     }
   },
   css: {
-    devSourcemap: process.env.NODE_ENV !== 'production',
+    devSourcemap: !isProduction,
     modules: {
       localsConvention: 'camelCase',
       generateScopedName: '[hash:base64:5]'
