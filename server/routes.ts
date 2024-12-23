@@ -66,7 +66,7 @@ class GitHubFileUpdater {
   private getHeaders(): HeadersInit {
     return {
       'Accept': 'application/vnd.github.v3+json',
-      'Authorization': `token ${this.token}`,
+      'Authorization': `Bearer ${this.token.trim()}`,
       'Content-Type': 'application/json',
       'User-Agent': 'ScrumFestMap'
     };
@@ -75,6 +75,7 @@ class GitHubFileUpdater {
   public async updateFile(path: string, content: string, message: string): Promise<GitHubUpdateResponse> {
     const url = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${path}`;
     console.log('Updating file at:', url);
+    console.log('Token prefix:', this.token.substring(0, 4) + '...');
 
     try {
       // 1. 既存ファイルの情報を取得
@@ -86,6 +87,8 @@ class GitHubFileUpdater {
       if (!fileResponse.ok) {
         const errorText = await fileResponse.text();
         console.error('Failed to fetch file:', errorText);
+        console.error('Response status:', fileResponse.status);
+        console.error('Response headers:', JSON.stringify(Object.fromEntries(fileResponse.headers.entries()), null, 2));
         throw new Error(`Failed to fetch file: ${errorText}`);
       }
 
@@ -107,6 +110,8 @@ class GitHubFileUpdater {
       if (!updateResponse.ok) {
         const errorText = await updateResponse.text();
         console.error('Failed to update file:', errorText);
+        console.error('Response status:', updateResponse.status);
+        console.error('Response headers:', JSON.stringify(Object.fromEntries(updateResponse.headers.entries()), null, 2));
         throw new Error(`Failed to update file: ${errorText}`);
       }
 
@@ -383,6 +388,7 @@ export function setupRoutes(app: Express) {
     }
   });
 
+
   // イベントの更新エンドポイント
   app.put("/api/events/:eventId", async (req, res) => {
     if (!req.isAuthenticated()) {
@@ -625,29 +631,6 @@ export function setupRoutes(app: Express) {
     }
   });
 
-  // マイイベント取得
-  app.get("/api/my-events", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-
-    try {
-      const userEvents = await db
-        .select()
-        .from(events)
-        .where(
-          and(
-            eq(events.createdBy, req.user.id),
-            eq(events.isArchived, false)
-          )
-        )
-        .orderBy(desc(events.date));
-
-      res.json(userEvents);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch events" });
-    }
-  });
 
   app.post("/api/admin/demote/:userId", requireAdmin, async (req, res) => {
     try {
