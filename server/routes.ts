@@ -482,10 +482,13 @@ export function setupRoutes(app: Express) {
   // GitHub同期エンドポイント
   app.post("/api/admin/sync-github", requireAdmin, async (req, res) => {
     try {
+      console.log("Starting GitHub sync process...");
       const githubToken = process.env.GITHUB_TOKEN;
       if (!githubToken) {
+        console.error("GitHub token is missing");
         return res.status(500).json({ error: "GitHub token is not configured" });
       }
+      console.log("GitHub token is configured");
 
       // イベント一覧の取得
       const allEvents = await db
@@ -494,43 +497,101 @@ export function setupRoutes(app: Express) {
         .where(eq(events.isArchived, false))
         .orderBy(desc(events.date));
 
+      console.log(`Found ${allEvents.length} events to sync`);
+
       // マークダウンファイルの生成
       const markdownContent = generateMarkdown(allEvents);
+      console.log("Generated markdown content");
 
       // GitHubの設定
       const owner = 'kawaguti';
       const repo = 'ScrumFestMapViewer';
       const path = 'all-events.md';
-      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
-      // Base64エンコード
-      const base64Content = Buffer.from(markdownContent, 'utf-8').toString('base64');
+      // GitHub APIヘッダー
+      const headers = {
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'ScrumFestMap'
+      };
 
-      // GitHub APIにリクエスト
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${githubToken}`,
-          'Content-Type': 'application/json',
-          'User-Agent': 'ScrumFestMap'
-        },
-        body: JSON.stringify({
-          message: 'Update events list',
-          content: base64Content,
-          branch: 'main'
-        })
+      console.log('Fetching existing file information...');
+      console.log('API URL:', apiUrl);
+
+      // 1. まず既存ファイルの情報を取得
+      const fileResponse = await fetch(apiUrl, { 
+        method: 'GET',
+        headers 
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('GitHub API Error:', errorText);
-        return res.status(500).json({ 
-          error: "GitHub同期に失敗しました",
-          details: errorText
+      console.log('File info response status:', fileResponse.status);
+      const responseText = await fileResponse.text();
+      console.log('File info response:', responseText);
+
+      let sha = undefined;
+      let fileData;
+
+      try {
+        fileData = JSON.parse(responseText);
+        if (fileResponse.ok) {
+          sha = fileData.sha;
+          console.log('Existing file found, SHA:', sha);
+        }
+      } catch (parseError) {
+        console.error('Error parsing response:', parseError);
+        return res.status(500).json({
+          error: "GitHub APIのレスポンスの解析に失敗しました",
+          details: parseError.message
         });
       }
 
-      const result = await response.json();
+      if (!fileResponse.ok && fileResponse.status !== 404) {
+        console.error('Error fetching file info:', responseText);
+        return res.status(500).json({
+          error: "ファイル情報の取得に失敗しました",
+          details: responseText
+        });
+      }
+
+      // Base64エンコード
+      const base64Content = Buffer.from(markdownContent, 'utf-8').toString('base64');
+      console.log('Content encoded to base64');
+
+      // 2. ファイルを更新または作成
+      const updateData: any = {
+        message: 'Update events list',
+        content: base64Content,
+        branch: 'main'
+      };
+
+      // 既存ファイルの場合はSHAを含める
+      if (sha) {
+        updateData.sha = sha;
+        console.log('Including SHA in update request');
+      }
+
+      console.log('Sending update request...');
+      const updateResponse = await fetch(apiUrl, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(updateData)
+      });
+
+      console.log('Update response status:', updateResponse.status);
+      const updateResponseText = await updateResponse.text();
+      console.log('Update response:', updateResponseText);
+
+      if (!updateResponse.ok) {
+        console.error('GitHub API Error:', updateResponseText);
+        return res.status(500).json({ 
+          error: "GitHub同期に失敗しました",
+          details: updateResponseText
+        });
+      }
+
+      const result = JSON.parse(updateResponseText);
       res.json({
         success: true,
         message: "GitHubリポジトリにイベント一覧を同期しました",
