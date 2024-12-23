@@ -31,56 +31,38 @@ class GitHubFileUpdater {
   constructor(appId: string, privateKey: string, owner: string, repo: string) {
     this.appId = appId;
     try {
-      // Base64デコードを試みる（Base64でエンコードされている場合）
-      let decodedKey = privateKey;
-      try {
-        if (privateKey.match(/^[A-Za-z0-9+/=]+$/)) {
-          decodedKey = Buffer.from(privateKey, 'base64').toString('utf-8');
-        }
-      } catch (error) {
-        console.log('Key is not in Base64 format, proceeding with original key');
-      }
+      console.log('Processing private key...');
 
-      // プライベートキーの前処理
-      const normalizedKey = decodedKey
+      // キーの正規化
+      let normalizedKey = privateKey
         .replace(/\\n/g, '\n')
-        .replace(/\r\n/g, '\n')
-        .replace(/\r/g, '\n')
-        .replace(/["']/g, '')
         .trim();
 
-      // キーの形式を確認
-      const keyLines = normalizedKey.split('\n');
-      const isValidKey = 
-        keyLines[0].includes('BEGIN RSA PRIVATE KEY') &&
-        keyLines[keyLines.length - 1].includes('END RSA PRIVATE KEY') &&
-        keyLines.length > 2;
-
-      if (!isValidKey) {
-        throw new Error('Invalid private key format');
+      // 改行の追加
+      if (!normalizedKey.endsWith('\n')) {
+        normalizedKey += '\n';
       }
+
+      // PEMフォーマットの検証
+      console.log('Key format check:', {
+        hasBeginMarker: normalizedKey.includes('BEGIN RSA PRIVATE KEY'),
+        hasEndMarker: normalizedKey.includes('END RSA PRIVATE KEY'),
+        lineCount: normalizedKey.split('\n').length,
+        totalLength: normalizedKey.length
+      });
 
       this.privateKey = normalizedKey;
       this.owner = owner;
       this.repo = repo;
 
-      // 初期化時のデバッグ情報
-      console.log('GitHubFileUpdater initialized:', {
-        appId,
-        keyLength: this.privateKey.length,
-        lineCount: keyLines.length,
-        headerValid: keyLines[0].includes('BEGIN RSA PRIVATE KEY'),
-        footerValid: keyLines[keyLines.length - 1].includes('END RSA PRIVATE KEY'),
-        contentLines: keyLines.length - 2
-      });
-
+      console.log('GitHubFileUpdater initialized successfully');
     } catch (error) {
-      console.error('Error initializing GitHubFileUpdater:', error);
+      console.error('GitHubFileUpdater initialization error:', error);
       throw error;
     }
   }
 
-  private async generateJWT(): Promise<string> {
+  private generateJWT(): string {
     try {
       const now = Math.floor(Date.now() / 1000);
       const payload = {
@@ -89,22 +71,11 @@ class GitHubFileUpdater {
         iss: this.appId
       };
 
-      // JWTを生成する前の最終チェック
-      const keyLines = this.privateKey.split('\n');
-      console.log('JWT generation check:', {
-        keyLength: this.privateKey.length,
-        lineCount: keyLines.length,
-        headerPresent: keyLines[0].includes('BEGIN RSA PRIVATE KEY'),
-        footerPresent: keyLines[keyLines.length - 1].includes('END RSA PRIVATE KEY'),
-        middleLinesSample: keyLines.slice(1, -1).length > 0 ? 
-          keyLines[1].substring(0, 10) + '...' : 'No content'
-      });
-
-      const token = jwt.sign(payload, this.privateKey, { algorithm: 'RS256' });
-      return token;
+      console.log('Generating JWT with key length:', this.privateKey.length);
+      return jwt.sign(payload, this.privateKey, { algorithm: 'RS256' });
     } catch (error) {
       console.error('JWT Generation Error:', error);
-      throw new Error(`Failed to generate JWT: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
     }
   }
 
@@ -112,28 +83,27 @@ class GitHubFileUpdater {
     const url = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${path}`;
 
     try {
-      const token = await this.generateJWT();
-      const headers = new Headers({
+      const token = this.generateJWT();
+      console.log('JWT token generated successfully');
+
+      const headers = {
         'Accept': 'application/vnd.github+json',
         'Authorization': `Bearer ${token}`,
         'X-GitHub-Api-Version': '2022-11-28'
-      });
+      };
 
-      console.log('Attempting to fetch file:', path);
+      // 既存ファイルの取得
+      console.log('Fetching existing file:', path);
       const fileResponse = await fetch(url, { headers });
 
       if (!fileResponse.ok) {
         const errorText = await fileResponse.text();
-        console.error('File fetch error:', {
-          status: fileResponse.status,
-          statusText: fileResponse.statusText,
-          error: errorText
-        });
-        throw new Error(`Failed to fetch file: ${errorText}`);
+        throw new Error(`File fetch failed (${fileResponse.status}): ${errorText}`);
       }
 
       const fileData = await fileResponse.json() as GitHubFileResponse;
 
+      // ファイルの更新
       console.log('Updating file contents...');
       const updateResponse = await fetch(url, {
         method: 'PUT',
@@ -147,12 +117,7 @@ class GitHubFileUpdater {
 
       if (!updateResponse.ok) {
         const errorText = await updateResponse.text();
-        console.error('File update error:', {
-          status: updateResponse.status,
-          statusText: updateResponse.statusText,
-          error: errorText
-        });
-        throw new Error(`Failed to update file: ${errorText}`);
+        throw new Error(`File update failed (${updateResponse.status}): ${errorText}`);
       }
 
       const result = await updateResponse.json() as GitHubUpdateResponse;
@@ -163,6 +128,7 @@ class GitHubFileUpdater {
       });
 
       return result;
+
     } catch (error) {
       console.error('GitHub API Error:', error);
       throw error;
@@ -170,12 +136,33 @@ class GitHubFileUpdater {
   }
 }
 
-// 管理者権限を確認するミドルウェア
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || !req.user?.isAdmin) {
     return res.status(403).json({ error: "Forbidden" });
   }
   next();
+}
+
+function generateMarkdown(events: Event[]): string {
+  const now = new Date();
+  let markdown = `# スクラムフェスマップ\n\n`;
+  markdown += `作成日時: ${now.toLocaleString('ja-JP')}\n\n---\n\n`;
+
+  const sortedEvents = [...events].sort((a, b) =>
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  sortedEvents.forEach(event => {
+    markdown += `## ${event.name}\n\n`;
+    markdown += `- 開催日: ${new Date(event.date).toLocaleDateString('ja-JP')}\n`;
+    markdown += `- 開催地: ${event.prefecture}\n`;
+    if (event.website) markdown += `- Webサイト: ${event.website}\n`;
+    if (event.youtubePlaylist) markdown += `- 録画一覧: ${event.youtubePlaylist}\n`;
+    if (event.description) markdown += `\n${event.description}\n`;
+    markdown += '\n---\n\n';
+  });
+
+  return markdown;
 }
 
 export function setupRoutes(app: Express) {
@@ -205,13 +192,10 @@ export function setupRoutes(app: Express) {
       const githubPrivateKey = process.env.GITHUB_PRIVATE_KEY;
 
       if (!githubAppId || !githubPrivateKey) {
-        console.error("Missing GitHub credentials:", {
-          hasAppId: !!githubAppId,
-          hasPrivateKey: !!githubPrivateKey
-        });
+        console.error("Missing GitHub credentials");
         return res.status(500).json({
           error: "GitHub App credentials are not configured",
-          details: "Please check GITHUB_APP_ID and GITHUB_PRIVATE_KEY environment variables"
+          details: "環境変数の設定を確認してください"
         });
       }
 
@@ -259,32 +243,4 @@ export function setupRoutes(app: Express) {
       });
     }
   });
-}
-
-function generateMarkdown(events: Event[]): string {
-  const today = new Date();
-  let markdown = `# イベント一覧\n\n`;
-  markdown += `最終更新: ${today.toLocaleDateString('ja-JP')}\n\n`;
-
-  const sortedEvents = [...events].sort((a, b) =>
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
-
-  sortedEvents.forEach(event => {
-    markdown += `## ${event.name}\n\n`;
-    markdown += `- 日付: ${new Date(event.date).toLocaleDateString('ja-JP')}\n`;
-    markdown += `- 場所: ${event.prefecture}\n`;
-    if (event.website) markdown += `- Webサイト: ${event.website}\n`;
-    if (event.youtubePlaylist) markdown += `- YouTube: ${event.youtubePlaylist}\n`;
-    if (event.description) markdown += `\n${event.description}\n`;
-    markdown += '\n---\n\n';
-  });
-
-  return markdown;
-}
-
-function validatePasswordStrength(password: string): { isValid: boolean; errors: string[] } {
-  const isValid = password.length > 8;
-  const errors = isValid ? [] : ["パスワードは8文字以上にする必要があります。"];
-  return { isValid, errors };
 }
