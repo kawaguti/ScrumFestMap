@@ -35,20 +35,33 @@ class GitHubFileUpdater {
     this.appId = appId;
     try {
       // .pemファイルから直接読み込む
-      this.privateKey = readFileSync(privateKeyPath, 'utf8')
-        .replace(/\\n/g, '\n')
-        .trim();
+      let privateKey = readFileSync(privateKeyPath, 'utf8');
 
+      // 改行コードの正規化
+      privateKey = privateKey
+        .replace(/\r\n/g, '\n')  // Windows形式の改行を統一
+        .replace(/\r/g, '\n')    // 古いMac形式の改行を統一
+        .trim();                 // 前後の空白を削除
+
+      this.privateKey = privateKey;
       this.owner = owner;
       this.repo = repo;
 
+      // デバッグ情報の出力を詳細化
       console.log('GitHubFileUpdater initialized:', {
         appId,
         privateKeyLength: this.privateKey.length,
+        privateKeyLines: this.privateKey.split('\n').length,
+        privateKeyStart: this.privateKey.substring(0, 64),
+        privateKeyEnd: this.privateKey.substring(this.privateKey.length - 64),
         privateKeyIsValid: this.validatePrivateKey(this.privateKey),
         owner,
         repo
       });
+
+      if (!this.validatePrivateKey(this.privateKey)) {
+        throw new Error('Invalid private key format detected during initialization');
+      }
     } catch (error) {
       console.error('Error initializing GitHubFileUpdater:', error);
       throw error;
@@ -59,19 +72,23 @@ class GitHubFileUpdater {
     const hasHeader = key.includes('-----BEGIN RSA PRIVATE KEY-----');
     const hasFooter = key.includes('-----END RSA PRIVATE KEY-----');
     const hasContent = key.length > 100;
+    const lines = key.split('\n');
+    const hasValidStructure = lines.length >= 3;  // ヘッダー、内容、フッターの最小構成
 
-    if (!hasHeader || !hasFooter || !hasContent) {
-      console.error('Private key validation failed:', {
-        hasHeader,
-        hasFooter,
-        hasContent,
-        keyLength: key.length,
-        keyStart: key.substring(0, 50),
-        keyEnd: key.substring(key.length - 50)
-      });
-      return false;
-    }
-    return true;
+    const validationResult = {
+      hasHeader,
+      hasFooter,
+      hasContent,
+      hasValidStructure,
+      lineCount: lines.length,
+      keyLength: key.length,
+      firstLine: lines[0],
+      lastLine: lines[lines.length - 1]
+    };
+
+    console.log('Private key validation details:', validationResult);
+
+    return hasHeader && hasFooter && hasContent && hasValidStructure;
   }
 
   private async generateJWT(): Promise<string> {
@@ -90,12 +107,14 @@ class GitHubFileUpdater {
         throw new Error('Invalid private key format: The key must be a valid RSA private key');
       }
 
-      // JWTの生成時にキーのデバッグ情報を出力
-      console.log('Private key format check:', {
-        hasHeader: this.privateKey.includes('-----BEGIN RSA PRIVATE KEY-----'),
-        hasFooter: this.privateKey.includes('-----END RSA PRIVATE KEY-----'),
-        length: this.privateKey.length,
-        sample: `${this.privateKey.substring(0, 50)}...${this.privateKey.substring(this.privateKey.length - 50)}`
+      // キーの形式を詳細にチェック
+      const keyLines = this.privateKey.split('\n');
+      console.log('Private key structure:', {
+        totalLines: keyLines.length,
+        hasCorrectHeader: keyLines[0] === '-----BEGIN RSA PRIVATE KEY-----',
+        hasCorrectFooter: keyLines[keyLines.length - 1] === '-----END RSA PRIVATE KEY-----',
+        contentLineCount: keyLines.length - 2,
+        sampleContentLine: keyLines[1]?.substring(0, 32) + '...'
       });
 
       const token = jwt.sign(payload, this.privateKey, { algorithm: 'RS256' });
