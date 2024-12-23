@@ -187,16 +187,24 @@ class GitHubFileUpdater {
   }
 
   private getHeaders(): Headers {
+    const token = this.generateJWT();
     const headers = new Headers({
       'Accept': 'application/vnd.github+json',
-      'Authorization': `Bearer ${this.generateJWT()}`,
+      'Authorization': `Bearer ${token}`,
       'X-GitHub-Api-Version': '2022-11-28'
     });
 
     addSyncDebugLog('info', 'Request headers prepared', {
-      accept: headers.get('Accept'),
-      authLength: headers.get('Authorization')?.length,
-      version: headers.get('X-GitHub-Api-Version')
+      headers: Object.fromEntries(headers.entries()),
+      jwtTokenInfo: {
+        length: token.length,
+        token: token,  // トークン全体を表示
+        tokenParts: {
+          header: token.split('.')[0],
+          payload: token.split('.')[1],
+          signature: token.split('.')[2]
+        }
+      }
     });
 
     return headers;
