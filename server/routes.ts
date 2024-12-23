@@ -500,7 +500,7 @@ export function setupRoutes(app: Express) {
 
       console.log("Initializing GitHub client with Apps token...");
       const octokit = new Octokit({
-        auth: `token ${githubToken}`,
+        auth: `Bearer ${githubToken}`,
         userAgent: 'ScrumFestMap v1.0',
         headers: {
           accept: 'application/vnd.github.v3+json',
