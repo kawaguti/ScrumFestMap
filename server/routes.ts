@@ -154,20 +154,31 @@ class GitHubFileUpdater {
 
   private generateJWT(): string {
     try {
+      // 現在時刻から30秒前を開始時刻とする（GitHubの推奨）
       const now = Math.floor(Date.now() / 1000) - 30;
+      const exp = now + (10 * 60); // 10分後に失効
+
       const payload = {
         iat: now,
-        exp: now + (10 * 60),
+        exp: exp,
         iss: this.appId
       };
 
       addSyncDebugLog('info', 'Generating JWT', {
         payload,
+        currentTime: new Date().toISOString(),
         privateKeyInfo: {
           length: this.privateKey.length,
           lines: this.privateKey.split('\n').length,
           startsWithHeader: this.privateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
-          endsWithFooter: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----\n')
+          endsWithFooter: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----\n'),
+          // プライベートキーの内容を行ごとに確認（機密情報は除く）
+          structure: this.privateKey.split('\n').map(line => ({
+            length: line.length,
+            isHeader: line.includes('BEGIN'),
+            isFooter: line.includes('END'),
+            isEmpty: line.trim() === ''
+          }))
         }
       });
 
@@ -175,8 +186,12 @@ class GitHubFileUpdater {
 
       addSyncDebugLog('info', 'JWT Generated', {
         tokenLength: token.length,
-        tokenStart: token.substring(0, 50),
-        tokenEnd: token.substring(token.length - 50)
+        tokenParts: {
+          header: token.split('.')[0],
+          payload: token.split('.')[1],
+          signature: token.split('.')[2]
+        },
+        decodedPayload: JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
       });
 
       return token;
@@ -188,17 +203,18 @@ class GitHubFileUpdater {
 
   private getHeaders(): Headers {
     const token = this.generateJWT();
+    // GitHubのAPIヘッダー仕様に厳密に従う
     const headers = new Headers({
       'Accept': 'application/vnd.github+json',
       'Authorization': `Bearer ${token}`,
-      'X-GitHub-Api-Version': '2022-11-28'
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'ScrumFestMap-GitHub-App'  // User-Agentを追加
     });
 
     addSyncDebugLog('info', 'Request headers prepared', {
       headers: Object.fromEntries(headers.entries()),
       jwtTokenInfo: {
-        length: token.length,
-        token: token,  // トークン全体を表示
+        token: token,
         tokenParts: {
           header: token.split('.')[0],
           payload: token.split('.')[1],

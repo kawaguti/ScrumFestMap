@@ -18,11 +18,32 @@ interface DebugLog {
   details: any;
 }
 
+const DebugLogEntry: React.FC<{ log: DebugLog; index: number }> = React.memo(({ log, index }) => (
+  <div
+    key={`${log.timestamp}-${index}`}
+    className={`p-4 rounded-lg ${
+      log.type === 'error' ? 'bg-destructive/10' : 'bg-muted'
+    }`}
+  >
+    <div className="flex items-center justify-between mb-2">
+      <span className="font-semibold">{log.title}</span>
+      <span className="text-sm text-muted-foreground">
+        {new Date(log.timestamp).toLocaleString('ja-JP')}
+      </span>
+    </div>
+    <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-48">
+      {JSON.stringify(log.details, null, 2)}
+    </pre>
+  </div>
+));
+
+DebugLogEntry.displayName = 'DebugLogEntry';
+
 const DebugContent: React.FC<{
   logs: DebugLog[];
   isLoading: boolean;
   error: Error | null;
-}> = ({ logs, isLoading, error }) => {
+}> = React.memo(({ logs, isLoading, error }) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -43,22 +64,7 @@ const DebugContent: React.FC<{
     <ScrollArea className="h-[calc(80vh-8rem)] rounded-md border p-4">
       <div className="space-y-4">
         {logs.map((log, index) => (
-          <div
-            key={`${log.timestamp}-${index}`}
-            className={`p-4 rounded-lg ${
-              log.type === 'error' ? 'bg-destructive/10' : 'bg-muted'
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-semibold">{log.title}</span>
-              <span className="text-sm text-muted-foreground">
-                {new Date(log.timestamp).toLocaleString('ja-JP')}
-              </span>
-            </div>
-            <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-48">
-              {JSON.stringify(log.details, null, 2)}
-            </pre>
-          </div>
+          <DebugLogEntry key={`${log.timestamp}-${index}`} log={log} index={index} />
         ))}
         {logs.length === 0 && (
           <div className="text-center text-muted-foreground">
@@ -68,9 +74,11 @@ const DebugContent: React.FC<{
       </div>
     </ScrollArea>
   );
-};
+});
 
-export function SyncDebugPanel() {
+DebugContent.displayName = 'DebugContent';
+
+export function SyncDebugPanel(): React.ReactElement {
   const [open, setOpen] = React.useState(false);
 
   const { data: logs = [], isLoading, error } = useQuery<DebugLog[]>({
