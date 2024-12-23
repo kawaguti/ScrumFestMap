@@ -485,15 +485,14 @@ export function setupRoutes(app: Express) {
     try {
       // GitHub認証情報の確認とデバッグログ
       const githubToken = process.env.GITHUB_TOKEN;
-      console.log("Checking GitHub token...");
-      console.log("Token exists:", !!githubToken);
+      console.log("Starting GitHub sync process...");
 
       if (!githubToken) {
         console.error("GitHub token is missing");
         return res.status(500).json({ error: "GitHub token is not configured" });
       }
 
-      console.log("Initializing GitHub client...");
+      console.log("Initializing GitHub client with token...");
       const octokit = new Octokit({
         auth: githubToken
       });
@@ -513,56 +512,37 @@ export function setupRoutes(app: Express) {
         const markdownContent = generateMarkdown(allEvents);
         console.log("Generated markdown content length:", markdownContent.length);
 
-        // 既存のファイルの取得を試みる
-        let fileSha: string | undefined;
-        try {
-          console.log("Checking for existing file on GitHub...");
-          const { data: existingFile } = await octokit.repos.getContent({
-            owner: 'kawaguti',
-            repo: 'ScrumFestMapViewer',
-            path: 'all-events.md',
-            ref: 'main'
-          });
-
-          if ('sha' in existingFile) {
-            fileSha = existingFile.sha;
-            console.log("Found existing file with SHA:", fileSha);
-          }
-        } catch (error) {
-          console.log('File does not exist yet, will create new one');
-          console.log('Get content error details:', error instanceof Error ? error.message : 'Unknown error');
-        }
-
-        console.log("Pushing content to GitHub...");
+        // GitHub APIの呼び出し
+        console.log("Attempting to update file on GitHub...");
         const response = await octokit.repos.createOrUpdateFileContents({
           owner: 'kawaguti',
           repo: 'ScrumFestMapViewer',
           path: 'all-events.md',
           message: `Update events list - ${new Date().toISOString()}`,
           content: Buffer.from(markdownContent).toString('base64'),
-          branch: 'main',
-          ...(fileSha && { sha: fileSha })
+          branch: 'main'
         });
 
-        console.log("Successfully pushed to GitHub");
+        console.log("Successfully pushed to GitHub:", response.status);
         res.json({
           success: true,
           message: "Successfully synced with GitHub",
-          sha: response.data.content?.sha
+          details: response.data
         });
       } catch (githubError) {
-        console.error("GitHub API error:", githubError);
-        const errorMessage = githubError instanceof Error ? githubError.message : "Unknown error";
-        console.error("Error details:", errorMessage);
+        console.error("GitHub API error details:", githubError);
+        const errorMessage = githubError instanceof Error
+          ? `${githubError.message} (${(githubError as any).status || 'unknown status'})`
+          : "Unknown GitHub API error";
+
         res.status(500).json({
           error: "Failed to sync with GitHub",
           details: errorMessage
         });
       }
     } catch (error) {
-      console.error("Sync error:", error);
+      console.error("Sync process error:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      console.error("Error details:", errorMessage);
       res.status(500).json({
         error: "Failed to sync events",
         details: errorMessage

@@ -67,15 +67,15 @@ export default function MyEventsPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "GitHubとの同期に失敗しました");
+        throw new Error(error.details || error.error || "GitHubとの同期に失敗しました");
       }
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "同期完了",
-        description: "GitHubリポジトリにイベント一覧を同期しました。",
+        description: `GitHubリポジトリにイベント一覧を同期しました。${data.details ? `\n${data.details}` : ""}`,
       });
     },
     onError: (error) => {
