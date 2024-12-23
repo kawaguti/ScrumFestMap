@@ -5,6 +5,7 @@ import { eq, desc, and } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { validatePasswordStrength } from "./password-validation";
+import { Octokit } from "@octokit/rest";
 
 const scryptAsync = promisify(scrypt);
 const crypto = {
@@ -477,4 +478,101 @@ export function setupRoutes(app: Express) {
       });
     }
   });
+
+  // Add new GitHub sync endpoint
+  app.post("/api/admin/sync-github", requireAdmin, async (req, res) => {
+    try {
+      // GitHub認証情報の確認
+      const githubToken = process.env.GITHUB_TOKEN;
+      if (!githubToken) {
+        return res.status(500).json({ error: "GitHub token is not configured" });
+      }
+
+      // GitHubクライアントの初期化
+      const octokit = new Octokit({
+        auth: githubToken
+      });
+
+      // イベント一覧の取得
+      const allEvents = await db
+        .select()
+        .from(events)
+        .where(eq(events.isArchived, false))
+        .orderBy(desc(events.date));
+
+      // マークダウンファイルの生成
+      const markdownContent = generateMarkdown(allEvents);
+
+      try {
+        // 既存のファイルの取得を試みる
+        let fileSha: string | undefined;
+        try {
+          const { data: existingFile } = await octokit.repos.getContent({
+            owner: 'kawaguti',
+            repo: 'ScrumFestMapViewer',
+            path: 'all-events.md',
+            ref: 'main'
+          });
+
+          if ('sha' in existingFile) {
+            fileSha = existingFile.sha;
+          }
+        } catch (error) {
+          // ファイルが存在しない場合は新規作成となるのでエラーは無視
+          console.log('File does not exist yet, will create new one');
+        }
+
+        // GitHubにファイルをプッシュ
+        const response = await octokit.repos.createOrUpdateFileContents({
+          owner: 'kawaguti',
+          repo: 'ScrumFestMapViewer',
+          path: 'all-events.md',
+          message: `Update events list - ${new Date().toISOString()}`,
+          content: Buffer.from(markdownContent).toString('base64'),
+          branch: 'main',
+          ...(fileSha && { sha: fileSha }) // 既存ファイルがある場合はSHAを指定
+        });
+
+        res.json({ 
+          success: true, 
+          message: "Successfully synced with GitHub",
+          sha: response.data.content?.sha 
+        });
+      } catch (githubError) {
+        console.error("GitHub API error:", githubError);
+        res.status(500).json({ 
+          error: "Failed to sync with GitHub", 
+          details: githubError instanceof Error ? githubError.message : "Unknown error" 
+        });
+      }
+    } catch (error) {
+      console.error("Sync error:", error);
+      res.status(500).json({ 
+        error: "Failed to sync events", 
+        details: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  // ヘルパー関数: マークダウンの生成
+  function generateMarkdown(events: typeof events.$inferSelect[]): string {
+    const today = new Date();
+    let markdown = `# イベント一覧\n\n`;
+    markdown += `最終更新: ${today.toLocaleDateString('ja-JP')}\n\n`;
+
+    // イベントを日付でソート
+    events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    events.forEach(event => {
+      markdown += `## ${event.name}\n\n`;
+      markdown += `- 日付: ${new Date(event.date).toLocaleDateString('ja-JP')}\n`;
+      markdown += `- 場所: ${event.prefecture}\n`;
+      if (event.website) markdown += `- Webサイト: ${event.website}\n`;
+      if (event.youtubePlaylist) markdown += `- YouTube: ${event.youtubePlaylist}\n`;
+      if (event.description) markdown += `\n${event.description}\n`;
+      markdown += '\n---\n\n';
+    });
+
+    return markdown;
+  }
 }

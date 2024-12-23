@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Loader2, Edit, Download, Trash2 } from "lucide-react";
+import { Loader2, Edit, Download, Trash2, GitPullRequest } from "lucide-react";
 import type { Event } from "@db/schema";
 import { EventForm } from "@/components/EventForm";
 import {
@@ -44,6 +44,36 @@ export default function MyEventsPage() {
     queryKey: ["events"],
     queryFn: fetchAllEvents,
     retry: 1,
+  });
+
+  const syncGitHubMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/admin/sync-github", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "GitHubとの同期に失敗しました");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "同期完了",
+        description: "GitHubリポジトリにイベント一覧を同期しました。",
+      });
+    },
+    onError: (error) => {
+      console.error("Sync error:", error);
+      toast({
+        variant: "destructive",
+        title: "同期エラー",
+        description: error instanceof Error ? error.message : "GitHubとの同期に失敗しました。",
+      });
+    },
   });
 
   const updateEventMutation = useMutation({
@@ -126,7 +156,6 @@ export default function MyEventsPage() {
     },
   });
 
-  // ローディング中の表示
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -135,7 +164,6 @@ export default function MyEventsPage() {
     );
   }
 
-  // エラー時の表示
   if (error) {
     return (
       <div className="container mx-auto py-6">
@@ -147,12 +175,10 @@ export default function MyEventsPage() {
     );
   }
 
-  // イベントのソート
   const sortedEvents = [...events].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  // 全てのイベントを表示
   const displayEvents = sortedEvents;
 
   return (
@@ -161,16 +187,32 @@ export default function MyEventsPage() {
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold">イベント一覧</h1>
           {displayEvents.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                const markdown = generateEventMarkdown(displayEvents);
-                downloadMarkdown(markdown, `all-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
-              }}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              マークダウンでダウンロード
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const markdown = generateEventMarkdown(displayEvents);
+                  downloadMarkdown(markdown, `all-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                マークダウンでダウンロード
+              </Button>
+              {user?.isAdmin && (
+                <Button
+                  variant="outline"
+                  onClick={() => syncGitHubMutation.mutate()}
+                  disabled={syncGitHubMutation.isPending}
+                >
+                  {syncGitHubMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <GitPullRequest className="h-4 w-4 mr-2" />
+                  )}
+                  GitHubに同期
+                </Button>
+              )}
+            </div>
           )}
         </div>
         <Button variant="outline" onClick={() => setLocation("/")}>
@@ -207,6 +249,7 @@ export default function MyEventsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
       {displayEvents.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
@@ -256,7 +299,6 @@ export default function MyEventsPage() {
                     )}
                     {user && (
                       <div className="flex gap-2">
-                        {/* 削除ボタンは管理者と作成者のみ表示 */}
                         {user && (user.isAdmin || event.createdBy === user.id) && (
                           <Button
                             variant="destructive"
@@ -271,23 +313,22 @@ export default function MyEventsPage() {
                             削除
                           </Button>
                         )}
-                        {/* 編集ボタンはログインしているユーザーなら誰でも表示 */}
                         <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setEditingEvent(event)}
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              編集
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setLocation(`/events/${event.id}/history`)}
-                            >
-                              履歴を見る
-                            </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingEvent(event)}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            編集
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setLocation(`/events/${event.id}/history`)}
+                          >
+                            履歴を見る
+                          </Button>
                         </>
                       </div>
                     )}
