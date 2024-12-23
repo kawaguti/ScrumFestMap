@@ -43,8 +43,10 @@ class GitHubFileUpdater {
         repo,
         privateKeyLength: this.privateKey.length,
         privateKeyLines: this.privateKey.split('\n').length,
-        privateKeyStart: this.privateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
-        privateKeyEnd: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----')
+        privateKeyStart: this.privateKey.substring(0, 50),
+        privateKeyEnd: this.privateKey.substring(this.privateKey.length - 50),
+        startsWithHeader: this.privateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
+        endsWithFooter: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----\n')
       });
     } catch (error) {
       console.error('GitHubFileUpdater initialization error:', error);
@@ -53,21 +55,38 @@ class GitHubFileUpdater {
   }
 
   private formatPrivateKey(key: string): string {
+    console.log('Original private key:', {
+      length: key.length,
+      containsSlashN: key.includes('\\n'),
+      firstChars: key.substring(0, 50),
+      lastChars: key.substring(key.length - 50)
+    });
+
     // 環境変数の\nを実際の改行に変換し、余分な空白を削除
-    const formattedKey = key
+    let formattedKey = key
       .replace(/\\n/g, '\n')  // \n文字列を実際の改行に変換
       .split('\n')
       .map(line => line.trim()) // 各行の余分な空白を削除
       .filter(line => line.length > 0) // 空行を削除
       .join('\n');
 
-    console.log('Private key formatting:', {
-      originalLength: key.length,
-      formattedLength: formattedKey.length,
-      lines: formattedKey.split('\n').length,
+    // 最後に改行を追加
+    formattedKey += '\n';
+
+    console.log('Formatted private key:', {
+      length: formattedKey.length,
+      lines: formattedKey.split('\n').length - 1,
+      firstChars: formattedKey.substring(0, 50),
+      lastChars: formattedKey.substring(formattedKey.length - 50),
       startsWithHeader: formattedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
-      endsWithFooter: formattedKey.endsWith('-----END RSA PRIVATE KEY-----')
+      endsWithFooter: formattedKey.endsWith('-----END RSA PRIVATE KEY-----\n')
     });
+
+    // キーの形式を確認
+    if (!formattedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----') || 
+        !formattedKey.endsWith('-----END RSA PRIVATE KEY-----\n')) {
+      throw new Error('Invalid RSA private key format');
+    }
 
     return formattedKey;
   }
@@ -86,15 +105,18 @@ class GitHubFileUpdater {
         privateKeyInfo: {
           length: this.privateKey.length,
           lines: this.privateKey.split('\n').length,
+          firstChars: this.privateKey.substring(0, 50),
+          lastChars: this.privateKey.substring(this.privateKey.length - 50),
           startsWithHeader: this.privateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
-          endsWithFooter: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----')
+          endsWithFooter: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----\n')
         }
       });
 
       const token = jwt.sign(payload, this.privateKey, { algorithm: 'RS256' });
       console.log('JWT token generated successfully:', {
         tokenLength: token.length,
-        tokenStart: token.substring(0, 20) + '...'
+        tokenStart: token.substring(0, 50),
+        tokenEnd: token.substring(token.length - 50)
       });
 
       return token;
@@ -126,6 +148,7 @@ class GitHubFileUpdater {
 
     try {
       // 1. Get current file to obtain SHA
+      console.log('Fetching current file from GitHub...');
       const fileResponse = await fetch(url, {
         headers: this.getHeaders()
       });
@@ -136,14 +159,20 @@ class GitHubFileUpdater {
           status: fileResponse.status,
           statusText: fileResponse.statusText,
           errorText,
-          responseHeaders: Object.fromEntries(fileResponse.headers.entries())
+          url,
+          headers: Object.fromEntries(fileResponse.headers.entries())
         });
         throw new Error(`ファイル取得エラー (${fileResponse.status}): ${errorText}`);
       }
 
       const fileData = await fileResponse.json() as GitHubFileResponse;
+      console.log('Current file fetched successfully:', {
+        sha: fileData.sha,
+        contentLength: fileData.content?.length
+      });
 
       // 2. Update file
+      console.log('Updating file on GitHub...');
       const updateResponse = await fetch(url, {
         method: 'PUT',
         headers: this.getHeaders(),
@@ -160,7 +189,8 @@ class GitHubFileUpdater {
           status: updateResponse.status,
           statusText: updateResponse.statusText,
           errorText,
-          responseHeaders: Object.fromEntries(updateResponse.headers.entries())
+          url,
+          headers: Object.fromEntries(updateResponse.headers.entries())
         });
         throw new Error(`ファイル更新エラー (${updateResponse.status}): ${errorText}`);
       }
