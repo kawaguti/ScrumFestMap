@@ -526,13 +526,30 @@ export function setupRoutes(app: Express) {
 
         // GitHub APIの呼び出し（Single File access - all-events.md）
         console.log("Attempting to update all-events.md on GitHub...");
+
+        // 現在のファイルの取得を試みる
+        let currentFile;
+        try {
+          currentFile = await octokit.repos.getContent({
+            owner: 'kawaguti',
+            repo: 'ScrumFestMapViewer',
+            path: 'all-events.md',
+            ref: 'main'
+          });
+          console.log("Current file found on GitHub");
+        } catch (error) {
+          console.log("File does not exist yet or other error:", error);
+        }
+
+        // ファイルの更新または作成
         const response = await octokit.repos.createOrUpdateFileContents({
           owner: 'kawaguti',
           repo: 'ScrumFestMapViewer',
           path: 'all-events.md',
           message: `Update events list - ${new Date().toISOString()}`,
           content: Buffer.from(markdownContent).toString('base64'),
-          branch: 'main'
+          branch: 'main',
+          ...(currentFile && { sha: currentFile.data.sha })
         });
 
         console.log("GitHub API Response Status:", response.status);
