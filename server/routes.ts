@@ -37,7 +37,7 @@ class GitHubFileUpdater {
       // .pemファイルから直接読み込む
       let privateKey = readFileSync(privateKeyPath, 'utf8');
 
-      // 改行コードの正規化
+      // 改行コードの正規化と前後の空白を削除
       privateKey = privateKey
         .replace(/\r\n/g, '\n')  // Windows形式の改行を統一
         .replace(/\r/g, '\n')    // 古いMac形式の改行を統一
