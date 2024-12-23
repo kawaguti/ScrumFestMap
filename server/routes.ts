@@ -62,6 +62,21 @@ class GitHubFileUpdater {
       lastChars: key.substring(key.length - 50)
     });
 
+    // Base64エンコードされているかチェック
+    const isBase64 = /^[A-Za-z0-9+/=]+$/.test(key.replace(/[\r\n\s]/g, ''));
+    if (isBase64) {
+      try {
+        key = Buffer.from(key, 'base64').toString('utf-8');
+        console.log('Decoded Base64 key:', {
+          length: key.length,
+          firstChars: key.substring(0, 50),
+          lastChars: key.substring(key.length - 50)
+        });
+      } catch (error) {
+        console.error('Base64 decoding error:', error);
+      }
+    }
+
     // 環境変数の\nを実際の改行に変換し、余分な空白を削除
     let formattedKey = key
       .replace(/\\n/g, '\n')  // \n文字列を実際の改行に変換
@@ -71,7 +86,17 @@ class GitHubFileUpdater {
       .join('\n');
 
     // 最後に改行を追加
-    formattedKey += '\n';
+    if (!formattedKey.endsWith('\n')) {
+      formattedKey += '\n';
+    }
+
+    // プライベートキーのヘッダーとフッターを確認
+    if (!formattedKey.includes('-----BEGIN RSA PRIVATE KEY-----')) {
+      formattedKey = '-----BEGIN RSA PRIVATE KEY-----\n' + formattedKey;
+    }
+    if (!formattedKey.includes('-----END RSA PRIVATE KEY-----')) {
+      formattedKey = formattedKey + '-----END RSA PRIVATE KEY-----\n';
+    }
 
     console.log('Formatted private key:', {
       length: formattedKey.length,
@@ -85,6 +110,12 @@ class GitHubFileUpdater {
     // キーの形式を確認
     if (!formattedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----') || 
         !formattedKey.endsWith('-----END RSA PRIVATE KEY-----\n')) {
+      console.error('Invalid private key format:', {
+        startsCorrectly: formattedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
+        endsCorrectly: formattedKey.endsWith('-----END RSA PRIVATE KEY-----\n'),
+        keyStart: formattedKey.substring(0, 50),
+        keyEnd: formattedKey.substring(formattedKey.length - 50)
+      });
       throw new Error('Invalid RSA private key format');
     }
 
@@ -195,7 +226,13 @@ class GitHubFileUpdater {
         throw new Error(`ファイル更新エラー (${updateResponse.status}): ${errorText}`);
       }
 
-      return await updateResponse.json() as GitHubUpdateResponse;
+      const result = await updateResponse.json() as GitHubUpdateResponse;
+      console.log('File update succeeded:', {
+        commitSha: result.commit.sha,
+        fileUrl: result.content.html_url
+      });
+
+      return result;
 
     } catch (error) {
       console.error('GitHub API Error:', error);
