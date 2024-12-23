@@ -18,60 +18,64 @@ interface DebugLog {
   details: any;
 }
 
+const DebugContent: React.FC<{
+  logs: DebugLog[];
+  isLoading: boolean;
+  error: Error | null;
+}> = ({ logs, isLoading, error }) => {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-destructive p-4">
+        エラーが発生しました: {error instanceof Error ? error.message : String(error)}
+      </div>
+    );
+  }
+
+  return (
+    <ScrollArea className="h-[calc(80vh-8rem)] rounded-md border p-4">
+      <div className="space-y-4">
+        {logs.map((log, index) => (
+          <div
+            key={`${log.timestamp}-${index}`}
+            className={`p-4 rounded-lg ${
+              log.type === 'error' ? 'bg-destructive/10' : 'bg-muted'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-semibold">{log.title}</span>
+              <span className="text-sm text-muted-foreground">
+                {new Date(log.timestamp).toLocaleString('ja-JP')}
+              </span>
+            </div>
+            <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-48">
+              {JSON.stringify(log.details, null, 2)}
+            </pre>
+          </div>
+        ))}
+        {logs.length === 0 && (
+          <div className="text-center text-muted-foreground">
+            デバッグログはありません
+          </div>
+        )}
+      </div>
+    </ScrollArea>
+  );
+};
+
 export function SyncDebugPanel() {
   const [open, setOpen] = React.useState(false);
 
   const { data: logs = [], isLoading, error } = useQuery<DebugLog[]>({
     queryKey: ['/api/admin/sync-debug-logs'],
     enabled: open,
-  });
-
-  const Content = React.memo(() => {
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="text-destructive p-4">
-          エラーが発生しました: {error instanceof Error ? error.message : String(error)}
-        </div>
-      );
-    }
-
-    return (
-      <ScrollArea className="h-[calc(80vh-8rem)] rounded-md border p-4">
-        <div className="space-y-4">
-          {logs.map((log, index) => (
-            <div
-              key={`${log.timestamp}-${index}`}
-              className={`p-4 rounded-lg ${
-                log.type === 'error' ? 'bg-destructive/10' : 'bg-muted'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold">{log.title}</span>
-                <span className="text-sm text-muted-foreground">
-                  {new Date(log.timestamp).toLocaleString('ja-JP')}
-                </span>
-              </div>
-              <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-48">
-                {JSON.stringify(log.details, null, 2)}
-              </pre>
-            </div>
-          ))}
-          {logs.length === 0 && (
-            <div className="text-center text-muted-foreground">
-              デバッグログはありません
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-    );
   });
 
   return (
@@ -87,7 +91,11 @@ export function SyncDebugPanel() {
           <DialogTitle>GitHub同期デバッグパネル</DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-hidden">
-          <Content />
+          <DebugContent 
+            logs={logs}
+            isLoading={isLoading}
+            error={error as Error | null}
+          />
         </div>
       </DialogContent>
     </Dialog>
