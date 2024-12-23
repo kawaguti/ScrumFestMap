@@ -32,7 +32,7 @@ async function fetchAllEvents(): Promise<Event[]> {
   return response.json();
 }
 
-function MyEventsPage() {
+export default function MyEventsPage() {
   const { user } = useUser();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -71,86 +71,6 @@ function MyEventsPage() {
         variant: "destructive",
         title: "同期エラー",
         description: error instanceof Error ? error.message : "GitHubとの同期に失敗しました。",
-      });
-    },
-  });
-
-  const updateEventMutation = useMutation({
-    mutationFn: async (updatedEvent: Event) => {
-      const updateData = {
-        name: updatedEvent.name,
-        prefecture: updatedEvent.prefecture,
-        date: updatedEvent.date,
-        website: updatedEvent.website,
-        description: updatedEvent.description,
-        youtubePlaylist: updatedEvent.youtubePlaylist,
-        coordinates: updatedEvent.coordinates,
-      };
-
-      const response = await fetch(`/api/events/${updatedEvent.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updateData),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "イベントの更新に失敗しました");
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      toast({
-        title: "更新完了",
-        description: "イベント情報を更新しました。",
-      });
-      setEditingEvent(null);
-    },
-    onError: (error) => {
-      console.error("Update error:", error);
-      toast({
-        variant: "destructive",
-        title: "エラー",
-        description: error instanceof Error ? error.message : "イベントの更新に失敗しました。",
-      });
-    },
-  });
-
-  const deleteEventMutation = useMutation({
-    mutationFn: async (eventId: number) => {
-      const response = await fetch(`/api/events/${eventId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "イベントの削除に失敗しました");
-      }
-
-      return response.json();
-    },
-    onSuccess: (_, deletedEventId) => {
-      queryClient.setQueryData<Event[]>(["events"], (oldEvents) => {
-        if (!oldEvents) return [];
-        return oldEvents.filter((event) => event.id !== deletedEventId);
-      });
-      toast({
-        title: "削除完了",
-        description: "イベントを削除しました。",
-      });
-    },
-    onError: (error) => {
-      console.error("Delete error:", error);
-      toast({
-        variant: "destructive",
-        title: "エラー",
-        description: error instanceof Error ? error.message : "イベントの削除に失敗しました。",
       });
     },
   });
@@ -226,28 +146,51 @@ function MyEventsPage() {
           <DialogHeader>
             <DialogTitle>イベントの編集</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4">
-            {editingEvent && (
-              <div className="max-h-[calc(100vh-20rem)] overflow-y-auto pr-4">
-                <EventForm
-                  defaultValues={{
-                    name: editingEvent.name,
-                    prefecture: editingEvent.prefecture,
-                    date: new Date(editingEvent.date),
-                    website: editingEvent.website || "",
-                    description: editingEvent.description || "",
-                    youtubePlaylist: editingEvent.youtubePlaylist || "",
-                  }}
-                  onSubmit={async (data) => {
-                    await updateEventMutation.mutateAsync({
-                      ...editingEvent,
-                      ...data,
+          {editingEvent && (
+            <div className="grid gap-4 max-h-[calc(100vh-20rem)] overflow-y-auto pr-4">
+              <EventForm
+                defaultValues={{
+                  name: editingEvent.name,
+                  prefecture: editingEvent.prefecture,
+                  date: new Date(editingEvent.date),
+                  website: editingEvent.website || "",
+                  description: editingEvent.description || "",
+                  youtubePlaylist: editingEvent.youtubePlaylist || "",
+                }}
+                onSubmit={async (data) => {
+                  try {
+                    const response = await fetch(`/api/events/${editingEvent.id}`, {
+                      method: "PUT",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify(data),
+                      credentials: "include",
                     });
-                  }}
-                />
-              </div>
-            )}
-          </div>
+
+                    if (!response.ok) {
+                      const error = await response.json();
+                      throw new Error(error.error || "Failed to update event");
+                    }
+
+                    await queryClient.invalidateQueries({ queryKey: ["events"] });
+                    toast({
+                      title: "更新完了",
+                      description: "イベント情報を更新しました。",
+                    });
+                    setEditingEvent(null);
+                  } catch (error) {
+                    console.error("Update error:", error);
+                    toast({
+                      variant: "destructive",
+                      title: "エラー",
+                      description: error instanceof Error ? error.message : "イベントの更新に失敗しました。",
+                    });
+                  }
+                }}
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -284,7 +227,7 @@ function MyEventsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => event.website && window.open(event.website, "_blank")}
+                        onClick={() => window.open(event.website, "_blank")}
                       >
                         Webサイトを開く
                       </Button>
@@ -293,20 +236,42 @@ function MyEventsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => event.youtubePlaylist && window.open(event.youtubePlaylist, "_blank")}
+                        onClick={() => window.open(event.youtubePlaylist, "_blank")}
                       >
                         録画を見る
                       </Button>
                     )}
                     {user && (
                       <div className="flex gap-2">
-                        {user && (user.isAdmin || event.createdBy === Number(user.id)) && (
+                        {(user.isAdmin || event.createdBy === Number(user.id)) && (
                           <Button
                             variant="destructive"
                             size="sm"
                             onClick={() => {
                               if (confirm("このイベントを削除してもよろしいですか？\nこの操作は取り消すことができません。")) {
-                                deleteEventMutation.mutate(event.id);
+                                // Delete event
+                                fetch(`/api/events/${event.id}`, {
+                                  method: "DELETE",
+                                  credentials: "include",
+                                })
+                                  .then((response) => {
+                                    if (!response.ok) {
+                                      throw new Error("Failed to delete event");
+                                    }
+                                    queryClient.invalidateQueries({ queryKey: ["events"] });
+                                    toast({
+                                      title: "削除完了",
+                                      description: "イベントを削除しました。",
+                                    });
+                                  })
+                                  .catch((error) => {
+                                    console.error("Delete error:", error);
+                                    toast({
+                                      variant: "destructive",
+                                      title: "エラー",
+                                      description: "イベントの削除に失敗しました。",
+                                    });
+                                  });
                               }
                             }}
                           >
@@ -314,23 +279,21 @@ function MyEventsPage() {
                             削除
                           </Button>
                         )}
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingEvent(event)}
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            編集
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setLocation(`/events/${event.id}/history`)}
-                          >
-                            履歴を見る
-                          </Button>
-                        </>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingEvent(event)}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          編集
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setLocation(`/events/${event.id}/history`)}
+                        >
+                          履歴を見る
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -343,5 +306,3 @@ function MyEventsPage() {
     </div>
   );
 }
-
-export default MyEventsPage;
