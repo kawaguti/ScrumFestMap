@@ -24,6 +24,7 @@ interface GitHubUpdateResponse {
   };
 }
 
+// GitHubファイル更新用のクラス
 class GitHubFileUpdater {
   private readonly appId: string;
   private readonly privateKey: string;
@@ -33,15 +34,15 @@ class GitHubFileUpdater {
   constructor(appId: string, privateKey: string, owner: string, repo: string) {
     this.appId = appId;
     // Private Keyの前処理を改善
-    this.privateKey = Buffer.from(privateKey, 'utf8').toString('utf8')
+    this.privateKey = privateKey
       .replace(/\\n/g, '\n')
-      .replace(/\s+$/g, '')
-      .trim();
+      .replace(/^\s+|\s+$/g, '');
+
     this.owner = owner;
     this.repo = repo;
 
-    // 初期化時にキーの状態を確認
-    console.log('Initializing GitHubFileUpdater with:', {
+    // 初期化時のデバッグ情報
+    console.log('GitHubFileUpdater initialized:', {
       appId,
       privateKeyLength: this.privateKey.length,
       privateKeyFirstLine: this.privateKey.split('\n')[0],
@@ -52,22 +53,23 @@ class GitHubFileUpdater {
   }
 
   private async generateJWT(): Promise<string> {
-    const now = Math.floor(Date.now() / 1000) - 30;
+    const now = Math.floor(Date.now() / 1000);
+
     const payload = {
-      iat: now,
+      iat: now - 30,
       exp: now + (10 * 60),
       iss: this.appId
     };
 
     try {
-      console.log('Generating JWT with payload:', JSON.stringify(payload));
+      console.log('Generating JWT with payload:', payload);
 
-      // RS256アルゴリズムでJWTを生成
-      const token = jwt.sign(payload, this.privateKey, { 
-        algorithm: 'RS256'
-      });
+      if (!this.privateKey.includes('-----BEGIN RSA PRIVATE KEY-----')) {
+        throw new Error('Invalid private key format: Missing RSA private key header');
+      }
 
-      console.log('JWT Token generated successfully');
+      const token = jwt.sign(payload, this.privateKey, { algorithm: 'RS256' });
+      console.log('JWT generated successfully');
       return token;
     } catch (error) {
       console.error('JWT Generation Error:', error);
@@ -638,10 +640,9 @@ export function setupRoutes(app: Express) {
 
       console.log("GitHub App credentials found:", {
         appId: githubAppId,
-        privateKeyLength: githubPrivateKey.length
+        privateKeyAvailable: !!githubPrivateKey
       });
 
-      // イベント一覧の取得
       const allEvents = await db
         .select()
         .from(events)
@@ -650,11 +651,9 @@ export function setupRoutes(app: Express) {
 
       console.log(`Found ${allEvents.length} events to sync`);
 
-      // マークダウンファイルの生成
       const markdownContent = generateMarkdown(allEvents);
       console.log("Generated markdown content");
 
-      // GitHubの設定
       const owner = 'kawaguti';
       const repo = 'ScrumFestMapViewer';
       const path = 'all-events.md';
@@ -672,6 +671,8 @@ export function setupRoutes(app: Express) {
           markdownContent,
           'Update events list via ScrumFestMap'
         );
+
+        console.log('GitHub sync completed:', result);
 
         res.json({
           success: true,
