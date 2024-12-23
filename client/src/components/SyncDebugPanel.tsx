@@ -1,4 +1,4 @@
-import { useState } from "react";
+import * as React from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,15 +19,63 @@ interface DebugLog {
 }
 
 export function SyncDebugPanel() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = React.useState(false);
 
   const { data: logs = [], isLoading, error } = useQuery<DebugLog[]>({
     queryKey: ['/api/admin/sync-debug-logs'],
-    enabled: isOpen,
+    enabled: open,
+  });
+
+  const Content = React.memo(() => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="text-destructive p-4">
+          エラーが発生しました: {error instanceof Error ? error.message : String(error)}
+        </div>
+      );
+    }
+
+    return (
+      <ScrollArea className="h-[calc(80vh-8rem)] rounded-md border p-4">
+        <div className="space-y-4">
+          {logs.map((log, index) => (
+            <div
+              key={`${log.timestamp}-${index}`}
+              className={`p-4 rounded-lg ${
+                log.type === 'error' ? 'bg-destructive/10' : 'bg-muted'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold">{log.title}</span>
+                <span className="text-sm text-muted-foreground">
+                  {new Date(log.timestamp).toLocaleString('ja-JP')}
+                </span>
+              </div>
+              <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-48">
+                {JSON.stringify(log.details, null, 2)}
+              </pre>
+            </div>
+          ))}
+          {logs.length === 0 && (
+            <div className="text-center text-muted-foreground">
+              デバッグログはありません
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+    );
   });
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Bug className="h-4 w-4 mr-2" />
@@ -39,43 +87,7 @@ export function SyncDebugPanel() {
           <DialogTitle>GitHub同期デバッグパネル</DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-hidden">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : error ? (
-            <div className="text-destructive p-4">
-              エラーが発生しました: {error instanceof Error ? error.message : String(error)}
-            </div>
-          ) : (
-            <ScrollArea className="h-[calc(80vh-8rem)] rounded-md border p-4">
-              <div className="space-y-4">
-                {logs.map((log, index) => (
-                  <div
-                    key={index}
-                    className={`p-4 rounded-lg ${
-                      log.type === 'error' ? 'bg-destructive/10' : 'bg-muted'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold">{log.title}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(log.timestamp).toLocaleString('ja-JP')}
-                      </span>
-                    </div>
-                    <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-48">
-                      {JSON.stringify(log.details, null, 2)}
-                    </pre>
-                  </div>
-                ))}
-                {logs.length === 0 && (
-                  <div className="text-center text-muted-foreground">
-                    デバッグログはありません
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          )}
+          <Content />
         </div>
       </DialogContent>
     </Dialog>
