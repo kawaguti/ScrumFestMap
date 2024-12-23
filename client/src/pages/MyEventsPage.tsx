@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { useLocation } from "wouter";
+import type { Event } from "@db/schema";
 import {
   Card,
   CardContent,
@@ -23,19 +24,6 @@ import {
 } from "@/components/ui/dialog";
 
 import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
-
-// Event型の定義
-interface Event {
-  id: number;
-  name: string;
-  prefecture: string;
-  date: string;
-  website?: string | null;
-  description?: string | null;
-  youtubePlaylist?: string | null;
-  createdBy: number;
-  coordinates?: [number, number] | null;
-}
 
 async function fetchAllEvents(): Promise<Event[]> {
   const response = await fetch("/api/events");
@@ -201,7 +189,12 @@ export default function MyEventsPage() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  const markdown = generateEventMarkdown(events);
+                  // イベントデータを変換してからマークダウンを生成
+                  const processedEvents = events.map(event => ({
+                    ...event,
+                    date: new Date(event.date)
+                  }));
+                  const markdown = generateEventMarkdown(processedEvents);
                   downloadMarkdown(markdown, `all-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
                 }}
               >

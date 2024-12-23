@@ -483,97 +483,64 @@ export function setupRoutes(app: Express) {
   app.post("/api/admin/sync-github", requireAdmin, async (req, res) => {
     try {
       const githubToken = process.env.GITHUB_TOKEN;
-      console.log("Starting GitHub sync process...");
-
       if (!githubToken) {
-        console.error("GitHub token is missing");
         return res.status(500).json({ error: "GitHub token is not configured" });
       }
 
       // イベント一覧の取得
-      console.log("Fetching events from database...");
       const allEvents = await db
         .select()
         .from(events)
         .where(eq(events.isArchived, false))
         .orderBy(desc(events.date));
 
-      console.log(`Found ${allEvents.length} events to sync`);
-
       // マークダウンファイルの生成
       const markdownContent = generateMarkdown(allEvents);
-      console.log("Generated markdown content length:", markdownContent.length);
 
+      // GitHubの設定
       const owner = 'kawaguti';
       const repo = 'ScrumFestMapViewer';
       const path = 'all-events.md';
-      const getFileUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
-      const headers = {
-        'Accept': 'application/vnd.github+json',
-        'Authorization': `Bearer ${githubToken}`,
-        'X-GitHub-Api-Version': '2022-11-28',
-        'User-Agent': 'ScrumFestMap-Sync'
-      };
+      // Base64エンコード
+      const base64Content = Buffer.from(markdownContent, 'utf-8').toString('base64');
 
-      try {
-        // 既存ファイルの情報を取得
-        console.log("Fetching current file information...");
-        const fileResponse = await fetch(getFileUrl, { headers });
+      // GitHub APIにリクエスト
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${githubToken}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'ScrumFestMap'
+        },
+        body: JSON.stringify({
+          message: 'Update events list',
+          content: base64Content,
+          branch: 'main'
+        })
+      });
 
-        if (!fileResponse.ok) {
-          const errorData = await fileResponse.text();
-          console.error("GitHub API Error Response:", errorData);
-          throw new Error(`GitHub API error: ${errorData}`);
-        }
-
-        const fileData = await fileResponse.json();
-        const currentSha = fileData.sha;
-
-        // ファイルを更新
-        console.log("Preparing to update file...");
-        const updateResponse = await fetch(getFileUrl, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify({
-            message: 'Update all-events.md',
-            content: Buffer.from(markdownContent).toString('base64'),
-            sha: currentSha,
-            branch: 'main'
-          })
-        });
-
-        if (!updateResponse.ok) {
-          const errorText = await updateResponse.text();
-          console.error("GitHub Update Error:", errorText);
-          throw new Error(`Failed to update file: ${errorText}`);
-        }
-
-        const result = await updateResponse.json();
-        console.log("Update successful:", {
-          sha: result.content?.sha,
-          url: result.content?.html_url
-        });
-
-        res.json({
-          success: true,
-          message: "Successfully synced with GitHub",
-          details: {
-            sha: result.content?.sha,
-            url: result.content?.html_url
-          }
-        });
-      } catch (error) {
-        console.error("GitHub API error:", error);
-        res.status(500).json({
-          error: "GitHub API error",
-          details: error instanceof Error ? error.message : String(error)
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('GitHub API Error:', errorText);
+        return res.status(500).json({ 
+          error: "GitHub同期に失敗しました",
+          details: errorText
         });
       }
+
+      const result = await response.json();
+      res.json({
+        success: true,
+        message: "GitHubリポジトリにイベント一覧を同期しました",
+        url: result.content?.html_url
+      });
+
     } catch (error) {
-      console.error("Sync process error:", error);
+      console.error('Sync error:', error);
       res.status(500).json({
-        error: "Failed to sync events",
+        error: "同期処理中にエラーが発生しました",
         details: error instanceof Error ? error.message : String(error)
       });
     }
