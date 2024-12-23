@@ -32,7 +32,11 @@ class GitHubFileUpdater {
 
   constructor(appId: string, privateKey: string, owner: string, repo: string) {
     this.appId = appId;
-    this.privateKey = privateKey.replace(/\\n/g, '\n');
+    // 改行文字の正規化
+    this.privateKey = privateKey
+      .replace(/\\n/g, '\n')
+      .replace(/["']/g, '')
+      .trim();
     this.owner = owner;
     this.repo = repo;
 
@@ -55,7 +59,9 @@ class GitHubFileUpdater {
         hasHeader,
         hasFooter,
         hasContent,
-        keyLength: key.length
+        keyLength: key.length,
+        keyStart: key.substring(0, 50),
+        keyEnd: key.substring(key.length - 50)
       });
       return false;
     }
@@ -77,6 +83,14 @@ class GitHubFileUpdater {
       if (!this.validatePrivateKey(this.privateKey)) {
         throw new Error('Invalid private key format: The key must be a valid RSA private key');
       }
+
+      // JWTの生成時にキーのデバッグ情報を出力
+      console.log('Private key format check:', {
+        hasHeader: this.privateKey.includes('-----BEGIN RSA PRIVATE KEY-----'),
+        hasFooter: this.privateKey.includes('-----END RSA PRIVATE KEY-----'),
+        length: this.privateKey.length,
+        sample: `${this.privateKey.substring(0, 50)}...${this.privateKey.substring(this.privateKey.length - 50)}`
+      });
 
       const token = jwt.sign(payload, this.privateKey, { algorithm: 'RS256' });
       console.log('JWT generated successfully');
@@ -257,7 +271,6 @@ function generateMarkdown(allEvents: Event[]): string {
   let markdown = `# イベント一覧\n\n`;
   markdown += `最終更新: ${today.toLocaleDateString('ja-JP')}\n\n`;
 
-  // イベントを日付でソート
   const sortedEvents = [...allEvents].sort((a, b) =>
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
@@ -273,7 +286,6 @@ function generateMarkdown(allEvents: Event[]): string {
       markdown += '\n---\n\n';
     } catch (error) {
       console.error(`Error processing event ${event.id}:`, error);
-      // Skip this event but continue with others
     }
   });
 
