@@ -4,6 +4,7 @@ import { users, events, eventHistory, insertEventSchema } from "../db/schema";
 import type { Event } from "../db/schema";
 import { eq, desc } from "drizzle-orm";
 import jwt from 'jsonwebtoken';
+import { readFileSync } from 'fs';
 
 // GitHubのレスポンス型定義
 interface GitHubFileResponse {
@@ -30,23 +31,28 @@ class GitHubFileUpdater {
   private readonly owner: string;
   private readonly repo: string;
 
-  constructor(appId: string, privateKey: string, owner: string, repo: string) {
+  constructor(appId: string, privateKeyPath: string, owner: string, repo: string) {
     this.appId = appId;
-    // 改行文字の正規化
-    this.privateKey = privateKey
-      .replace(/\\n/g, '\n')
-      .replace(/["']/g, '')
-      .trim();
-    this.owner = owner;
-    this.repo = repo;
+    try {
+      // .pemファイルから直接読み込む
+      this.privateKey = readFileSync(privateKeyPath, 'utf8')
+        .replace(/\\n/g, '\n')
+        .trim();
 
-    console.log('GitHubFileUpdater initialized:', {
-      appId,
-      privateKeyLength: this.privateKey.length,
-      privateKeyIsValid: this.validatePrivateKey(this.privateKey),
-      owner,
-      repo
-    });
+      this.owner = owner;
+      this.repo = repo;
+
+      console.log('GitHubFileUpdater initialized:', {
+        appId,
+        privateKeyLength: this.privateKey.length,
+        privateKeyIsValid: this.validatePrivateKey(this.privateKey),
+        owner,
+        repo
+      });
+    } catch (error) {
+      console.error('Error initializing GitHubFileUpdater:', error);
+      throw error;
+    }
   }
 
   private validatePrivateKey(key: string): boolean {
@@ -195,30 +201,19 @@ export function setupRoutes(app: Express) {
     try {
       console.log("Starting GitHub sync process...");
       const githubAppId = process.env.GITHUB_APP_ID;
-      const githubPrivateKey = process.env.GITHUB_PRIVATE_KEY;
+      const githubPrivateKeyPath = 'scrumfestmap.2024-12-23.private-key.pem';
 
-      if (!githubAppId || !githubPrivateKey) {
+      if (!githubAppId) {
         console.error("GitHub App credentials are missing");
         return res.status(500).json({
           error: "GitHub App credentials are not configured",
-          details: "Please set GITHUB_APP_ID and GITHUB_PRIVATE_KEY environment variables"
+          details: "Please set GITHUB_APP_ID environment variable"
         });
       }
 
-      // デバッグ情報を追加
-      console.log("GitHub credentials validation:", {
-        appId: githubAppId,
-        privateKeyAvailable: !!githubPrivateKey,
-        privateKeyFormat: {
-          hasHeader: githubPrivateKey.includes('-----BEGIN RSA PRIVATE KEY-----'),
-          hasFooter: githubPrivateKey.includes('-----END RSA PRIVATE KEY-----'),
-          length: githubPrivateKey.length
-        }
-      });
-
       const github = new GitHubFileUpdater(
         githubAppId,
-        githubPrivateKey,
+        githubPrivateKeyPath,
         'kawaguti',
         'ScrumFestMapViewer'
       );
