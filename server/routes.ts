@@ -483,18 +483,18 @@ export function setupRoutes(app: Express) {
   // GitHub同期エンドポイント
   app.post("/api/admin/sync-github", requireAdmin, async (req, res) => {
     try {
-      // GitHub認証情報の確認とデバッグログ
       const githubToken = process.env.GITHUB_TOKEN;
-      console.log("Starting GitHub sync process...");
+      console.log("Starting GitHub sync process with GitHub Apps token...");
 
       if (!githubToken) {
-        console.error("GitHub token is missing");
-        return res.status(500).json({ error: "GitHub token is not configured" });
+        console.error("GitHub Apps token is missing");
+        return res.status(500).json({ error: "GitHub Apps token is not configured" });
       }
 
-      console.log("Initializing GitHub client with token...");
+      console.log("Initializing GitHub client with Apps token...");
       const octokit = new Octokit({
-        auth: githubToken
+        auth: githubToken,
+        userAgent: 'ScrumFestMap v1.0'
       });
 
       // イベント一覧の取得
@@ -512,8 +512,8 @@ export function setupRoutes(app: Express) {
         const markdownContent = generateMarkdown(allEvents);
         console.log("Generated markdown content length:", markdownContent.length);
 
-        // GitHub APIの呼び出し
-        console.log("Attempting to update file on GitHub...");
+        // GitHub APIの呼び出し（Single File access - all-events.md）
+        console.log("Attempting to update all-events.md on GitHub...");
         const response = await octokit.repos.createOrUpdateFileContents({
           owner: 'kawaguti',
           repo: 'ScrumFestMapViewer',
@@ -523,21 +523,35 @@ export function setupRoutes(app: Express) {
           branch: 'main'
         });
 
-        console.log("Successfully pushed to GitHub:", response.status);
+        console.log("GitHub API Response Status:", response.status);
+        console.log("GitHub API Response:", JSON.stringify(response.data, null, 2));
+
         res.json({
           success: true,
           message: "Successfully synced with GitHub",
-          details: response.data
+          details: {
+            status: response.status,
+            sha: response.data.content?.sha,
+            url: response.data.content?.html_url
+          }
         });
       } catch (githubError) {
         console.error("GitHub API error details:", githubError);
-        const errorMessage = githubError instanceof Error
-          ? `${githubError.message} (${(githubError as any).status || 'unknown status'})`
-          : "Unknown GitHub API error";
+        // GitHubのエラーレスポンスをより詳細に解析
+        const errorResponse = githubError.response?.data;
+        const errorMessage = errorResponse?.message || 
+          (githubError instanceof Error ? githubError.message : "Unknown GitHub API error");
+        const errorStatus = githubError.status || errorResponse?.status || 'unknown status';
+
+        console.error("Detailed error information:", {
+          message: errorMessage,
+          status: errorStatus,
+          response: errorResponse
+        });
 
         res.status(500).json({
           error: "Failed to sync with GitHub",
-          details: errorMessage
+          details: `${errorMessage} (Status: ${errorStatus})`
         });
       }
     } catch (error) {
