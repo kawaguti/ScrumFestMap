@@ -205,10 +205,10 @@ class GitHubFileUpdater {
     const token = this.generateJWT();
     // GitHubのAPIヘッダー仕様に厳密に従う
     const headers = new Headers({
-      'Accept': 'application/vnd.github+json',
-      'Authorization': `Bearer ${token}`,
-      'X-GitHub-Api-Version': '2022-11-28',
-      'User-Agent': 'ScrumFestMap-GitHub-App'  // User-Agentを追加
+      'accept': 'application/vnd.github+json',
+      'authorization': `Bearer ${token}`,
+      'x-github-api-version': '2022-11-28',
+      'user-agent': 'ScrumFestMap-GitHub-App'  // GitHubが要求するUser-Agent
     });
 
     addSyncDebugLog('info', 'Request headers prepared', {
@@ -219,7 +219,8 @@ class GitHubFileUpdater {
           header: token.split('.')[0],
           payload: token.split('.')[1],
           signature: token.split('.')[2]
-        }
+        },
+        decodedPayload: JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
       }
     });
 

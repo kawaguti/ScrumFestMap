@@ -78,8 +78,8 @@ const DebugContent: React.FC<{
 
 DebugContent.displayName = 'DebugContent';
 
-export function SyncDebugPanel(): React.ReactElement {
-  const [open, setOpen] = React.useState(false);
+export const SyncDebugPanel: React.FC = () => {
+  const [open, setOpen] = React.useState<boolean>(false);
 
   const { data: logs = [], isLoading, error } = useQuery<DebugLog[]>({
     queryKey: ['/api/admin/sync-debug-logs'],
@@ -108,4 +108,4 @@ export function SyncDebugPanel(): React.ReactElement {
       </DialogContent>
     </Dialog>
   );
-}
+};
