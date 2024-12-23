@@ -10,45 +10,53 @@ import AuthPage from "./pages/AuthPage";
 import { Loader2 } from "lucide-react";
 import * as React from "react";
 
+const AdminPage = React.lazy(() => import('./pages/AdminPage'));
+const MyEventsPage = React.lazy(() => import('./pages/MyEventsPage'));
+const EventHistoryPage = React.lazy(() => import('./pages/EventHistoryPage'));
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={HomePage} />
       <Route path="/auth" component={AuthPage} />
-      <Route path="/admin" component={() => {
-        const AdminPage = React.lazy(() => import('./pages/AdminPage'));
-        return (
+      <Route path="/admin">
+        {() => (
           <React.Suspense fallback={<div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
             <AdminPage />
           </React.Suspense>
-        );
-      }} />
-      <Route path="/my-events" component={() => {
-        const MyEventsPage = React.lazy(() => import('./pages/MyEventsPage'));
-        return (
+        )}
+      </Route>
+      <Route path="/my-events">
+        {() => (
           <React.Suspense fallback={<div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
             <MyEventsPage />
           </React.Suspense>
-        );
-      }} />
-      <Route path="/events/:eventId/history" component={() => {
-        const EventHistoryPage = React.lazy(() => import('./pages/EventHistoryPage'));
-        return (
+        )}
+      </Route>
+      <Route path="/events/:eventId/history">
+        {() => (
           <React.Suspense fallback={<div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
             <EventHistoryPage />
           </React.Suspense>
-        );
-      }} />
+        )}
+      </Route>
       <Route>404 Page Not Found</Route>
     </Switch>
   );
 }
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
       <Router />
       <Toaster />
     </QueryClientProvider>
+  );
+}
+
+const root = createRoot(document.getElementById("root")!);
+root.render(
+  <StrictMode>
+    <App />
   </StrictMode>,
 );

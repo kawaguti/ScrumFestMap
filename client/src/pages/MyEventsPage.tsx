@@ -22,7 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
 
 async function fetchAllEvents(): Promise<Event[]> {
@@ -33,7 +32,7 @@ async function fetchAllEvents(): Promise<Event[]> {
   return response.json();
 }
 
-export default function MyEventsPage() {
+function MyEventsPage() {
   const { user } = useUser();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -189,7 +188,6 @@ export default function MyEventsPage() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  // イベントデータを変換してからマークダウンを生成
                   const processedEvents = events.map(event => ({
                     ...event,
                     date: new Date(event.date)
@@ -345,3 +343,5 @@ export default function MyEventsPage() {
     </div>
   );
 }
+
+export default MyEventsPage;
