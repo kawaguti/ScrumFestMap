@@ -78,158 +78,113 @@ class GitHubFileUpdater {
   }
 
   private formatPrivateKey(key: string): string {
-    addSyncDebugLog('info', 'Processing private key', {
-      length: key.length,
-      containsSlashN: key.includes('\\n'),
-      firstChars: key.substring(0, 50),
-      lastChars: key.substring(key.length - 50)
-    });
+    try {
+      addSyncDebugLog('info', 'Processing private key', {
+        originalLength: key.length,
+        containsSlashN: key.includes('\\n'),
+        containsRealNewline: key.includes('\n')
+      });
 
-    // Base64エンコードされているかチェック
-    const isBase64 = /^[A-Za-z0-9+/=]+$/.test(key.replace(/[\r\n\s]/g, ''));
-    if (isBase64) {
-      try {
-        key = Buffer.from(key, 'base64').toString('utf-8');
-        addSyncDebugLog('info', 'Decoded Base64 key', {
-          length: key.length,
-          firstChars: key.substring(0, 50),
-          lastChars: key.substring(key.length - 50)
-        });
-      } catch (error) {
-        addSyncDebugLog('error', 'Base64 decoding error', error);
-        console.error('Base64 decoding error:', error);
+      // Remove any surrounding quotes if present
+      key = key.replace(/^["']|["']$/g, '');
+
+      // First, handle Base64 encoded keys
+      if (/^[A-Za-z0-9+/=]+$/.test(key.replace(/[\r\n\s]/g, ''))) {
+        try {
+          const decodedKey = Buffer.from(key, 'base64').toString('utf-8');
+          if (decodedKey.includes('-----BEGIN')) {
+            key = decodedKey;
+            addSyncDebugLog('info', 'Decoded Base64 key', {
+              decodedLength: key.length,
+              isValidFormat: key.includes('-----BEGIN')
+            });
+          }
+        } catch (error) {
+          addSyncDebugLog('error', 'Base64 decoding failed', { error });
+        }
       }
-    }
 
-    // 環境変数の\nを実際の改行に変換し、余分な空白を削除
-    let formattedKey = key
-      .replace(/\\n/g, '\n')  // \n文字列を実際の改行に変換
-      .split('\n')
-      .map(line => line.trim()) // 各行の余分な空白を削除
-      .filter(line => line.length > 0) // 空行を削除
-      .join('\n');
+      // Convert \n to real newlines and clean up the format
+      let formattedKey = key
+        .replace(/\\n/g, '\n')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\n');
 
-    // 最後に改行を追加
-    if (!formattedKey.endsWith('\n')) {
-      formattedKey += '\n';
-    }
+      // Ensure proper header and footer
+      if (!formattedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----')) {
+        formattedKey = '-----BEGIN RSA PRIVATE KEY-----\n' + formattedKey;
+      }
+      if (!formattedKey.includes('-----END RSA PRIVATE KEY-----')) {
+        formattedKey += '\n-----END RSA PRIVATE KEY-----';
+      }
+      if (!formattedKey.endsWith('\n')) {
+        formattedKey += '\n';
+      }
 
-    // プライベートキーのヘッダーとフッターを確認
-    if (!formattedKey.includes('-----BEGIN RSA PRIVATE KEY-----')) {
-      formattedKey = '-----BEGIN RSA PRIVATE KEY-----\n' + formattedKey;
-    }
-    if (!formattedKey.includes('-----END RSA PRIVATE KEY-----')) {
-      formattedKey = formattedKey + '-----END RSA PRIVATE KEY-----\n';
-    }
-
-    addSyncDebugLog('info', 'Formatted private key', {
-      length: formattedKey.length,
-      lines: formattedKey.split('\n').length - 1,
-      firstChars: formattedKey.substring(0, 50),
-      lastChars: formattedKey.substring(formattedKey.length - 50),
-      startsWithHeader: formattedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
-      endsWithFooter: formattedKey.endsWith('-----END RSA PRIVATE KEY-----\n')
-    });
-
-    // キーの形式を確認
-    if (!formattedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----') ||
-      !formattedKey.endsWith('-----END RSA PRIVATE KEY-----\n')) {
-      addSyncDebugLog('error', 'Invalid private key format', {
-        startsCorrectly: formattedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
-        endsCorrectly: formattedKey.endsWith('-----END RSA PRIVATE KEY-----\n'),
-        keyStart: formattedKey.substring(0, 50),
-        keyEnd: formattedKey.substring(formattedKey.length - 50)
+      addSyncDebugLog('info', 'Private key formatted', {
+        finalLength: formattedKey.length,
+        lineCount: formattedKey.split('\n').length,
+        hasValidHeader: formattedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
+        hasValidFooter: formattedKey.includes('-----END RSA PRIVATE KEY-----'),
+        endsWithNewline: formattedKey.endsWith('\n')
       });
-      console.error('Invalid private key format:', {
-        startsCorrectly: formattedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
-        endsCorrectly: formattedKey.endsWith('-----END RSA PRIVATE KEY-----\n'),
-        keyStart: formattedKey.substring(0, 50),
-        keyEnd: formattedKey.substring(formattedKey.length - 50)
-      });
-      throw new Error('Invalid RSA private key format');
-    }
 
-    return formattedKey;
+      return formattedKey;
+
+    } catch (error) {
+      addSyncDebugLog('error', 'Private key formatting failed', { error });
+      throw new Error(`Failed to format private key: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   private generateJWT(): string {
     try {
-      // 現在のUnixタイムスタンプを取得（秒単位）
       const currentTime = Math.floor(Date.now() / 1000);
 
       const payload = {
-        iat: currentTime - 30,           // 現在時刻から30秒前
+        iat: currentTime - 30,           // 現在時刻から30秒前（クロックスキュー対策）
         exp: currentTime + (10 * 60),    // 現在時刻から10分後
         iss: this.appId.toString()
       };
 
       addSyncDebugLog('info', 'Generating JWT', {
-        payload,
-        currentTime: {
-          timestamp: currentTime,
-          humanReadable: new Date(currentTime * 1000).toISOString(),
-          iat: new Date(payload.iat * 1000).toISOString(),
-          exp: new Date(payload.exp * 1000).toISOString()
-        },
-        privateKeyInfo: {
-          length: this.privateKey.length,
-          lines: this.privateKey.split('\n').length,
-          startsWithHeader: this.privateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
-          endsWithFooter: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----\n'),
-          structure: this.privateKey.split('\n').map(line => ({
-            length: line.length,
-            isHeader: line.includes('BEGIN'),
-            isFooter: line.includes('END'),
-            isEmpty: line.trim() === ''
-          }))
+        timeInfo: {
+          currentTimestamp: currentTime,
+          currentTimeISO: new Date(currentTime * 1000).toISOString(),
+          iatTimeISO: new Date(payload.iat * 1000).toISOString(),
+          expTimeISO: new Date(payload.exp * 1000).toISOString()
         }
       });
 
       const token = jwt.sign(payload, this.privateKey, { algorithm: 'RS256' });
 
-      addSyncDebugLog('info', 'JWT Generated', {
+      addSyncDebugLog('info', 'JWT token generated', {
         tokenLength: token.length,
-        tokenParts: {
-          header: token.split('.')[0],
-          payload: token.split('.')[1],
-          signature: token.split('.')[2]
-        },
-        decodedPayload: JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString()),
-        timeInfo: {
-          generatedAt: new Date().toISOString(),
-          validFrom: new Date(payload.iat * 1000).toISOString(),
-          expiresAt: new Date(payload.exp * 1000).toISOString()
-        }
+        decodedHeader: JSON.parse(Buffer.from(token.split('.')[0], 'base64').toString()),
+        decodedPayload: JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
       });
 
       return token;
+
     } catch (error) {
-      addSyncDebugLog('error', 'JWT Generation Error', error);
-      throw new Error(`JWT生成エラー: ${error instanceof Error ? error.message : String(error)}`);
+      addSyncDebugLog('error', 'JWT generation failed', { error });
+      throw new Error(`JWT generation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   private getHeaders(): Headers {
     const token = this.generateJWT();
-    // GitHubのAPIヘッダー仕様に厳密に従う
     const headers = new Headers({
-      'accept': 'application/vnd.github+json',
-      'authorization': `Bearer ${token}`,
-      'x-github-api-version': '2022-11-28',
-      'user-agent': 'ScrumFestMap-GitHub-App'  // GitHubが要求するUser-Agent
+      'Accept': 'application/vnd.github+json',
+      'Authorization': `Bearer ${token}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'ScrumFestMap-GitHub-App'
     });
 
     addSyncDebugLog('info', 'Request headers prepared', {
-      headers: Object.fromEntries(headers.entries()),
-      jwtTokenInfo: {
-        token: token,
-        tokenParts: {
-          header: token.split('.')[0],
-          payload: token.split('.')[1],
-          signature: token.split('.')[2]
-        },
-        decodedPayload: JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
-      }
+      headers: Object.fromEntries(headers.entries())
     });
 
     return headers;
