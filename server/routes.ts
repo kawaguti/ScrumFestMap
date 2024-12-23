@@ -564,7 +564,7 @@ export function setupRoutes(app: Express) {
             url: response.data.content?.html_url
           }
         });
-      } catch (githubError) {
+      } catch (githubError: any) {
         console.error("GitHub API error details:", githubError);
         // GitHubのエラーレスポンスをより詳細に解析
         const errorResponse = githubError.response?.data;
