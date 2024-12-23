@@ -18,9 +18,9 @@ interface DebugLog {
   details: any;
 }
 
-const DebugLogEntry: React.FC<{ log: DebugLog; index: number }> = React.memo(({ log, index }) => (
+const DebugLogEntry = React.memo(({ log, index }: { log: DebugLog; index: number }) => (
   <div
-    key={`${log.timestamp}-${index}`}
+    key={index}
     className={`p-4 rounded-lg ${
       log.type === 'error' ? 'bg-destructive/10' : 'bg-muted'
     }`}
@@ -39,11 +39,15 @@ const DebugLogEntry: React.FC<{ log: DebugLog; index: number }> = React.memo(({ 
 
 DebugLogEntry.displayName = 'DebugLogEntry';
 
-const DebugContent: React.FC<{
+const DebugContent = React.memo(({ 
+  logs, 
+  isLoading, 
+  error 
+}: {
   logs: DebugLog[];
   isLoading: boolean;
   error: Error | null;
-}> = React.memo(({ logs, isLoading, error }) => {
+}) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -64,7 +68,7 @@ const DebugContent: React.FC<{
     <ScrollArea className="h-[calc(80vh-8rem)] rounded-md border p-4">
       <div className="space-y-4">
         {logs.map((log, index) => (
-          <DebugLogEntry key={`${log.timestamp}-${index}`} log={log} index={index} />
+          <DebugLogEntry key={index} log={log} index={index} />
         ))}
         {logs.length === 0 && (
           <div className="text-center text-muted-foreground">
@@ -79,15 +83,15 @@ const DebugContent: React.FC<{
 DebugContent.displayName = 'DebugContent';
 
 export const SyncDebugPanel: React.FC = () => {
-  const [open, setOpen] = React.useState<boolean>(false);
+  const [isOpen, setIsOpen] = React.useState(false);
 
   const { data: logs = [], isLoading, error } = useQuery<DebugLog[]>({
     queryKey: ['/api/admin/sync-debug-logs'],
-    enabled: open,
+    enabled: isOpen,
   });
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Bug className="h-4 w-4 mr-2" />

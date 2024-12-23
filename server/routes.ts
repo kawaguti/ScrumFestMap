@@ -154,25 +154,28 @@ class GitHubFileUpdater {
 
   private generateJWT(): string {
     try {
-      // 現在時刻から30秒前を開始時刻とする（GitHubの推奨）
-      const now = Math.floor(Date.now() / 1000) - 30;
-      const exp = now + (10 * 60); // 10分後に失効
+      // 現在のUnixタイムスタンプを取得（秒単位）
+      const currentTime = Math.floor(Date.now() / 1000);
 
       const payload = {
-        iat: now,
-        exp: exp,
-        iss: this.appId
+        iat: currentTime - 30,           // 現在時刻から30秒前
+        exp: currentTime + (10 * 60),    // 現在時刻から10分後
+        iss: this.appId.toString()
       };
 
       addSyncDebugLog('info', 'Generating JWT', {
         payload,
-        currentTime: new Date().toISOString(),
+        currentTime: {
+          timestamp: currentTime,
+          humanReadable: new Date(currentTime * 1000).toISOString(),
+          iat: new Date(payload.iat * 1000).toISOString(),
+          exp: new Date(payload.exp * 1000).toISOString()
+        },
         privateKeyInfo: {
           length: this.privateKey.length,
           lines: this.privateKey.split('\n').length,
           startsWithHeader: this.privateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
           endsWithFooter: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----\n'),
-          // プライベートキーの内容を行ごとに確認（機密情報は除く）
           structure: this.privateKey.split('\n').map(line => ({
             length: line.length,
             isHeader: line.includes('BEGIN'),
@@ -191,7 +194,12 @@ class GitHubFileUpdater {
           payload: token.split('.')[1],
           signature: token.split('.')[2]
         },
-        decodedPayload: JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
+        decodedPayload: JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString()),
+        timeInfo: {
+          generatedAt: new Date().toISOString(),
+          validFrom: new Date(payload.iat * 1000).toISOString(),
+          expiresAt: new Date(payload.exp * 1000).toISOString()
+        }
       });
 
       return token;
