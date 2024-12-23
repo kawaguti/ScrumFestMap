@@ -1,0 +1,112 @@
+import { sign } from 'jsonwebtoken';
+
+interface GitHubFileResponse {
+  sha: string;
+  content: string;
+  encoding: string;
+}
+
+interface GitHubUpdateResponse {
+  content: {
+    sha: string;
+    url: string;
+  };
+  commit: {
+    sha: string;
+    url: string;
+  };
+}
+
+class GitHubFileUpdater {
+  private readonly appId: string;
+  private readonly privateKey: string;
+  private readonly owner: string;
+  private readonly repo: string;
+
+  constructor(appId: string, privateKey: string, owner: string, repo: string) {
+    this.appId = appId;
+    this.privateKey = privateKey;
+    this.owner = owner;
+    this.repo = repo;
+  }
+
+  private generateJWT(): string {
+    const now = Math.floor(Date.now() / 1000) - 30;
+    
+    const payload = {
+      iat: now,
+      exp: now + (10 * 60),
+      iss: this.appId
+    };
+
+    return sign(payload, this.privateKey, { algorithm: 'RS256' });
+  }
+
+  private getHeaders(): Headers {
+    const headers = new Headers({
+      'Accept': 'application/vnd.github+json',
+      'Authorization': `Bearer ${this.generateJWT()}`,
+      'X-GitHub-Api-Version': '2022-11-28'
+    });
+    return headers;
+  }
+
+  public async updateAllEventsFile(newContent: string): Promise<GitHubUpdateResponse> {
+    const filePath = 'all-events.md';
+    const url = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${filePath}`;
+
+    try {
+      // 1. Get current file to obtain SHA
+      const fileResponse = await fetch(url, {
+        headers: this.getHeaders()
+      });
+
+      if (!fileResponse.ok) {
+        throw new Error(`Failed to fetch file: ${await fileResponse.text()}`);
+      }
+
+      const fileData = await fileResponse.json() as GitHubFileResponse;
+
+      // 2. Update file
+      const updateResponse = await fetch(url, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          message: 'Update all-events.md',
+          content: Buffer.from(newContent).toString('base64'),
+          sha: fileData.sha
+        })
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error(`Failed to update file: ${await updateResponse.text()}`);
+      }
+
+      return await updateResponse.json() as GitHubUpdateResponse;
+
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`GitHub API Error: ${error.message}`);
+      }
+      throw error;
+    }
+  }
+}
+
+// 使用例
+async function main() {
+  const updater = new GitHubFileUpdater(
+    process.env.GITHUB_APP_ID!,
+    process.env.GITHUB_PRIVATE_KEY!,
+    'owner-name',
+    'repo-name'
+  );
+
+  try {
+    const newContent = '# Updated Events\n- New event added';
+    const result = await updater.updateAllEventsFile(newContent);
+    console.log('File updated successfully:', result);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}

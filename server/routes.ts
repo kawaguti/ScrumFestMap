@@ -33,6 +33,93 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+// GitHubのレスポンス型定義
+interface GitHubFileResponse {
+  sha: string;
+  content: string;
+  encoding: string;
+}
+
+interface GitHubUpdateResponse {
+  content: {
+    sha: string;
+    html_url: string;
+  };
+  commit: {
+    sha: string;
+    url: string;
+  };
+}
+
+// GitHubファイル更新用のクラス
+class GitHubFileUpdater {
+  private readonly token: string;
+  private readonly owner: string;
+  private readonly repo: string;
+
+  constructor(token: string, owner: string, repo: string) {
+    this.token = token;
+    this.owner = owner;
+    this.repo = repo;
+  }
+
+  private getHeaders(): HeadersInit {
+    return {
+      'Accept': 'application/vnd.github.v3+json',
+      'Authorization': `token ${this.token}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'ScrumFestMap'
+    };
+  }
+
+  public async updateFile(path: string, content: string, message: string): Promise<GitHubUpdateResponse> {
+    const url = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${path}`;
+    console.log('Updating file at:', url);
+
+    try {
+      // 1. 既存ファイルの情報を取得
+      console.log('Fetching existing file...');
+      const fileResponse = await fetch(url, {
+        headers: this.getHeaders()
+      });
+
+      if (!fileResponse.ok) {
+        const errorText = await fileResponse.text();
+        console.error('Failed to fetch file:', errorText);
+        throw new Error(`Failed to fetch file: ${errorText}`);
+      }
+
+      const fileData = await fileResponse.json() as GitHubFileResponse;
+      console.log('File fetched successfully, SHA:', fileData.sha);
+
+      // 2. ファイルを更新
+      console.log('Updating file...');
+      const updateResponse = await fetch(url, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify({
+          message,
+          content: Buffer.from(content).toString('base64'),
+          sha: fileData.sha
+        })
+      });
+
+      if (!updateResponse.ok) {
+        const errorText = await updateResponse.text();
+        console.error('Failed to update file:', errorText);
+        throw new Error(`Failed to update file: ${errorText}`);
+      }
+
+      const result = await updateResponse.json() as GitHubUpdateResponse;
+      console.log('File updated successfully:', result.content.html_url);
+      return result;
+    } catch (error) {
+      console.error('GitHub API Error:', error);
+      throw error;
+    }
+  }
+}
+
 export function setupRoutes(app: Express) {
   // 最新の更新履歴を1件取得するエンドポイント
   app.get("/api/latest-update", async (req, res) => {
@@ -507,105 +594,84 @@ export function setupRoutes(app: Express) {
       const owner = 'kawaguti';
       const repo = 'ScrumFestMapViewer';
       const path = 'all-events.md';
-      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
-      // GitHub APIヘッダー
-      const headers = {
-        'Authorization': `Bearer ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
-        'User-Agent': 'ScrumFestMap'
-      };
-
-      console.log('Fetching existing file information...');
-      console.log('API URL:', apiUrl);
-
-      // 1. まず既存ファイルの情報を取得
-      const fileResponse = await fetch(apiUrl, { 
-        method: 'GET',
-        headers 
-      });
-
-      console.log('File info response status:', fileResponse.status);
-      const responseText = await fileResponse.text();
-      console.log('File info response:', responseText);
-
-      let sha = undefined;
-      let fileData;
+      const github = new GitHubFileUpdater(githubToken, owner, repo);
 
       try {
-        fileData = JSON.parse(responseText);
-        if (fileResponse.ok) {
-          sha = fileData.sha;
-          console.log('Existing file found, SHA:', sha);
-        }
-      } catch (parseError) {
-        console.error('Error parsing response:', parseError);
-        return res.status(500).json({
-          error: "GitHub APIのレスポンスの解析に失敗しました",
-          details: parseError.message
+        const result = await github.updateFile(
+          path,
+          markdownContent,
+          'Update events list via ScrumFestMap'
+        );
+
+        res.json({
+          success: true,
+          message: "GitHubリポジトリにイベント一覧を同期しました",
+          url: result.content.html_url
         });
-      }
-
-      if (!fileResponse.ok && fileResponse.status !== 404) {
-        console.error('Error fetching file info:', responseText);
-        return res.status(500).json({
-          error: "ファイル情報の取得に失敗しました",
-          details: responseText
-        });
-      }
-
-      // Base64エンコード
-      const base64Content = Buffer.from(markdownContent, 'utf-8').toString('base64');
-      console.log('Content encoded to base64');
-
-      // 2. ファイルを更新または作成
-      const updateData: any = {
-        message: 'Update events list',
-        content: base64Content,
-        branch: 'main'
-      };
-
-      // 既存ファイルの場合はSHAを含める
-      if (sha) {
-        updateData.sha = sha;
-        console.log('Including SHA in update request');
-      }
-
-      console.log('Sending update request...');
-      const updateResponse = await fetch(apiUrl, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(updateData)
-      });
-
-      console.log('Update response status:', updateResponse.status);
-      const updateResponseText = await updateResponse.text();
-      console.log('Update response:', updateResponseText);
-
-      if (!updateResponse.ok) {
-        console.error('GitHub API Error:', updateResponseText);
-        return res.status(500).json({ 
+      } catch (error: any) {
+        console.error('GitHub sync error:', error);
+        res.status(500).json({
           error: "GitHub同期に失敗しました",
-          details: updateResponseText
+          details: error.message
         });
       }
-
-      const result = JSON.parse(updateResponseText);
-      res.json({
-        success: true,
-        message: "GitHubリポジトリにイベント一覧を同期しました",
-        url: result.content?.html_url
-      });
-
-    } catch (error) {
-      console.error('Sync error:', error);
+    } catch (error: any) {
+      console.error('Server error:', error);
       res.status(500).json({
         error: "同期処理中にエラーが発生しました",
-        details: error instanceof Error ? error.message : String(error)
+        details: error.message
       });
     }
   });
+
+  // マイイベント取得
+  app.get("/api/my-events", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const userEvents = await db
+        .select()
+        .from(events)
+        .where(
+          and(
+            eq(events.createdBy, req.user.id),
+            eq(events.isArchived, false)
+          )
+        )
+        .orderBy(desc(events.date));
+
+      res.json(userEvents);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch events" });
+    }
+  });
+
+  app.post("/api/admin/demote/:userId", requireAdmin, async (req, res) => {
+    try {
+      // 自分自身の権限は剥奪できないようにする
+      if (parseInt(req.params.userId) === req.user?.id) {
+        return res.status(400).json({ error: "Cannot demote yourself" });
+      }
+
+      const [user] = await db
+        .update(users)
+        .set({ isAdmin: false })
+        .where(eq(users.id, parseInt(req.params.userId)))
+        .returning();
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to demote user" });
+    }
+  });
+
 
   // ヘルパー関数: マークダウンの生成
   function generateMarkdown(allEvents: Event[]): string {
