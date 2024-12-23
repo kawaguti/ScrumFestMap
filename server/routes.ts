@@ -36,7 +36,6 @@ class GitHubFileUpdater {
     this.owner = owner;
     this.repo = repo;
 
-    // 初期化時のデバッグ情報
     console.log('GitHubFileUpdater initialized:', {
       appId,
       privateKeyLength: this.privateKey.length,
@@ -49,7 +48,7 @@ class GitHubFileUpdater {
   private validatePrivateKey(key: string): boolean {
     const hasHeader = key.includes('-----BEGIN RSA PRIVATE KEY-----');
     const hasFooter = key.includes('-----END RSA PRIVATE KEY-----');
-    const hasContent = key.length > 100; // 最小限の長さチェック
+    const hasContent = key.length > 100;
 
     if (!hasHeader || !hasFooter || !hasContent) {
       console.error('Private key validation failed:', {
@@ -88,34 +87,16 @@ class GitHubFileUpdater {
     }
   }
 
-  private async getHeaders(): Promise<Headers> {
-    try {
-      const jwt = await this.generateJWT();
-      const headers = new Headers({
-        'Accept': 'application/vnd.github+json',
-        'Authorization': `Bearer ${jwt}`,
-        'X-GitHub-Api-Version': '2022-11-28'
-      });
-
-      console.log('Headers generated successfully:', {
-        accept: headers.get('Accept'),
-        authType: 'Bearer',
-        version: headers.get('X-GitHub-Api-Version')
-      });
-
-      return headers;
-    } catch (error) {
-      console.error('Headers Generation Error:', error);
-      throw error;
-    }
-  }
-
   public async updateFile(path: string, content: string, message: string): Promise<GitHubUpdateResponse> {
     const url = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${path}`;
     console.log('Updating file at:', url);
 
     try {
-      const headers = await this.getHeaders();
+      const headers = new Headers({
+        'Accept': 'application/vnd.github+json',
+        'Authorization': `Bearer ${await this.generateJWT()}`,
+        'X-GitHub-Api-Version': '2022-11-28'
+      });
 
       // 1. Get current file to obtain SHA
       console.log('Fetching existing file...');
@@ -129,8 +110,7 @@ class GitHubFileUpdater {
         console.error('Failed to fetch file:', {
           status: fileResponse.status,
           statusText: fileResponse.statusText,
-          error: errorText,
-          headers: Object.fromEntries(fileResponse.headers.entries())
+          error: errorText
         });
         throw new Error(`Failed to fetch file: ${errorText}`);
       }
@@ -146,12 +126,6 @@ class GitHubFileUpdater {
         sha: fileData.sha
       };
 
-      console.log('Update request data:', {
-        message: updateData.message,
-        sha: updateData.sha,
-        contentLength: updateData.content.length
-      });
-
       const updateResponse = await fetch(url, {
         method: 'PUT',
         headers,
@@ -160,12 +134,6 @@ class GitHubFileUpdater {
 
       if (!updateResponse.ok) {
         const errorText = await updateResponse.text();
-        console.error('Failed to update file:', {
-          status: updateResponse.status,
-          statusText: updateResponse.statusText,
-          error: errorText,
-          headers: Object.fromEntries(updateResponse.headers.entries())
-        });
         throw new Error(`Failed to update file: ${errorText}`);
       }
 
@@ -187,9 +155,26 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-// サーバーの起動設定
 export function setupRoutes(app: Express) {
-  // ... other routes ...
+  // イベント一覧を取得するエンドポイント
+  app.get("/api/events", async (req, res) => {
+    try {
+      const allEvents = await db
+        .select()
+        .from(events)
+        .where(eq(events.isArchived, false))
+        .orderBy(desc(events.date));
+
+      res.setHeader('Content-Type', 'application/json');
+      res.json(allEvents);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      res.status(500).json({
+        error: "Failed to fetch events",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
 
   // GitHub同期エンドポイント
   app.post("/api/admin/sync-github", requireAdmin, async (req, res) => {
@@ -265,8 +250,6 @@ export function setupRoutes(app: Express) {
       });
     }
   });
-
-  // ... other routes ...
 }
 
 function generateMarkdown(allEvents: Event[]): string {
