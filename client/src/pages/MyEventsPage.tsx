@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useUser } from "@/hooks/useUser";
+import { useUser } from "@/hooks/use-user";
 import { useLocation } from "wouter";
 import {
   Card,
@@ -14,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { Loader2, Edit, Download, Trash2, GitPullRequest } from "lucide-react";
-import type { Event } from "@db/schema";
 import { EventForm } from "@/components/EventForm";
 import {
   Dialog,
@@ -24,6 +23,19 @@ import {
 } from "@/components/ui/dialog";
 
 import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
+
+// Event型の定義
+interface Event {
+  id: number;
+  name: string;
+  prefecture: string;
+  date: string;
+  website?: string | null;
+  description?: string | null;
+  youtubePlaylist?: string | null;
+  createdBy: number;
+  coordinates?: [number, number] | null;
+}
 
 async function fetchAllEvents(): Promise<Event[]> {
   const response = await fetch("/api/events");
@@ -179,19 +191,17 @@ export default function MyEventsPage() {
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  const displayEvents = sortedEvents;
-
   return (
     <div className="container mx-auto py-6 space-y-6">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold">イベント一覧</h1>
-          {displayEvents.length > 0 && (
+          {events.length > 0 && (
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
-                  const markdown = generateEventMarkdown(displayEvents);
+                  const markdown = generateEventMarkdown(events);
                   downloadMarkdown(markdown, `all-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
                 }}
               >
@@ -250,7 +260,7 @@ export default function MyEventsPage() {
         </DialogContent>
       </Dialog>
 
-      {displayEvents.length === 0 ? (
+      {sortedEvents.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <p>表示できるイベントはありません。</p>
@@ -258,7 +268,7 @@ export default function MyEventsPage() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {displayEvents.map((event) => (
+          {sortedEvents.map((event) => (
             <Card key={event.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -299,7 +309,7 @@ export default function MyEventsPage() {
                     )}
                     {user && (
                       <div className="flex gap-2">
-                        {user && (user.isAdmin || String(event.createdBy) === user.id) && (
+                        {user && (user.isAdmin || event.createdBy === Number(user.id)) && (
                           <Button
                             variant="destructive"
                             size="sm"

@@ -3,6 +3,7 @@ import { setupRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import { createServer } from "http";
 import { setupAuth } from "./auth";
+import { db } from "../db";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
@@ -25,10 +26,19 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// 環境変数の設定確認
+// 環境変数の設定確認とデータベース接続テスト
 const isDevelopment = process.env.NODE_ENV !== "production";
 log(`Environment: ${process.env.NODE_ENV || "development"}`);
-log(`Database URL: ${process.env.DATABASE_URL ? "configured" : "missing"}`);
+
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is required");
+}
+log("Database URL is configured");
+
+// GitHub Token の確認
+if (!process.env.GITHUB_TOKEN) {
+  log("Warning: GITHUB_TOKEN is not set. GitHub sync functionality will be disabled.");
+}
 
 // 認証設定を初期化
 setupAuth(app);
@@ -66,6 +76,16 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
+    // データベース接続テスト
+    try {
+      await db.execute('SELECT 1');
+      log("Database connection successful");
+    } catch (error) {
+      log("Database connection failed");
+      console.error(error);
+      process.exit(1);
+    }
+
     // APIルートを設定
     setupRoutes(app);
     const server = createServer(app);

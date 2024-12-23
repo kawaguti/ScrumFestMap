@@ -1,6 +1,7 @@
 import { type Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { users, events, eventHistory, insertEventSchema, type Event } from "@db/schema";
+import { users, events, eventHistory, insertEventSchema } from "../db/schema";
+import type { Event } from "../db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
