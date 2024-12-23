@@ -1,6 +1,6 @@
 import { type Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { users, events, eventHistory, insertEventSchema } from "@db/schema";
+import { users, events, eventHistory, insertEventSchema, type Event } from "@db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -69,10 +69,10 @@ export function setupRoutes(app: Express) {
         .select()
         .from(events)
         .where(eq(events.isArchived, false));
-      
+
       // エラーログを追加
       console.log("Fetched events:", allEvents);
-      
+
       res.json(allEvents);
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -96,7 +96,7 @@ export function setupRoutes(app: Express) {
       // パスワード強度のチェック
       const validation = validatePasswordStrength(newPassword);
       if (!validation.isValid) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "パスワードが要件を満たしていません",
           details: validation.errors
         });
@@ -120,7 +120,7 @@ export function setupRoutes(app: Express) {
       // パスワードを更新
       const [updatedUser] = await db
         .update(users)
-        .set({ 
+        .set({
           password: hashedNewPassword
         })
         .where(eq(users.id, req.user.id))
@@ -129,7 +129,7 @@ export function setupRoutes(app: Express) {
       res.json({ message: "パスワードが正常に更新されました" });
     } catch (error) {
       console.error("Password change error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "パスワードの変更に失敗しました",
         details: error instanceof Error ? error.message : "不明なエラー"
       });
@@ -165,7 +165,7 @@ export function setupRoutes(app: Express) {
       res.json(event);
     } catch (error) {
       console.error("Event creation error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to create event",
         details: error instanceof Error ? error.message : "Unknown error"
       });
@@ -266,7 +266,7 @@ export function setupRoutes(app: Express) {
           )
         )
         .orderBy(desc(events.date));
-    
+
       res.json(userEvents);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch events" });
@@ -329,14 +329,14 @@ export function setupRoutes(app: Express) {
       type EventKey = keyof typeof existingEvent;
       const changedFields = Object.entries(result.data).filter(([key, value]) => {
         const typedKey = key as EventKey;
-        
+
         // 日付の比較
         if (key === 'date') {
           const newDate = new Date(value as string | number | Date);
           const oldDate = new Date(existingEvent[typedKey] as string | number | Date);
           return newDate.toISOString() !== oldDate.toISOString();
         }
-        
+
         // その他のフィールドの比較（nullと空文字列を同等として扱う）
         const oldValue = existingEvent[typedKey];
         if (typeof value === 'string' && typeof oldValue === 'string') {
@@ -344,7 +344,7 @@ export function setupRoutes(app: Express) {
           const normalizedNew = (value as string).trim() || null;
           return normalizedOld !== normalizedNew;
         }
-        
+
         return value !== existingEvent[typedKey];
       });
 
@@ -479,34 +479,43 @@ export function setupRoutes(app: Express) {
     }
   });
 
-  // Add new GitHub sync endpoint
+  // GitHub同期エンドポイント
   app.post("/api/admin/sync-github", requireAdmin, async (req, res) => {
     try {
-      // GitHub認証情報の確認
+      // GitHub認証情報の確認とデバッグログ
       const githubToken = process.env.GITHUB_TOKEN;
+      console.log("Checking GitHub token...");
+      console.log("Token exists:", !!githubToken);
+
       if (!githubToken) {
+        console.error("GitHub token is missing");
         return res.status(500).json({ error: "GitHub token is not configured" });
       }
 
-      // GitHubクライアントの初期化
+      console.log("Initializing GitHub client...");
       const octokit = new Octokit({
         auth: githubToken
       });
 
       // イベント一覧の取得
+      console.log("Fetching events from database...");
       const allEvents = await db
         .select()
         .from(events)
         .where(eq(events.isArchived, false))
         .orderBy(desc(events.date));
 
-      // マークダウンファイルの生成
-      const markdownContent = generateMarkdown(allEvents);
+      console.log(`Found ${allEvents.length} events to sync`);
 
       try {
+        // マークダウンファイルの生成
+        const markdownContent = generateMarkdown(allEvents);
+        console.log("Generated markdown content length:", markdownContent.length);
+
         // 既存のファイルの取得を試みる
         let fileSha: string | undefined;
         try {
+          console.log("Checking for existing file on GitHub...");
           const { data: existingFile } = await octokit.repos.getContent({
             owner: 'kawaguti',
             repo: 'ScrumFestMapViewer',
@@ -516,13 +525,14 @@ export function setupRoutes(app: Express) {
 
           if ('sha' in existingFile) {
             fileSha = existingFile.sha;
+            console.log("Found existing file with SHA:", fileSha);
           }
         } catch (error) {
-          // ファイルが存在しない場合は新規作成となるのでエラーは無視
           console.log('File does not exist yet, will create new one');
+          console.log('Get content error details:', error instanceof Error ? error.message : 'Unknown error');
         }
 
-        // GitHubにファイルをプッシュ
+        console.log("Pushing content to GitHub...");
         const response = await octokit.repos.createOrUpdateFileContents({
           owner: 'kawaguti',
           repo: 'ScrumFestMapViewer',
@@ -530,40 +540,47 @@ export function setupRoutes(app: Express) {
           message: `Update events list - ${new Date().toISOString()}`,
           content: Buffer.from(markdownContent).toString('base64'),
           branch: 'main',
-          ...(fileSha && { sha: fileSha }) // 既存ファイルがある場合はSHAを指定
+          ...(fileSha && { sha: fileSha })
         });
 
-        res.json({ 
-          success: true, 
+        console.log("Successfully pushed to GitHub");
+        res.json({
+          success: true,
           message: "Successfully synced with GitHub",
-          sha: response.data.content?.sha 
+          sha: response.data.content?.sha
         });
       } catch (githubError) {
         console.error("GitHub API error:", githubError);
-        res.status(500).json({ 
-          error: "Failed to sync with GitHub", 
-          details: githubError instanceof Error ? githubError.message : "Unknown error" 
+        const errorMessage = githubError instanceof Error ? githubError.message : "Unknown error";
+        console.error("Error details:", errorMessage);
+        res.status(500).json({
+          error: "Failed to sync with GitHub",
+          details: errorMessage
         });
       }
     } catch (error) {
       console.error("Sync error:", error);
-      res.status(500).json({ 
-        error: "Failed to sync events", 
-        details: error instanceof Error ? error.message : "Unknown error" 
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error("Error details:", errorMessage);
+      res.status(500).json({
+        error: "Failed to sync events",
+        details: errorMessage
       });
     }
   });
 
   // ヘルパー関数: マークダウンの生成
-  function generateMarkdown(events: typeof events.$inferSelect[]): string {
+  function generateMarkdown(allEvents: Event[]): string {
     const today = new Date();
     let markdown = `# イベント一覧\n\n`;
     markdown += `最終更新: ${today.toLocaleDateString('ja-JP')}\n\n`;
 
     // イベントを日付でソート
-    events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const sortedEvents = [...allEvents].sort((a, b) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
-    events.forEach(event => {
+    sortedEvents.forEach(event => {
       markdown += `## ${event.name}\n\n`;
       markdown += `- 日付: ${new Date(event.date).toLocaleDateString('ja-JP')}\n`;
       markdown += `- 場所: ${event.prefecture}\n`;

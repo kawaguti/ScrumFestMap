@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useUser } from "@/hooks/use-user";
+import { useUser } from "@/hooks/useUser";
 import { useLocation } from "wouter";
 import {
   Card,
@@ -299,7 +299,7 @@ export default function MyEventsPage() {
                     )}
                     {user && (
                       <div className="flex gap-2">
-                        {user && (user.isAdmin || event.createdBy === user.id) && (
+                        {user && (user.isAdmin || String(event.createdBy) === user.id) && (
                           <Button
                             variant="destructive"
                             size="sm"
