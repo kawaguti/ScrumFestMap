@@ -33,25 +33,8 @@ class GitHubFileUpdater {
     try {
       console.log('Processing private key...');
 
-      // キーの正規化
-      let normalizedKey = privateKey
-        .replace(/\\n/g, '\n')
-        .trim();
-
-      // 改行の追加
-      if (!normalizedKey.endsWith('\n')) {
-        normalizedKey += '\n';
-      }
-
-      // PEMフォーマットの検証
-      console.log('Key format check:', {
-        hasBeginMarker: normalizedKey.includes('BEGIN RSA PRIVATE KEY'),
-        hasEndMarker: normalizedKey.includes('END RSA PRIVATE KEY'),
-        lineCount: normalizedKey.split('\n').length,
-        totalLength: normalizedKey.length
-      });
-
-      this.privateKey = normalizedKey;
+      // プライベートキーをそのまま保持（\nを含む文字列として）
+      this.privateKey = privateKey;
       this.owner = owner;
       this.repo = repo;
 
@@ -71,8 +54,20 @@ class GitHubFileUpdater {
         iss: this.appId
       };
 
-      console.log('Generating JWT with key length:', this.privateKey.length);
-      return jwt.sign(payload, this.privateKey, { algorithm: 'RS256' });
+      // プライベートキーの\nを実際の改行に変換
+      const formattedKey = this.privateKey
+        .replace(/\\n/g, '\n')
+        .trim();
+
+      console.log('Key format check:', {
+        originalLength: this.privateKey.length,
+        formattedLength: formattedKey.length,
+        hasBeginMarker: formattedKey.includes('BEGIN RSA PRIVATE KEY'),
+        hasEndMarker: formattedKey.includes('END RSA PRIVATE KEY'),
+        lineCount: formattedKey.split('\n').length
+      });
+
+      return jwt.sign(payload, formattedKey, { algorithm: 'RS256' });
     } catch (error) {
       console.error('JWT Generation Error:', error);
       throw error;
@@ -128,7 +123,6 @@ class GitHubFileUpdater {
       });
 
       return result;
-
     } catch (error) {
       console.error('GitHub API Error:', error);
       throw error;
