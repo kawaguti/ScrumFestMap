@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
+import { SyncDebugPanel } from "@/components/SyncDebugPanel";
 
 async function fetchAllEvents(): Promise<Event[]> {
   const response = await fetch("/api/events");
@@ -120,18 +121,21 @@ export default function MyEventsPage() {
                 マークダウンでダウンロード
               </Button>
               {user?.isAdmin && (
-                <Button
-                  variant="outline"
-                  onClick={() => syncGitHubMutation.mutate()}
-                  disabled={syncGitHubMutation.isPending}
-                >
-                  {syncGitHubMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <GitPullRequest className="h-4 w-4 mr-2" />
-                  )}
-                  GitHubに同期
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => syncGitHubMutation.mutate()}
+                    disabled={syncGitHubMutation.isPending}
+                  >
+                    {syncGitHubMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <GitPullRequest className="h-4 w-4 mr-2" />
+                    )}
+                    GitHubに同期
+                  </Button>
+                  <SyncDebugPanel />
+                </div>
               )}
             </div>
           )}
