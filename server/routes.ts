@@ -491,10 +491,22 @@ export function setupRoutes(app: Express) {
         return res.status(500).json({ error: "GitHub Apps token is not configured" });
       }
 
+      // トークンの形式をチェック（値自体は表示しない）
+      console.log("Token format check:", {
+        length: githubToken.length,
+        startsWithGitHub: githubToken.startsWith('github_pat_') || githubToken.startsWith('ghs_'),
+        isDefined: typeof githubToken === 'string' && githubToken.length > 0
+      });
+
       console.log("Initializing GitHub client with Apps token...");
       const octokit = new Octokit({
-        auth: githubToken,
-        userAgent: 'ScrumFestMap v1.0'
+        auth: `token ${githubToken}`,
+        userAgent: 'ScrumFestMap v1.0',
+        headers: {
+          accept: 'application/vnd.github.v3+json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        },
+        baseUrl: 'https://api.github.com'
       });
 
       // イベント一覧の取得
