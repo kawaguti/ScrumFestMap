@@ -223,11 +223,15 @@ export default function MyEventsPage() {
                     <p className="text-sm text-muted-foreground mt-2">{event.description}</p>
                   )}
                   <div className="flex gap-2 mt-4">
-                    {event.website && (
+                    {event.website && event.website.trim() !== "" && (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(event.website, "_blank")}
+                        onClick={() => {
+                          if (event.website) {
+                            window.open(event.website, "_blank");
+                          }
+                        }}
                       >
                         Webサイトを開く
                       </Button>
@@ -236,7 +240,11 @@ export default function MyEventsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(event.youtubePlaylist, "_blank")}
+                        onClick={() => {
+                          if (event.youtubePlaylist) {
+                            window.open(event.youtubePlaylist, "_blank");
+                          }
+                        }}
                       >
                         録画を見る
                       </Button>
@@ -269,7 +277,7 @@ export default function MyEventsPage() {
                                     toast({
                                       variant: "destructive",
                                       title: "エラー",
-                                      description: "イベントの削除に失敗しました。",
+                                      description: error instanceof Error ? error.message : "イベントの削除に失敗しました。",
                                     });
                                   });
                               }
