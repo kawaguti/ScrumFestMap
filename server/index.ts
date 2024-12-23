@@ -22,82 +22,91 @@ function log(message: string) {
   console.log(`${formattedTime} [express] ${message}`);
 }
 
-const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
-// 環境変数の設定確認とデータベース接続テスト
-const isDevelopment = process.env.NODE_ENV !== "production";
-log(`Environment: ${process.env.NODE_ENV || "development"}`);
-
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is required");
-}
-log("Database URL is configured");
-
-// GitHub Token の確認
-if (!process.env.GITHUB_TOKEN) {
-  log("Warning: GITHUB_TOKEN is not set. GitHub sync functionality will be disabled.");
-}
-
-// 認証設定を初期化
-setupAuth(app);
-
-// リクエストロギングミドルウェア
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
-  });
-
-  next();
-});
-
-(async () => {
+async function startServer() {
   try {
+    log("Starting server initialization...");
+    const app = express();
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: false }));
+
+    // 環境変数の設定確認
+    const isDevelopment = process.env.NODE_ENV !== "production";
+    log(`Environment: ${process.env.NODE_ENV || "development"}`);
+
+    // データベース設定の確認
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL environment variable is required");
+    }
+    log("Database URL is configured");
+
     // データベース接続テスト
     try {
+      log("Testing database connection...");
       await db.execute('SELECT 1');
       log("Database connection successful");
-    } catch (error) {
+    } catch (dbError) {
       log("Database connection failed");
-      console.error(error);
-      process.exit(1);
+      console.error("Database Error:", dbError);
+      throw dbError;
     }
 
+    // 認証設定を初期化
+    log("Setting up authentication...");
+    setupAuth(app);
+    log("Authentication setup complete");
+
+    // リクエストロギングミドルウェア
+    app.use((req, res, next) => {
+      const start = Date.now();
+      const path = req.path;
+      let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+      const originalResJson = res.json;
+      res.json = function (bodyJson, ...args) {
+        capturedJsonResponse = bodyJson;
+        return originalResJson.apply(res, [bodyJson, ...args]);
+      };
+
+      res.on("finish", () => {
+        const duration = Date.now() - start;
+        if (path.startsWith("/api")) {
+          let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+          if (capturedJsonResponse) {
+            logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+          }
+
+          if (logLine.length > 80) {
+            logLine = logLine.slice(0, 79) + "…";
+          }
+
+          log(logLine);
+        }
+      });
+
+      next();
+    });
+
     // APIルートを設定
+    log("Setting up API routes...");
     setupRoutes(app);
+    log("API routes setup complete");
+
     const server = createServer(app);
 
     // エラーハンドリングミドルウェア
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      console.error("Server Error:", err);
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
-      console.error(`Error: ${message}`);
-      res.status(status).json({ message });
+      log(`Error: ${message}`);
+      res.status(status).json({
+        error: message,
+        details: isDevelopment ? err.stack || "No stack trace available" : undefined,
+        status
+      });
     });
 
+    // 開発/本番モードに応じたセットアップ
     if (isDevelopment) {
       log("Starting server in development mode");
       await setupVite(app, server);
@@ -109,6 +118,7 @@ app.use((req, res, next) => {
     const PORT = process.env.PORT || 5000;
     const HOST = '0.0.0.0';
 
+    // サーバー起動
     server.listen(Number(PORT), HOST, () => {
       log(`Server started in ${process.env.NODE_ENV || 'development'} mode`);
       log(`Listening on port ${PORT}`);
@@ -117,8 +127,17 @@ app.use((req, res, next) => {
         log(`Replit production URL: ${replitUrl}`);
       }
     });
+
+    return server;
   } catch (error) {
     console.error("Server startup error:", error);
-    process.exit(1);
+    log(`Fatal Startup Error: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
   }
-})();
+}
+
+// サーバー起動
+startServer().catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
+});

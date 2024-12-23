@@ -7,9 +7,6 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { validatePasswordStrength } from "./password-validation";
 
-// Octokitのインポートを削除（使用しないため）
-
-
 const scryptAsync = promisify(scrypt);
 const crypto = {
   hash: async (password: string) => {
@@ -510,62 +507,66 @@ export function setupRoutes(app: Express) {
       const owner = 'kawaguti';
       const repo = 'ScrumFestMapViewer';
       const path = 'all-events.md';
-      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+      const getFileUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
       const headers = {
         'Accept': 'application/vnd.github+json',
         'Authorization': `Bearer ${githubToken}`,
         'X-GitHub-Api-Version': '2022-11-28',
-        'Content-Type': 'application/json',
+        'User-Agent': 'ScrumFestMap-Sync'
       };
 
       try {
         // 既存ファイルの情報を取得
         console.log("Fetching current file information...");
-        const fileResponse = await fetch(apiUrl, { headers });
-        let sha = undefined;
+        const fileResponse = await fetch(getFileUrl, { headers });
 
-        if (fileResponse.ok) {
-          const fileData = await fileResponse.json();
-          sha = fileData.sha;
-          console.log("Current file found, SHA:", sha);
-        } else {
-          console.log("File does not exist yet or other error");
+        if (!fileResponse.ok) {
+          const errorData = await fileResponse.text();
+          console.error("GitHub API Error Response:", errorData);
+          throw new Error(`GitHub API error: ${errorData}`);
         }
 
-        // ファイルの更新または作成
-        console.log("Updating file on GitHub...");
-        const updateResponse = await fetch(apiUrl, {
+        const fileData = await fileResponse.json();
+        const currentSha = fileData.sha;
+
+        // ファイルを更新
+        console.log("Preparing to update file...");
+        const updateResponse = await fetch(getFileUrl, {
           method: 'PUT',
-          headers: headers,
+          headers,
           body: JSON.stringify({
-            message: `Update events list - ${new Date().toISOString()}`,
+            message: 'Update all-events.md',
             content: Buffer.from(markdownContent).toString('base64'),
-            branch: 'main',
-            ...(sha && { sha })
+            sha: currentSha,
+            branch: 'main'
           })
         });
 
         if (!updateResponse.ok) {
           const errorText = await updateResponse.text();
+          console.error("GitHub Update Error:", errorText);
           throw new Error(`Failed to update file: ${errorText}`);
         }
 
         const result = await updateResponse.json();
-        console.log("File update successful:", result);
+        console.log("Update successful:", {
+          sha: result.content?.sha,
+          url: result.content?.html_url
+        });
 
         res.json({
           success: true,
           message: "Successfully synced with GitHub",
           details: {
-            sha: result.sha,
-            url: result.html_url
+            sha: result.content?.sha,
+            url: result.content?.html_url
           }
         });
       } catch (error) {
         console.error("GitHub API error:", error);
         res.status(500).json({
-          error: "Failed to sync with GitHub",
+          error: "GitHub API error",
           details: error instanceof Error ? error.message : String(error)
         });
       }
