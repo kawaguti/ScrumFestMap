@@ -3,9 +3,7 @@ import { db } from "../db";
 import { users, events, eventHistory, insertEventSchema } from "../db/schema";
 import type { Event } from "../db/schema";
 import { eq, desc } from "drizzle-orm";
-import jwt, { sign } from 'jsonwebtoken';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import jwt from 'jsonwebtoken';
 
 interface GitHubFileResponse {
   sha: string;
@@ -30,13 +28,12 @@ class GitHubFileUpdater {
   private readonly owner: string;
   private readonly repo: string;
 
-  constructor(appId: string, privateKeyPath: string, owner: string, repo: string) {
+  constructor(appId: string, privateKey: string, owner: string, repo: string) {
     try {
       this.appId = appId;
 
-      // プライベートキーファイルを直接読み込む
-      this.privateKey = readFileSync(join(process.cwd(), privateKeyPath), 'utf8');
-
+      // 環境変数の\nを実際の改行に変換
+      this.privateKey = this.formatPrivateKey(privateKey);
       this.owner = owner;
       this.repo = repo;
 
@@ -47,7 +44,7 @@ class GitHubFileUpdater {
         privateKeyLength: this.privateKey.length,
         privateKeyLines: this.privateKey.split('\n').length,
         privateKeyStart: this.privateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
-        privateKeyEnd: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----\n')
+        privateKeyEnd: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----')
       });
     } catch (error) {
       console.error('GitHubFileUpdater initialization error:', error);
@@ -55,72 +52,104 @@ class GitHubFileUpdater {
     }
   }
 
+  private formatPrivateKey(key: string): string {
+    // 環境変数の\nを実際の改行に変換し、余分な空白を削除
+    const formattedKey = key
+      .replace(/\\n/g, '\n')  // \n文字列を実際の改行に変換
+      .split('\n')
+      .map(line => line.trim()) // 各行の余分な空白を削除
+      .filter(line => line.length > 0) // 空行を削除
+      .join('\n');
+
+    console.log('Private key formatting:', {
+      originalLength: key.length,
+      formattedLength: formattedKey.length,
+      lines: formattedKey.split('\n').length,
+      startsWithHeader: formattedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
+      endsWithFooter: formattedKey.endsWith('-----END RSA PRIVATE KEY-----')
+    });
+
+    return formattedKey;
+  }
+
   private generateJWT(): string {
     try {
-      const now = Math.floor(Date.now() / 1000);
+      const now = Math.floor(Date.now() / 1000) - 30;
       const payload = {
-        iat: now - 30,
+        iat: now,
         exp: now + (10 * 60),
         iss: this.appId
       };
 
       console.log('Generating JWT with payload:', {
         ...payload,
-        privateKeyLines: this.privateKey.split('\n').length
+        privateKeyInfo: {
+          length: this.privateKey.length,
+          lines: this.privateKey.split('\n').length,
+          startsWithHeader: this.privateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
+          endsWithFooter: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----')
+        }
       });
 
-      return jwt.sign(payload, this.privateKey, { algorithm: 'RS256' });
+      const token = jwt.sign(payload, this.privateKey, { algorithm: 'RS256' });
+      console.log('JWT token generated successfully:', {
+        tokenLength: token.length,
+        tokenStart: token.substring(0, 20) + '...'
+      });
+
+      return token;
     } catch (error) {
       console.error('JWT Generation Error:', error);
       throw new Error(`JWT生成エラー: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  private async getHeaders(): Promise<Headers> {
-    try {
-      const token = this.generateJWT();
-      console.log('JWT token generated successfully');
+  private getHeaders(): Headers {
+    const headers = new Headers({
+      'Accept': 'application/vnd.github+json',
+      'Authorization': `Bearer ${this.generateJWT()}`,
+      'X-GitHub-Api-Version': '2022-11-28'
+    });
 
-      return new Headers({
-        'Accept': 'application/vnd.github+json',
-        'Authorization': `Bearer ${token}`,
-        'X-GitHub-Api-Version': '2022-11-28'
-      });
-    } catch (error) {
-      console.error('Headers Generation Error:', error);
-      throw error;
-    }
+    console.log('Request headers prepared:', {
+      accept: headers.get('Accept'),
+      authLength: headers.get('Authorization')?.length,
+      version: headers.get('X-GitHub-Api-Version')
+    });
+
+    return headers;
   }
 
-  public async updateFile(path: string, content: string, message: string): Promise<GitHubUpdateResponse> {
-    const url = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${path}`;
+  public async updateAllEventsFile(newContent: string): Promise<GitHubUpdateResponse> {
+    const filePath = 'all-events.md';
+    const url = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${filePath}`;
 
     try {
-      const headers = await this.getHeaders();
-      console.log('Fetching existing file:', path);
+      // 1. Get current file to obtain SHA
+      const fileResponse = await fetch(url, {
+        headers: this.getHeaders()
+      });
 
-      // 既存ファイルの取得
-      const fileResponse = await fetch(url, { headers });
       if (!fileResponse.ok) {
         const errorText = await fileResponse.text();
         console.error('File fetch failed:', {
           status: fileResponse.status,
           statusText: fileResponse.statusText,
-          errorText
+          errorText,
+          responseHeaders: Object.fromEntries(fileResponse.headers.entries())
         });
         throw new Error(`ファイル取得エラー (${fileResponse.status}): ${errorText}`);
       }
 
       const fileData = await fileResponse.json() as GitHubFileResponse;
 
-      // ファイルの更新
-      console.log('Updating file contents...');
+      // 2. Update file
       const updateResponse = await fetch(url, {
         method: 'PUT',
-        headers,
+        headers: this.getHeaders(),
         body: JSON.stringify({
-          message,
-          content: Buffer.from(content).toString('base64'),
+          message: 'Update all-events.md',
+          content: Buffer.from(newContent).toString('base64'),
           sha: fileData.sha
         })
       });
@@ -130,19 +159,14 @@ class GitHubFileUpdater {
         console.error('File update failed:', {
           status: updateResponse.status,
           statusText: updateResponse.statusText,
-          errorText
+          errorText,
+          responseHeaders: Object.fromEntries(updateResponse.headers.entries())
         });
         throw new Error(`ファイル更新エラー (${updateResponse.status}): ${errorText}`);
       }
 
-      const result = await updateResponse.json() as GitHubUpdateResponse;
-      console.log('File update successful:', {
-        path,
-        commitSha: result.commit.sha,
-        url: result.content.html_url
-      });
+      return await updateResponse.json() as GitHubUpdateResponse;
 
-      return result;
     } catch (error) {
       console.error('GitHub API Error:', error);
       throw error;
@@ -205,18 +229,20 @@ export function setupRoutes(app: Express) {
 
     try {
       const githubAppId = process.env.GITHUB_APP_ID;
-      if (!githubAppId) {
-        console.error("Missing GitHub App ID");
+      const githubPrivateKey = process.env.GITHUB_PRIVATE_KEY;
+
+      if (!githubAppId || !githubPrivateKey) {
+        console.error("Missing GitHub credentials");
         return res.status(500).json({
-          error: "GitHub App IDが設定されていません",
-          details: "環境変数GITHUB_APP_IDを設定してください"
+          error: "GitHub認証情報が不足しています",
+          details: "環境変数GITHUB_APP_IDとGITHUB_PRIVATE_KEYを設定してください"
         });
       }
 
       console.log('Creating GitHubFileUpdater instance...');
       const github = new GitHubFileUpdater(
         githubAppId,
-        'scrumfestmap.2024-12-23.private-key.pem',  // プライベートキーファイルのパス
+        githubPrivateKey,
         'kawaguti',
         'ScrumFestMapViewer'
       );
@@ -232,11 +258,7 @@ export function setupRoutes(app: Express) {
       const markdownContent = generateMarkdown(allEvents);
 
       console.log('Updating GitHub file...');
-      const result = await github.updateFile(
-        'all-events.md',
-        markdownContent,
-        'Update events list via ScrumFestMap'
-      );
+      const result = await github.updateAllEventsFile(markdownContent);
 
       console.log('Sync completed successfully:', {
         commitSha: result.commit.sha,

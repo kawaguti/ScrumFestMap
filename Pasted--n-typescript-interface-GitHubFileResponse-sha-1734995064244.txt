@@ -1,0 +1,119 @@
+あ、申し訳ありません。`\n`の変換処理が抜けていました。改善したバージョンを示します：
+
+```typescript
+interface GitHubFileResponse {
+  sha: string;
+  content: string;
+}
+
+interface UpdateFileParams {
+  owner: string;
+  repo: string;
+  filePath: string;
+  content: string;
+  token: string;
+}
+
+class GitHubFileService {
+  private BASE_URL = 'https://api.github.com';
+
+  private formatContent(content: string): string {
+    // 改行を \n に変換
+    return content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  }
+
+  private getHeaders(token: string): Headers {
+    return new Headers({
+      'Accept': 'application/vnd.github+json',
+      'Authorization': `Bearer ${token}`,
+      'X-GitHub-Api-Version': '2022-11-28'
+    });
+  }
+
+  private async getFileSha(params: UpdateFileParams): Promise<string> {
+    const { owner, repo, filePath, token } = params;
+    const url = `${this.BASE_URL}/repos/${owner}/${repo}/contents/${filePath}`;
+
+    const response = await fetch(url, {
+      headers: this.getHeaders(token)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get file: ${await response.text()}`);
+    }
+
+    const data = await response.json() as GitHubFileResponse;
+    return data.sha;
+  }
+
+  public async updateFile(params: UpdateFileParams): Promise<void> {
+    const { owner, repo, filePath, content, token } = params;
+    const url = `${this.BASE_URL}/repos/${owner}/${repo}/contents/${filePath}`;
+
+    try {
+      const sha = await this.getFileSha(params);
+      // 改行を正規化してからBase64エンコード
+      const formattedContent = this.formatContent(content);
+      const base64Content = Buffer.from(formattedContent).toString('base64');
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: this.getHeaders(token),
+        body: JSON.stringify({
+          message: `Update ${filePath}`,
+          content: base64Content,
+          sha: sha
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to update file: ${errorText}`);
+      }
+
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`GitHub API Error: ${error.message}`);
+      }
+      throw error;
+    }
+  }
+}
+
+// 使用例
+async function main() {
+  const fileService = new GitHubFileService();
+  // プライベートキーの改行を処理
+  const privateKey = process.env.GITHUB_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  
+  // JWTトークンの生成（実際の実装に応じて）
+  // const token = generateJWT(privateKey);
+
+  try {
+    await fileService.updateFile({
+      owner: 'your-org',
+      repo: 'your-repo',
+      filePath: 'all-events.md',
+      content: '# Updated Events\n- New event added',
+      token: token
+    });
+    console.log('File updated successfully');
+  } catch (error) {
+    console.error('Error updating file:', error);
+  }
+}
+```
+
+主な変更点：
+
+1. `formatContent` メソッドを追加
+   - 改行文字を統一的に処理
+   - CRLF (`\r\n`) や CR (`\r`) も `\n` に変換
+
+2. プライベートキーの処理
+   - 環境変数から読み込む際の `\n` の変換処理を追加
+
+3. コンテンツの正規化
+   - Base64エンコード前に改行を正規化
+
+これにより、異なる環境での改行文字の違いによる問題を防ぐことができます。
