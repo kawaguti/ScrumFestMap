@@ -6,7 +6,9 @@ import { eq, desc, and } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { validatePasswordStrength } from "./password-validation";
-import { Octokit } from "@octokit/rest";
+
+// Octokitのインポートを削除（使用しないため）
+
 
 const scryptAsync = promisify(scrypt);
 const crypto = {
@@ -484,30 +486,12 @@ export function setupRoutes(app: Express) {
   app.post("/api/admin/sync-github", requireAdmin, async (req, res) => {
     try {
       const githubToken = process.env.GITHUB_TOKEN;
-      console.log("Starting GitHub sync process with GitHub Apps token...");
+      console.log("Starting GitHub sync process...");
 
       if (!githubToken) {
-        console.error("GitHub Apps token is missing");
-        return res.status(500).json({ error: "GitHub Apps token is not configured" });
+        console.error("GitHub token is missing");
+        return res.status(500).json({ error: "GitHub token is not configured" });
       }
-
-      // トークンの形式をチェック（値自体は表示しない）
-      console.log("Token format check:", {
-        length: githubToken.length,
-        startsWithGitHub: githubToken.startsWith('github_pat_') || githubToken.startsWith('ghs_'),
-        isDefined: typeof githubToken === 'string' && githubToken.length > 0
-      });
-
-      console.log("Initializing GitHub client with Apps token...");
-      const octokit = new Octokit({
-        auth: `Bearer ${githubToken}`,
-        userAgent: 'ScrumFestMap v1.0',
-        headers: {
-          accept: 'application/vnd.github.v3+json',
-          'X-GitHub-Api-Version': '2022-11-28'
-        },
-        baseUrl: 'https://api.github.com'
-      });
 
       // イベント一覧の取得
       console.log("Fetching events from database...");
@@ -519,76 +503,77 @@ export function setupRoutes(app: Express) {
 
       console.log(`Found ${allEvents.length} events to sync`);
 
+      // マークダウンファイルの生成
+      const markdownContent = generateMarkdown(allEvents);
+      console.log("Generated markdown content length:", markdownContent.length);
+
+      const owner = 'kawaguti';
+      const repo = 'ScrumFestMapViewer';
+      const path = 'all-events.md';
+      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+
+      const headers = {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': `Bearer ${githubToken}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json',
+      };
+
       try {
-        // マークダウンファイルの生成
-        const markdownContent = generateMarkdown(allEvents);
-        console.log("Generated markdown content length:", markdownContent.length);
+        // 既存ファイルの情報を取得
+        console.log("Fetching current file information...");
+        const fileResponse = await fetch(apiUrl, { headers });
+        let sha = undefined;
 
-        // GitHub APIの呼び出し（Single File access - all-events.md）
-        console.log("Attempting to update all-events.md on GitHub...");
-
-        // 現在のファイルの取得を試みる
-        let currentFile;
-        try {
-          currentFile = await octokit.repos.getContent({
-            owner: 'kawaguti',
-            repo: 'ScrumFestMapViewer',
-            path: 'all-events.md',
-            ref: 'main'
-          });
-          console.log("Current file found on GitHub");
-        } catch (error) {
-          console.log("File does not exist yet or other error:", error);
+        if (fileResponse.ok) {
+          const fileData = await fileResponse.json();
+          sha = fileData.sha;
+          console.log("Current file found, SHA:", sha);
+        } else {
+          console.log("File does not exist yet or other error");
         }
 
         // ファイルの更新または作成
-        const response = await octokit.repos.createOrUpdateFileContents({
-          owner: 'kawaguti',
-          repo: 'ScrumFestMapViewer',
-          path: 'all-events.md',
-          message: `Update events list - ${new Date().toISOString()}`,
-          content: Buffer.from(markdownContent).toString('base64'),
-          branch: 'main',
-          ...(currentFile && { sha: currentFile.data.sha })
+        console.log("Updating file on GitHub...");
+        const updateResponse = await fetch(apiUrl, {
+          method: 'PUT',
+          headers: headers,
+          body: JSON.stringify({
+            message: `Update events list - ${new Date().toISOString()}`,
+            content: Buffer.from(markdownContent).toString('base64'),
+            branch: 'main',
+            ...(sha && { sha })
+          })
         });
 
-        console.log("GitHub API Response Status:", response.status);
-        console.log("GitHub API Response:", JSON.stringify(response.data, null, 2));
+        if (!updateResponse.ok) {
+          const errorText = await updateResponse.text();
+          throw new Error(`Failed to update file: ${errorText}`);
+        }
+
+        const result = await updateResponse.json();
+        console.log("File update successful:", result);
 
         res.json({
           success: true,
           message: "Successfully synced with GitHub",
           details: {
-            status: response.status,
-            sha: response.data.content?.sha,
-            url: response.data.content?.html_url
+            sha: result.sha,
+            url: result.html_url
           }
         });
-      } catch (githubError: any) {
-        console.error("GitHub API error details:", githubError);
-        // GitHubのエラーレスポンスをより詳細に解析
-        const errorResponse = githubError.response?.data;
-        const errorMessage = errorResponse?.message || 
-          (githubError instanceof Error ? githubError.message : "Unknown GitHub API error");
-        const errorStatus = githubError.status || errorResponse?.status || 'unknown status';
-
-        console.error("Detailed error information:", {
-          message: errorMessage,
-          status: errorStatus,
-          response: errorResponse
-        });
-
+      } catch (error) {
+        console.error("GitHub API error:", error);
         res.status(500).json({
           error: "Failed to sync with GitHub",
-          details: `${errorMessage} (Status: ${errorStatus})`
+          details: error instanceof Error ? error.message : String(error)
         });
       }
     } catch (error) {
       console.error("Sync process error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       res.status(500).json({
         error: "Failed to sync events",
-        details: errorMessage
+        details: error instanceof Error ? error.message : String(error)
       });
     }
   });
