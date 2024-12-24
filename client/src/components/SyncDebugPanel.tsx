@@ -24,12 +24,12 @@ interface AuthInstructionsProps {
   userCode: string;
 }
 
-const AuthInstructions = ({ verificationUri, userCode }: AuthInstructionsProps) => {
-  const handleCopy = () => {
+function AuthInstructions({ verificationUri, userCode }: AuthInstructionsProps) {
+  const handleCopy = React.useCallback(() => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(userCode);
     }
-  };
+  }, [userCode]);
 
   return (
     <div className="bg-accent/20 p-4 rounded-lg space-y-4 my-4">
@@ -66,7 +66,7 @@ const AuthInstructions = ({ verificationUri, userCode }: AuthInstructionsProps) 
       </p>
     </div>
   );
-};
+}
 
 interface DebugContentProps {
   logs: DebugLog[];
@@ -75,12 +75,12 @@ interface DebugContentProps {
   isSyncing: boolean;
 }
 
-const DebugContent = ({ 
+function DebugContent({ 
   logs, 
   isLoading, 
   error, 
   isSyncing 
-}: DebugContentProps) => {
+}: DebugContentProps) {
   if (isLoading || isSyncing) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -151,9 +151,9 @@ const DebugContent = ({
       </div>
     </ScrollArea>
   );
-};
+}
 
-const SyncDebugPanel = () => {
+export default function SyncDebugPanel() {
   const [open, setOpen] = React.useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -248,6 +248,4 @@ const SyncDebugPanel = () => {
       </DialogContent>
     </Dialog>
   );
-};
-
-export default SyncDebugPanel;
+}

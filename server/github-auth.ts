@@ -17,100 +17,30 @@ interface TokenResponse {
 
 export class GitHubDeviceAuthService {
   private readonly clientId: string;
-  private readonly pollingInterval = 5000; // 5秒ごとにポーリング
+  private readonly apiUrl = 'https://github.com';
+  private readonly pollingInterval = 5000;
   private deviceCode: string | null = null;
-  private lastPollTime: number = 0;
 
   constructor(clientId: string) {
     if (!clientId) {
       throw new Error('GitHub Client ID is required');
     }
     this.clientId = clientId;
-    console.log('GitHubDeviceAuthService initialized with client ID:', this.clientId);
-  }
-
-  // ポーリング処理を別メソッドとして実装
-  private async pollOnce(): Promise<string | null> {
-    if (!this.deviceCode) {
-      throw new Error('Device flow not initiated');
-    }
-
-    console.log('Polling for token...', this.deviceCode);
-
-    const response = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        client_id: this.clientId,
-        device_code: this.deviceCode,
-        grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Token polling failed: ${await response.text()}`);
-    }
-
-    const data = await response.json() as TokenResponse;
-    console.log('Poll response:', data);
-
-    if (data.error === 'authorization_pending') {
-      return null;
-    }
-
-    if (data.error) {
-      throw new Error(data.error_description || data.error);
-    }
-
-    return data.access_token || null;
-  }
-
-  // メインのポーリングループ
-  private async startPolling(onCode: (code: string) => void): Promise<void> {
-    const startTime = Date.now();
-    const timeoutMs = 900000; // 15分
-
-    let attempts = 0;
-    while (true) {
-      if (Date.now() - startTime > timeoutMs) {
-        throw new Error('認証がタイムアウトしました。もう一度お試しください。');
-      }
-
-      attempts++;
-      console.log(`Polling attempt ${attempts}...`);
-
-      try {
-        const timeSinceLastPoll = Date.now() - this.lastPollTime;
-        if (timeSinceLastPoll < this.pollingInterval) {
-          await new Promise(resolve => setTimeout(resolve, this.pollingInterval - timeSinceLastPoll));
-        }
-
-        const token = await this.pollOnce();
-        this.lastPollTime = Date.now();
-
-        if (token) {
-          onCode(token);
-          break;
-        }
-      } catch (error) {
-        console.error('Polling error:', error);
-        if (error instanceof Error && error.message.includes('expired')) {
-          throw error;
-        }
-        // その他のエラーは一時的なものとして扱い、リトライ
-        await new Promise(resolve => setTimeout(resolve, this.pollingInterval));
-      }
-    }
+    console.log('GitHubDeviceAuthService initialized with clientId:', clientId);
   }
 
   async startDeviceFlow(): Promise<DeviceFlowStartResponse> {
-    try {
-      console.log('Starting Device Flow with client ID:', this.clientId);
+    console.log('Starting device flow...');
 
-      const response = await fetch('https://github.com/login/device/code', {
+    const url = `${this.apiUrl}/login/device/code`;
+    console.log('Request URL:', url);
+    console.log('Request payload:', {
+      client_id: this.clientId,
+      scope: 'repo'
+    });
+
+    try {
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -122,43 +52,136 @@ export class GitHubDeviceAuthService {
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`Device flow failed: ${await response.text()}`);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers));
+
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+
+      try {
+        const data = JSON.parse(responseText) as DeviceFlowStartResponse;
+        console.log('Parsed device flow response:', data);
+
+        if (!data.device_code || !data.user_code || !data.verification_uri) {
+          throw new Error('Invalid device flow response: missing required fields');
+        }
+
+        this.deviceCode = data.device_code;
+        return data;
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        throw new Error(`Failed to parse response as JSON: ${responseText}`);
       }
-
-      const data = await response.json() as DeviceFlowStartResponse;
-      this.deviceCode = data.device_code;
-      this.lastPollTime = Date.now();
-
-      console.log('Device Flow started successfully:', {
-        verification_uri: data.verification_uri,
-        user_code: data.user_code,
-        expires_in: data.expires_in
-      });
-
-      return data;
     } catch (error) {
-      console.error('Start device flow error:', error);
+      console.error('Device flow start error:', error);
       throw error;
     }
   }
 
-  // 認証フローを開始し、コールバックで結果を通知
-  async authenticate(): Promise<string> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const flow = await this.startDeviceFlow();
-        console.log('Device Flow started:', {
-          userCode: flow.user_code,
-          verificationUri: flow.verification_uri
-        });
+  private async pollForToken(): Promise<string | null> {
+    if (!this.deviceCode) {
+      throw new Error('Device code not found. Start device flow first.');
+    }
 
-        // ポーリングを開始
-        await this.startPolling(resolve);
-      } catch (error) {
-        reject(error);
-      }
+    console.log('Polling for token with device code:', this.deviceCode);
+
+    const url = `${this.apiUrl}/login/oauth/access_token`;
+    console.log('Token request URL:', url);
+    console.log('Token request payload:', {
+      client_id: this.clientId,
+      device_code: this.deviceCode,
+      grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
     });
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          client_id: this.clientId,
+          device_code: this.deviceCode,
+          grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+        })
+      });
+
+      console.log('Token response status:', response.status);
+      console.log('Token response headers:', Object.fromEntries(response.headers));
+
+      const responseText = await response.text();
+      console.log('Raw token response:', responseText);
+
+      try {
+        const data = JSON.parse(responseText) as TokenResponse;
+        console.log('Parsed token response:', data);
+
+        if (data.error === 'authorization_pending') {
+          console.log('Authorization is still pending');
+          return null;
+        }
+
+        if (data.error) {
+          throw new Error(data.error_description || data.error);
+        }
+
+        if (!data.access_token) {
+          throw new Error('Invalid token response: missing access_token');
+        }
+
+        return data.access_token;
+      } catch (parseError) {
+        console.error('Token response parse error:', parseError);
+        throw new Error(`Failed to parse token response as JSON: ${responseText}`);
+      }
+    } catch (error) {
+      console.error('Token polling error:', error);
+      throw error;
+    }
+  }
+
+  async authenticate(): Promise<string> {
+    const flow = await this.startDeviceFlow();
+    console.log('Device Flow started successfully:', {
+      verification_uri: flow.verification_uri,
+      user_code: flow.user_code,
+      expires_in: flow.expires_in
+    });
+
+    let attempts = 0;
+    const maxAttempts = 180; // 15分 (900秒) / 5秒 = 180回
+    const startTime = Date.now();
+    const timeoutMs = flow.expires_in * 1000;
+
+    while (attempts < maxAttempts) {
+      if (Date.now() - startTime > timeoutMs) {
+        throw new Error('認証がタイムアウトしました。もう一度お試しください。');
+      }
+
+      attempts++;
+      console.log(`Polling attempt ${attempts}/${maxAttempts}`);
+
+      try {
+        const token = await this.pollForToken();
+        if (token) {
+          console.log('Authentication successful!');
+          return token;
+        }
+
+        // 次のポーリングまで待機
+        await new Promise(resolve => setTimeout(resolve, this.pollingInterval));
+      } catch (error) {
+        console.error(`Polling attempt ${attempts} failed:`, error);
+        if (attempts === maxAttempts) {
+          throw new Error('認証の試行回数が上限に達しました。もう一度お試しください。');
+        }
+        // エラーの場合も一定時間待機してから再試行
+        await new Promise(resolve => setTimeout(resolve, this.pollingInterval));
+      }
+    }
+
+    throw new Error('認証の試行回数が上限に達しました。もう一度お試しください。');
   }
 
   getHeaders(token: string): { [key: string]: string } {
