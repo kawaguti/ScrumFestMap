@@ -111,8 +111,25 @@ export function setupRoutes(app: Express) {
         .where(eq(events.isArchived, false))
         .orderBy(desc(events.date));
 
+      // 前回の同期以降に変更されたイベントを取得
+      const lastSync = await db
+        .select()
+        .from(eventHistory)
+        .orderBy(desc(eventHistory.timestamp))
+        .limit(1);
+
+      const changedEvents = lastSync.length > 0
+        ? await db
+            .select()
+            .from(eventHistory)
+            .where(sql`timestamp > ${lastSync[0].timestamp}`)
+        : allEvents;
+
+      const changedEventNames = [...new Set(changedEvents.map(e => e.eventName))];
+
       addSyncDebugLog('info', 'Events fetched from database', {
-        count: allEvents.length
+        count: allEvents.length,
+        changedEvents: changedEventNames
       });
 
       // マークダウンを生成
@@ -123,13 +140,15 @@ export function setupRoutes(app: Express) {
       });
 
       // GitHubにファイルを更新
-      const allEventsWithNames = allEvents.map(e => e.name).join(', ');
+      const commitMessage = changedEventNames.length > 0
+        ? `イベント情報を更新: ${changedEventNames.join(', ')}`
+        : 'イベント情報を更新';
       const result = await github.updateAllEventsFile(
         markdownContent,
         'kawaguti',
         'ScrumFestMapViewer',
         'all-events.md',
-        `イベント情報を更新: ${allEventsWithNames}`
+        commitMessage
       );
 
       addSyncDebugLog('info', 'File update succeeded', {
