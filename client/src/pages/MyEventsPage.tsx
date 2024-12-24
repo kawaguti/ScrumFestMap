@@ -23,7 +23,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
-import SyncDebugPanel from "@/components/SyncDebugPanel";
+import { Suspense } from "react";
+
+// SyncDebugPanelコンポーネントを動的インポートに変更
+const SyncDebugPanel = React.lazy(() => import("@/components/SyncDebugPanel"));
 
 async function fetchAllEvents(): Promise<Event[]> {
   const response = await fetch("/api/events");
@@ -134,7 +137,9 @@ export default function MyEventsPage() {
                     )}
                     GitHubに同期
                   </Button>
-                  <SyncDebugPanel />
+                  <Suspense fallback={<Loader2 className="h-4 w-4 animate-spin" />}>
+                    <SyncDebugPanel />
+                  </Suspense>
                 </div>
               )}
             </div>

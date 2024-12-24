@@ -119,16 +119,17 @@ async function startServer() {
     const HOST = '0.0.0.0';
 
     // サーバー起動
-    server.listen(Number(PORT), HOST, () => {
-      log(`Server started in ${process.env.NODE_ENV || 'development'} mode`);
-      log(`Listening on port ${PORT}`);
-      if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-        const replitUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
-        log(`Replit production URL: ${replitUrl}`);
-      }
+    return new Promise((resolve) => {
+      server.listen(Number(PORT), HOST, () => {
+        log(`Server started in ${process.env.NODE_ENV || 'development'} mode`);
+        log(`Listening on port ${PORT}`);
+        if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+          const replitUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+          log(`Replit production URL: ${replitUrl}`);
+        }
+        resolve(server);
+      });
     });
-
-    return server;
   } catch (error) {
     console.error("Server startup error:", error);
     log(`Fatal Startup Error: ${error instanceof Error ? error.message : String(error)}`);

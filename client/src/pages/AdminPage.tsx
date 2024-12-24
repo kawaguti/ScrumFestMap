@@ -1,9 +1,8 @@
-import { useEffect } from "react";
+import React, { Suspense, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { useLocation } from "wouter";
-import SyncDebugPanel from "@/components/SyncDebugPanel";
-
+import type { Event, User } from "@db/schema";
 import {
   Card,
   CardContent,
@@ -25,7 +24,9 @@ import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import type { Event, User } from "@db/schema";
+
+// SyncDebugPanelコンポーネントを動的インポートに変更
+const SyncDebugPanel = React.lazy(() => import("@/components/SyncDebugPanel"));
 
 async function fetchAllUsers(): Promise<User[]> {
   const response = await fetch("/api/admin/users", {
@@ -147,12 +148,12 @@ export default function AdminPage() {
     },
   });
 
-  // Redirect if user is not logged in or not admin
+  // ユーザーがログインしていないか管理者でない場合のリダイレクト
   useEffect(() => {
     if (!user) {
-      setLocation("/auth");  // ユーザーが未ログインの場合は認証ページへ
+      setLocation("/auth");
     } else if (!user.isAdmin) {
-      setLocation("/");  // 管理者権限がない場合はホームへ
+      setLocation("/");
     }
   }, [user, setLocation]);
 
@@ -177,7 +178,9 @@ export default function AdminPage() {
       <header className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">管理者ダッシュボード</h1>
         <div className="flex items-center gap-4">
-          <SyncDebugPanel />
+          <Suspense fallback={<Loader2 className="h-4 w-4 animate-spin" />}>
+            <SyncDebugPanel />
+          </Suspense>
           <Button variant="outline" onClick={() => setLocation("/")}>
             ホームへ戻る
           </Button>

@@ -1,4 +1,4 @@
-import { useState, memo } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ interface DebugLog {
   details: any;
 }
 
-const AuthInstructions = memo(function AuthInstructions({ verificationUri, userCode }: { 
+function AuthInstructions({ verificationUri, userCode }: { 
   verificationUri: string;
   userCode: string;
 }) {
@@ -46,7 +46,13 @@ const AuthInstructions = memo(function AuthInstructions({ verificationUri, userC
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigator.clipboard.writeText(userCode)}
+            onClick={() => {
+              try {
+                navigator.clipboard.writeText(userCode);
+              } catch (error) {
+                console.error('クリップボードへのコピーに失敗しました:', error);
+              }
+            }}
           >
             コピー
           </Button>
@@ -58,45 +64,13 @@ const AuthInstructions = memo(function AuthInstructions({ verificationUri, userC
       </p>
     </div>
   );
-});
+}
 
-const DebugLogEntry = memo(function DebugLogEntry({ log }: { log: DebugLog }) {
-  const isDeviceFlow = log.title === 'Device Flow started';
-
-  return (
-    <div
-      className={`p-4 rounded-lg ${
-        log.type === 'error' ? 'bg-destructive/10' : 'bg-muted'
-      }`}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          {log.type === 'error' && <AlertCircle className="h-4 w-4 text-destructive" />}
-          <span className="font-semibold">{log.title}</span>
-        </div>
-        <span className="text-sm text-muted-foreground">
-          {new Date(log.timestamp).toLocaleString('ja-JP')}
-        </span>
-      </div>
-      {isDeviceFlow && log.details?.verification_uri && log.details?.user_code ? (
-        <AuthInstructions
-          verificationUri={log.details.verification_uri}
-          userCode={log.details.user_code}
-        />
-      ) : (
-        <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-48">
-          {JSON.stringify(log.details, null, 2)}
-        </pre>
-      )}
-    </div>
-  );
-});
-
-const DebugContent = memo(function DebugContent({ 
+function DebugContent({ 
   logs, 
   isLoading, 
   error,
-  isSyncing
+  isSyncing,
 }: {
   logs: DebugLog[];
   isLoading: boolean;
@@ -131,9 +105,40 @@ const DebugContent = memo(function DebugContent({
   return (
     <ScrollArea className="h-[calc(80vh-8rem)] rounded-md border p-4">
       <div className="space-y-4">
-        {logs.map((log, index) => (
-          <DebugLogEntry key={`${log.timestamp}-${index}`} log={log} />
-        ))}
+        {logs.map((log, index) => {
+          const isDeviceFlow = log.title === 'Device Flow started';
+
+          return (
+            <div
+              key={`${log.timestamp}-${index}`}
+              className={`p-4 rounded-lg ${
+                log.type === 'error' ? 'bg-destructive/10' : 'bg-muted'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  {log.type === 'error' && (
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                  )}
+                  <span className="font-semibold">{log.title}</span>
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  {new Date(log.timestamp).toLocaleString('ja-JP')}
+                </span>
+              </div>
+              {isDeviceFlow && log.details?.verification_uri && log.details?.user_code ? (
+                <AuthInstructions
+                  verificationUri={log.details.verification_uri}
+                  userCode={log.details.user_code}
+                />
+              ) : (
+                <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-48">
+                  {JSON.stringify(log.details, null, 2)}
+                </pre>
+              )}
+            </div>
+          );
+        })}
         {logs.length === 0 && (
           <div className="text-center text-muted-foreground">
             デバッグログはありません
@@ -142,29 +147,38 @@ const DebugContent = memo(function DebugContent({
       </div>
     </ScrollArea>
   );
-});
+}
 
-function SyncDebugPanel() {
-  const [isOpen, setIsOpen] = useState(false);
+export default function SyncDebugPanel() {
+  // 明示的な型付けとデフォルト値の設定
+  const [isOpen, setIsOpen] = useState<boolean>(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: logs = [], isLoading, error } = useQuery<DebugLog[], Error>({
     queryKey: ['/api/admin/sync-debug-logs'],
     queryFn: async () => {
-      const response = await fetch('/api/admin/sync-debug-logs', {
-        headers: {
-          'Accept': 'application/json',
-        },
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || 'Failed to fetch debug logs');
+      try {
+        const response = await fetch('/api/admin/sync-debug-logs', {
+          headers: {
+            'Accept': 'application/json',
+          },
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || errorData.message || 'デバッグログの取得に失敗しました');
+        }
+
+        return response.json();
+      } catch (error) {
+        console.error('デバッグログ取得エラー:', error);
+        throw error;
       }
-      return response.json();
     },
     enabled: isOpen,
+    refetchInterval: isOpen ? 1000 : false,
   });
 
   const syncMutation = useMutation({
@@ -238,5 +252,3 @@ function SyncDebugPanel() {
     </Dialog>
   );
 }
-
-export default SyncDebugPanel;
