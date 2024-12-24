@@ -1,0 +1,94 @@
+レスポンスからHTMLが返ってきているようですね。Device Flow開始時の実装を修正してみましょう：
+
+```typescript
+class GitHubDeviceAuthService {
+  private readonly clientId: string;
+
+  constructor(clientId: string) {
+    this.clientId = clientId;
+  }
+
+  async startDeviceFlow(): Promise<{
+    verification_uri: string;
+    user_code: string;
+    device_code: string;
+    expires_in: number;
+  }> {
+    try {
+      const response = await fetch('https://github.com/login/device/code', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          client_id: this.clientId,
+          scope: 'repo'  // Single fileアクセスに必要なスコープ
+        })
+      });
+
+      // デバッグ用にレスポンスの詳細を出力
+      console.log('Response headers:', response.headers);
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Device flow failed: ${errorText}`);
+      }
+
+      // Content-Typeをチェック
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        console.warn('Unexpected content type:', contentType);
+      }
+
+      const data = await response.json();
+      console.log('Device flow response:', data);  // デバッグ用
+
+      return {
+        verification_uri: data.verification_uri,
+        user_code: data.user_code,
+        device_code: data.device_code,
+        expires_in: data.expires_in
+      };
+    } catch (error) {
+      console.error('Device flow error:', error);
+      throw error;
+    }
+  }
+}
+```
+
+また、fetch時のエラーハンドリングも強化します：
+
+```typescript
+  private async fetchWithJson(url: string, options: RequestInit) {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('Request URL:', url);
+    console.log('Request options:', {
+      method: options.method,
+      headers: options.headers,
+      body: options.body
+    });
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers));
+
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error('Failed to parse JSON response:', text);
+      throw new Error('Invalid JSON response');
+    }
+  }
+```
+
+このデバッグ情報があれば、レスポンスの詳細な状態がわかるはずです。GitHubのAPIエンドポイントが正しく応答を返しているか確認できます。
