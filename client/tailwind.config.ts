@@ -4,8 +4,8 @@ import path from "path";
 export default {
   darkMode: ["class"],
   content: [
-    path.join(__dirname, "./index.html"),
-    path.join(__dirname, "./src/**/*.{js,ts,jsx,tsx}"),
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     container: {
