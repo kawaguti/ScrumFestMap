@@ -12,7 +12,10 @@ export class GitHubAppService {
   private readonly privateKey: string;
   private readonly installationId: string;
 
-  constructor(appId: string, privateKey: string, installationId: string) {
+  constructor(appId: string | undefined, privateKey: string | undefined, installationId: string | undefined) {
+    if (!appId || !privateKey || !installationId) {
+      throw new Error('Required GitHub authentication parameters are missing');
+    }
     this.appId = appId;
     this.privateKey = privateKey;
     this.installationId = installationId;
