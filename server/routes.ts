@@ -2,7 +2,7 @@ import { type Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { users, events, eventHistory } from "../db/schema";
 import type { Event } from "../db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { GitHubAppService } from './github-auth';
 
 // デバッグ情報を保存するための配列
@@ -105,53 +105,14 @@ export function setupRoutes(app: Express) {
         process.env.GITHUB_INSTALLATION_ID
       );
 
-      const [allEvents, latestHistory] = await Promise.all([
-        db.select()
-          .from(events)
-          .where(eq(events.isArchived, false))
-          .orderBy(desc(events.date)),
-        db.select({
-          eventName: events.name,
-          column: eventHistory.modifiedColumn,
-          modifiedAt: eventHistory.modifiedAt
-        })
-          .from(eventHistory)
-          .innerJoin(events, eq(events.id, eventHistory.eventId))
-          .where(
-            sql`${eventHistory.modifiedAt} > COALESCE(
-              (SELECT MAX(modified_at) FROM event_history WHERE "syncedToGitHub" = true),
-              '1970-01-01'::timestamp
-            )`
-          )
-          .orderBy(desc(eventHistory.modifiedAt))
-          .limit(5)
-      ]);
+      const allEvents = await db
+        .select()
+        .from(events)
+        .where(eq(events.isArchived, false))
+        .orderBy(desc(events.date));
 
-      if (latestHistory.length === 0) {
-        addSyncDebugLog('info', 'No recent changes found, skipping sync', {});
-        return res.json({
-          success: true,
-          message: "変更点がないため、同期をスキップしました",
-          debugLogs: syncDebugLogs
-        });
-      }
-
-      const columnNameMap: Record<string, string> = {
-        name: '名前',
-        date: '開催日',
-        prefecture: '開催地',
-        website: 'Webサイト',
-        description: '説明',
-        youtubePlaylist: '録画一覧'
-      };
-
-      const changes = latestHistory
-        .map(h => `${h.eventName}の${columnNameMap[h.column] || h.column}を更新`)
-        .join("、");
-
-      addSyncDebugLog('info', 'Events and history fetched from database', {
-        eventCount: allEvents.length,
-        recentChanges: changes
+      addSyncDebugLog('info', 'Events fetched from database', {
+        count: allEvents.length
       });
 
       // マークダウンを生成
@@ -166,8 +127,7 @@ export function setupRoutes(app: Express) {
         markdownContent,
         'kawaguti',
         'ScrumFestMapViewer',
-        'all-events.md',
-        changes ? `Update events: ${changes}` : 'Regular sync'
+        'all-events.md'
       );
 
       addSyncDebugLog('info', 'File update succeeded', {
