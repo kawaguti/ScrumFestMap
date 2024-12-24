@@ -1,4 +1,4 @@
-import { RequestInit } from 'node-fetch';
+import type { RequestInit } from 'node-fetch';
 import fetch from 'node-fetch';
 
 interface DeviceFlowStartResponse {
@@ -13,6 +13,7 @@ interface TokenResponse {
   access_token?: string;
   error?: string;
   error_description?: string;
+  error_uri?: string;
 }
 
 export class GitHubDeviceAuthService {
@@ -33,11 +34,7 @@ export class GitHubDeviceAuthService {
     console.log('Starting device flow...');
 
     const url = `${this.apiUrl}/login/device/code`;
-    console.log('Request URL:', url);
-    console.log('Request payload:', {
-      client_id: this.clientId,
-      scope: 'repo'
-    });
+    console.log('Device code request URL:', url);
 
     try {
       const response = await fetch(url, {
@@ -52,11 +49,11 @@ export class GitHubDeviceAuthService {
         })
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers));
+      console.log('Device code response status:', response.status);
+      console.log('Device code response headers:', Object.fromEntries(response.headers));
 
       const responseText = await response.text();
-      console.log('Raw response:', responseText);
+      console.log('Raw device code response:', responseText);
 
       try {
         const data = JSON.parse(responseText) as DeviceFlowStartResponse;
@@ -70,7 +67,7 @@ export class GitHubDeviceAuthService {
         return data;
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
-        throw new Error(`Failed to parse response as JSON: ${responseText}`);
+        throw new Error(`Failed to parse device flow response: ${responseText}`);
       }
     } catch (error) {
       console.error('Device flow start error:', error);
@@ -87,11 +84,6 @@ export class GitHubDeviceAuthService {
 
     const url = `${this.apiUrl}/login/oauth/access_token`;
     console.log('Token request URL:', url);
-    console.log('Token request payload:', {
-      client_id: this.clientId,
-      device_code: this.deviceCode,
-      grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
-    });
 
     try {
       const response = await fetch(url, {
@@ -115,7 +107,11 @@ export class GitHubDeviceAuthService {
 
       try {
         const data = JSON.parse(responseText) as TokenResponse;
-        console.log('Parsed token response:', data);
+        console.log('Parsed token response:', {
+          hasToken: !!data.access_token,
+          error: data.error,
+          errorDescription: data.error_description
+        });
 
         if (data.error === 'authorization_pending') {
           console.log('Authorization is still pending');

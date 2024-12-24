@@ -1,0 +1,207 @@
+GitHubのDevice Flowの完全な実装を示します：
+
+```typescript
+interface DeviceFlowResponse {
+  device_code: string;
+  user_code: string;
+  verification_uri: string;
+  expires_in: number;
+}
+
+interface TokenResponse {
+  access_token?: string;
+  error?: string;
+}
+
+class GitHubDeviceAuthService {
+  private readonly clientId: string;
+  private readonly pollingInterval = 5000;
+
+  constructor(clientId: string) {
+    this.clientId = clientId;
+  }
+
+  async authenticateWithDeviceFlow(): Promise<string> {
+    // 1. Device Flow開始
+    const deviceFlow = await this.startDeviceFlow();
+    console.log('Device Flow initiated:', {
+      userCode: deviceFlow.user_code,
+      verificationUri: deviceFlow.verification_uri
+    });
+
+    // 2. トークン取得のポーリング開始
+    return this.pollForToken(deviceFlow.device_code);
+  }
+
+  private async startDeviceFlow(): Promise<DeviceFlowResponse> {
+    const response = await fetch('https://github.com/login/device/code', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        client_id: this.clientId,
+        scope: 'repo'
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Device flow failed: ${errorText}`);
+    }
+
+    return await response.json();
+  }
+
+  private async pollForToken(deviceCode: string): Promise<string> {
+    const startTime = Date.now();
+    const timeout = 15 * 60 * 1000; // 15分
+
+    while (Date.now() - startTime < timeout) {
+      try {
+        const response = await fetch('https://github.com/login/oauth/access_token', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            client_id: this.clientId,
+            device_code: deviceCode,
+            grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Token request failed: ${await response.text()}`);
+        }
+
+        const data: TokenResponse = await response.json();
+        console.log('Token polling response:', {
+          hasToken: !!data.access_token,
+          error: data.error
+        });
+
+        if (data.access_token) {
+          return data.access_token;
+        }
+
+        if (data.error && data.error !== 'authorization_pending') {
+          throw new Error(`Token error: ${data.error}`);
+        }
+
+        // 次のポーリングまで待機
+        await new Promise(resolve => setTimeout(resolve, this.pollingInterval));
+      } catch (error) {
+        console.error('Polling error:', error);
+        throw error;
+      }
+    }
+
+    throw new Error('Authentication timeout');
+  }
+}
+
+// ファイル更新を含む完全な処理フロー
+class GitHubFileUpdater {
+  private readonly auth: GitHubDeviceAuthService;
+
+  constructor(clientId: string) {
+    this.auth = new GitHubDeviceAuthService(clientId);
+  }
+
+  async updateFile(owner: string, repo: string, path: string, content: string): Promise<void> {
+    try {
+      // 1. 認証実行
+      const token = await this.auth.authenticateWithDeviceFlow();
+      console.log('Authentication successful, proceeding with file update');
+
+      // 2. 既存ファイルのSHA取得
+      const fileInfo = await this.getFileInfo(owner, repo, path, token);
+      
+      // 3. ファイル更新
+      await this.pushUpdate(owner, repo, path, content, fileInfo.sha, token);
+      
+      console.log('File update completed');
+    } catch (error) {
+      console.error('File update failed:', error);
+      throw error;
+    }
+  }
+
+  private async getFileInfo(owner: string, repo: string, path: string, token: string): Promise<any> {
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to get file info: ${await response.text()}`);
+    }
+
+    return response.json();
+  }
+
+  private async pushUpdate(
+    owner: string,
+    repo: string,
+    path: string,
+    content: string,
+    sha: string,
+    token: string
+  ): Promise<void> {
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        },
+        body: JSON.stringify({
+          message: 'Update content via GitHub App',
+          content: Buffer.from(content).toString('base64'),
+          sha: sha
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to update file: ${await response.text()}`);
+    }
+  }
+}
+```
+
+使用例：
+```typescript
+const updater = new GitHubFileUpdater('Iv23lil36t8Vv89KPoBy');
+
+try {
+  await updater.updateFile(
+    'kawaguti',
+    'ScrumFestMapViewer',
+    'all-events.md',
+    'Updated content here'
+  );
+} catch (error) {
+  console.error('Update failed:', error);
+}
+```
+
+このコードは：
+1. Device Flow認証の完全な実装
+2. ファイル更新処理の実装
+3. エラーハンドリング
+4. タイムアウト処理
+
+を含んでいます。各ステップで適切なログを出力し、処理の進行状況を追跡できます。
