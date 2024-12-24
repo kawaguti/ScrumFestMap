@@ -1,4 +1,5 @@
-import {RequestInit} from 'node-fetch';
+import { RequestInit } from 'node-fetch';
+import fetch from 'node-fetch';
 
 interface DeviceFlowStartResponse {
   device_code: string;
@@ -23,30 +24,39 @@ export class GitHubDeviceAuthService {
       throw new Error('GitHub Client ID is required');
     }
     this.clientId = clientId;
+    console.log('GitHubDeviceAuthService initialized with client ID:', this.clientId);
   }
 
   private async fetchWithJson<T>(url: string, options: RequestInit): Promise<T> {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...options.headers,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('GitHub API Error:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers),
-        body: errorText
+    console.log(`Fetching from ${url}...`);
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
       });
-      throw new Error(`GitHub API error: ${response.status} ${errorText}`);
-    }
 
-    return response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('GitHub API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers),
+          body: errorText
+        });
+        throw new Error(`GitHub API error: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log(`Response from ${url}:`, data);
+      return data;
+    } catch (error) {
+      console.error(`Error fetching from ${url}:`, error);
+      throw error;
+    }
   }
 
   async startDeviceFlow(): Promise<DeviceFlowStartResponse> {
@@ -145,12 +155,12 @@ export class GitHubDeviceAuthService {
     return token;
   }
 
-  getHeaders(token: string): Headers {
-    return new Headers({
+  getHeaders(token: string): { [key: string]: string } {
+    return {
       'Accept': 'application/vnd.github.v3+json',
       'Authorization': `Bearer ${token}`,
       'User-Agent': 'ScrumFestMap-GitHub-App',
       'X-GitHub-Api-Version': '2022-11-28'
-    });
+    };
   }
 }

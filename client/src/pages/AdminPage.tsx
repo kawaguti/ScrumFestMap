@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { useLocation } from "wouter";
@@ -24,8 +24,6 @@ import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-
-// SyncDebugPanelを通常のインポートに変更
 import SyncDebugPanel from "@/components/SyncDebugPanel";
 
 async function fetchAllUsers(): Promise<User[]> {

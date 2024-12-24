@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import * as React from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,13 @@ interface AuthInstructionsProps {
   userCode: string;
 }
 
-const AuthInstructions = ({ verificationUri, userCode }: AuthInstructionsProps) => {
+const AuthInstructions: React.FC<AuthInstructionsProps> = React.memo(({ verificationUri, userCode }) => {
+  const handleCopy = React.useCallback(() => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(userCode);
+    }
+  }, [userCode]);
+
   return (
     <div className="bg-accent/20 p-4 rounded-lg space-y-4 my-4">
       <h3 className="font-semibold">GitHub認証手順</h3>
@@ -48,7 +54,7 @@ const AuthInstructions = ({ verificationUri, userCode }: AuthInstructionsProps) 
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigator.clipboard.writeText(userCode)}
+            onClick={handleCopy}
           >
             コピー
           </Button>
@@ -60,7 +66,9 @@ const AuthInstructions = ({ verificationUri, userCode }: AuthInstructionsProps) 
       </p>
     </div>
   );
-};
+});
+
+AuthInstructions.displayName = 'AuthInstructions';
 
 interface DebugContentProps {
   logs: DebugLog[];
@@ -69,12 +77,12 @@ interface DebugContentProps {
   isSyncing: boolean;
 }
 
-const DebugContent = ({
-  logs,
-  isLoading,
-  error,
-  isSyncing,
-}: DebugContentProps) => {
+const DebugContent: React.FC<DebugContentProps> = React.memo(({ 
+  logs, 
+  isLoading, 
+  error, 
+  isSyncing 
+}) => {
   if (isLoading || isSyncing) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -145,10 +153,12 @@ const DebugContent = ({
       </div>
     </ScrollArea>
   );
-};
+});
 
-export default function SyncDebugPanel() {
-  const [isOpen, setIsOpen] = useState(false);
+DebugContent.displayName = 'DebugContent';
+
+const SyncDebugPanel: React.FC = () => {
+  const [open, setOpen] = React.useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -169,8 +179,8 @@ export default function SyncDebugPanel() {
 
       return response.json();
     },
-    enabled: isOpen,
-    refetchInterval: isOpen ? 1000 : false,
+    enabled: open,
+    refetchInterval: open ? 1000 : false,
   });
 
   const syncMutation = useMutation({
@@ -208,9 +218,9 @@ export default function SyncDebugPanel() {
   });
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline">
           <Bug className="h-4 w-4 mr-2" />
           デバッグパネル
         </Button>
@@ -221,7 +231,6 @@ export default function SyncDebugPanel() {
             <span>GitHub同期デバッグパネル</span>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => syncMutation.mutate()}
               disabled={syncMutation.isPending}
             >
@@ -243,4 +252,6 @@ export default function SyncDebugPanel() {
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export default SyncDebugPanel;
