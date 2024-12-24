@@ -2,7 +2,7 @@ import { type Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { users, events, eventHistory } from "../db/schema";
 import type { Event } from "../db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { GitHubAppService } from './github-auth';
 
 // デバッグ情報を保存するための配列
