@@ -121,7 +121,7 @@ export default function MyEventsPage() {
                 マークダウンでダウンロード
               </Button>
 
-              {user?.isAdmin ? (
+              {user?.isAdmin && (
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -137,20 +137,8 @@ export default function MyEventsPage() {
                   </Button>
                   <SyncDebugPanel />
                 </div>
-              ) : user && (
-                <Button
-                  variant="outline"
-                  onClick={() => syncGitHubMutation.mutate()}
-                  disabled={syncGitHubMutation.isPending}
-                >
-                  {syncGitHubMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <GitPullRequest className="h-4 w-4 mr-2" />
-                  )}
-                  GitHubに同期
-                </Button>
               )}
+
             </div>
           )}
         </div>
