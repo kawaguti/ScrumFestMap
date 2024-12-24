@@ -78,7 +78,8 @@ export class GitHubAppService {
     newContent: string,
     owner: string,
     repo: string,
-    path: string
+    path: string,
+    commitMessage: string = 'Update all-events.md'
   ): Promise<GitHubUpdateResponse> {
     const config = this.validateConfig();
     if (!config.isValid) {
@@ -111,7 +112,7 @@ export class GitHubAppService {
         owner,
         repo,
         path,
-        message: 'Update all-events.md',
+        message: commitMessage,
         content: Buffer.from(newContent).toString('base64'),
         sha: currentFile.sha,
       });

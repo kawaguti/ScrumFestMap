@@ -123,11 +123,13 @@ export function setupRoutes(app: Express) {
       });
 
       // GitHubにファイルを更新
+      const allEventsWithNames = allEvents.map(e => e.name).join(', ');
       const result = await github.updateAllEventsFile(
         markdownContent,
         'kawaguti',
         'ScrumFestMapViewer',
-        'all-events.md'
+        'all-events.md',
+        `イベント情報を更新: ${allEventsWithNames}`
       );
 
       addSyncDebugLog('info', 'File update succeeded', {
