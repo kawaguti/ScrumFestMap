@@ -4,6 +4,7 @@ import { users, events, eventHistory, insertEventSchema } from "../db/schema";
 import type { Event } from "../db/schema";
 import { eq, desc } from "drizzle-orm";
 import jwt from 'jsonwebtoken';
+import { GitHubDeviceAuthService } from './github-auth';
 
 // デバッグ情報を保存するための配列
 let syncDebugLogs: Array<{
@@ -51,6 +52,7 @@ class GitHubFileUpdater {
   private readonly owner: string;
   private readonly repo: string;
   private readonly deviceFlow: boolean;
+  private deviceAuthService?: GitHubDeviceAuthService;
 
   constructor(appId: string, privateKey: string, owner: string, repo: string, deviceFlow = false) {
     try {
@@ -60,17 +62,18 @@ class GitHubFileUpdater {
       this.repo = repo;
       this.deviceFlow = deviceFlow;
 
+      if (deviceFlow) {
+        this.deviceAuthService = new GitHubDeviceAuthService({
+          client_id: process.env.GITHUB_CLIENT_ID || ''
+        });
+      }
+
       addSyncDebugLog('info', 'GitHubFileUpdater initialized', {
         appId,
         owner,
         repo,
         deviceFlow,
-        privateKeyLength: this.privateKey.length,
-        privateKeyFormat: {
-          startsWithHeader: this.privateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
-          endsWithFooter: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----\n'),
-          lineCount: this.privateKey.split('\n').length
-        }
+        hasDeviceAuthService: !!this.deviceAuthService
       });
     } catch (error) {
       console.error('GitHubFileUpdater initialization error:', error);
@@ -145,9 +148,9 @@ class GitHubFileUpdater {
       const currentTime = Math.floor(Date.now() / 1000);
 
       const payload = {
-        iat: currentTime - 60,     // 1分前（クロックスキュー対策）
-        exp: currentTime + 600,    // 10分後
-        iss: this.appId.toString()
+        iat: currentTime - 30,     // 現在時刻から30秒前
+        exp: currentTime + 600,    // 現在時刻から10分後
+        iss: this.appId.toString() // GitHub App ID
       };
 
       // Device Flow用の追加クレーム
@@ -216,9 +219,32 @@ class GitHubFileUpdater {
     try {
       addSyncDebugLog('info', 'Starting file update', { url });
 
+      // Device Flow認証が有効な場合は、認証フローを開始
+      if (this.deviceFlow && this.deviceAuthService) {
+        const deviceFlow = await this.deviceAuthService.startDeviceFlow();
+        addSyncDebugLog('info', 'Device Flow started', {
+          verificationUri: deviceFlow.verificationUri,
+          userCode: deviceFlow.userCode,
+          expiresIn: deviceFlow.expiresIn
+        });
+
+        // トークンを取得するまでポーリング
+        let token = '';
+        while (!token) {
+          await new Promise(resolve => setTimeout(resolve, 5000)); // 5秒待機
+          token = await this.deviceAuthService.pollForToken();
+        }
+
+        addSyncDebugLog('info', 'Device Flow authentication successful', {
+          tokenLength: token.length
+        });
+      }
+
       // Get current file
       const fileResponse = await fetch(url, {
-        headers: this.getHeaders()
+        headers: this.deviceFlow && this.deviceAuthService
+          ? this.deviceAuthService.getHeaders()
+          : this.getHeaders()
       });
 
       if (!fileResponse.ok) {
@@ -241,7 +267,9 @@ class GitHubFileUpdater {
       // Update file
       const updateResponse = await fetch(url, {
         method: 'PUT',
-        headers: this.getHeaders(),
+        headers: this.deviceFlow && this.deviceAuthService
+          ? this.deviceAuthService.getHeaders()
+          : this.getHeaders(),
         body: JSON.stringify({
           message: 'Update all-events.md',
           content: Buffer.from(newContent).toString('base64'),

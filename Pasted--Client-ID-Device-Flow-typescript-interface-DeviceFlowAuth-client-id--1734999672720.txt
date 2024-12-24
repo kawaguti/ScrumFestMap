@@ -1,0 +1,141 @@
+はい、Client IDを使用したDevice Flow認証の実装をお示しします：
+
+```typescript
+interface DeviceFlowAuth {
+  client_id: string;     // GitHub AppのClient ID
+  device_code?: string;
+  access_token?: string;
+}
+
+class GitHubDeviceAuthService {
+  constructor(private config: DeviceFlowAuth) {}
+
+  // Device Flow認証の開始
+  async startDeviceFlow() {
+    const response = await fetch('https://github.com/login/device/code', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        client_id: this.config.client_id,
+        scope: 'repo' // Single fileアクセス用
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to start device flow');
+    }
+
+    const data = await response.json();
+    this.config.device_code = data.device_code;
+
+    return {
+      userCode: data.user_code,
+      verificationUri: data.verification_uri,
+      expiresIn: data.expires_in
+    };
+  }
+
+  // アクセストークンの取得（ポーリング）
+  async pollForToken(): Promise<string> {
+    if (!this.config.device_code) {
+      throw new Error('Device flow not initiated');
+    }
+
+    const response = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        client_id: this.config.client_id,
+        device_code: this.config.device_code,
+        grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Token polling failed');
+    }
+
+    const data = await response.json();
+    if (data.error) {
+      if (data.error === 'authorization_pending') {
+        return ''; // まだ認証待ち
+      }
+      throw new Error(data.error);
+    }
+
+    return data.access_token;
+  }
+
+  // ファイルの取得
+  async getFile(owner: string, repo: string, path: string) {
+    if (!this.config.access_token) {
+      throw new Error('No access token available');
+    }
+
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+      {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'Authorization': `token ${this.config.access_token}`,
+          'User-Agent': 'ScrumFestMap-GitHub-App',
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to get file: ${await response.text()}`);
+    }
+
+    return response.json();
+  }
+}
+
+// 使用例
+const auth = new GitHubDeviceAuthService({
+  client_id: 'Iv23lil36t8Vv89KPoBy'
+});
+
+// 認証フローの開始
+try {
+  const deviceFlow = await auth.startDeviceFlow();
+  console.log('Please visit:', deviceFlow.verificationUri);
+  console.log('And enter code:', deviceFlow.userCode);
+
+  // ユーザーが認証を完了するまでポーリング
+  let token = '';
+  while (!token) {
+    await new Promise(resolve => setTimeout(resolve, 5000)); // 5秒待機
+    token = await auth.pollForToken();
+  }
+
+  // ファイルの取得
+  const fileContent = await auth.getFile(
+    'kawaguti',
+    'ScrumFestMapViewer',
+    'all-events.md'
+  );
+  console.log('File content:', fileContent);
+} catch (error) {
+  console.error('Error:', error);
+}
+```
+
+このコードの特徴：
+
+1. Client IDを使用した認証
+2. Device Flow認証の完全な実装
+3. ポーリングによるトークン取得
+4. エラーハンドリング
+
+注意点：
+- ユーザーは`verification_uri`にアクセスして`user_code`を入力する必要があります
+- ポーリング間隔は適切に設定する必要があります
+- トークンの有効期限を考慮する必要があります
