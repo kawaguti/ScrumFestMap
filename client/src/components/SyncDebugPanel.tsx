@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,9 +18,8 @@ interface DebugLog {
   details: any;
 }
 
-const DebugLogEntry = React.memo(({ log, index }: { log: DebugLog; index: number }) => (
+const DebugLogEntry = ({ log }: { log: DebugLog }) => (
   <div
-    key={index}
     className={`p-4 rounded-lg ${
       log.type === 'error' ? 'bg-destructive/10' : 'bg-muted'
     }`}
@@ -35,9 +34,7 @@ const DebugLogEntry = React.memo(({ log, index }: { log: DebugLog; index: number
       {JSON.stringify(log.details, null, 2)}
     </pre>
   </div>
-));
-
-DebugLogEntry.displayName = 'DebugLogEntry';
+);
 
 const DebugContent = React.memo(({ 
   logs, 
@@ -68,7 +65,7 @@ const DebugContent = React.memo(({
     <ScrollArea className="h-[calc(80vh-8rem)] rounded-md border p-4">
       <div className="space-y-4">
         {logs.map((log, index) => (
-          <DebugLogEntry key={index} log={log} index={index} />
+          <DebugLogEntry key={index} log={log} />
         ))}
         {logs.length === 0 && (
           <div className="text-center text-muted-foreground">
@@ -80,10 +77,8 @@ const DebugContent = React.memo(({
   );
 });
 
-DebugContent.displayName = 'DebugContent';
-
-export const SyncDebugPanel: React.FC = () => {
-  const [isOpen, setIsOpen] = React.useState(false);
+export function SyncDebugPanel() {
+  const [isOpen, setIsOpen] = useState(false);
 
   const { data: logs = [], isLoading, error } = useQuery<DebugLog[]>({
     queryKey: ['/api/admin/sync-debug-logs'],
@@ -112,4 +107,4 @@ export const SyncDebugPanel: React.FC = () => {
       </DialogContent>
     </Dialog>
   );
-};
+}
