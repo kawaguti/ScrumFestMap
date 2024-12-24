@@ -80,9 +80,6 @@ function SyncDebugPanel() {
   });
 
   function renderAuthInstructions(verificationUri: string, userCode: string) {
-    const handleCopy = React.useCallback(() => {
-      navigator.clipboard?.writeText(userCode);
-    }, [userCode]);
     return (
       <div className="bg-accent/20 p-4 rounded-lg space-y-4 my-4">
         <h3 className="font-semibold">GitHub認証手順</h3>
@@ -106,7 +103,7 @@ function SyncDebugPanel() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleCopy}
+              onClick={() => navigator.clipboard?.writeText(userCode)}
             >
               コピー
             </Button>
@@ -149,7 +146,7 @@ function SyncDebugPanel() {
     return (
       <ScrollArea className="h-[calc(80vh-8rem)] rounded-md border p-4">
         <div className="space-y-4">
-          {logs.map((log, index) => {
+          {logs.map((log: DebugLog, index: number) => {
             const isDeviceFlow = log.title === 'Device Flow started';
             return (
               <div
