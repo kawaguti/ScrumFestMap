@@ -1,26 +1,102 @@
-import { useState, useCallback } from 'react';
 
-interface User {
-  id: string;
-  username: string;
-  isAdmin: boolean;
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { User, InsertUser } from "@db/schema";
+
+type RequestResult = {
+  ok: true;
+} | {
+  ok: false;
+  message: string;
+};
+
+async function handleRequest(
+  url: string,
+  method: string,
+  body?: InsertUser
+): Promise<RequestResult> {
+  try {
+    const response = await fetch(url, {
+      method,
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      if (response.status >= 500) {
+        return { ok: false, message: response.statusText };
+      }
+      const message = await response.text();
+      return { ok: false, message };
+    }
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, message: e.toString() };
+  }
+}
+
+async function fetchUser(): Promise<User | null> {
+  const response = await fetch('/api/user', {
+    credentials: 'include'
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      return null;
+    }
+    if (response.status >= 500) {
+      throw new Error(`${response.status}: ${response.statusText}`);
+    }
+    throw new Error(`${response.status}: ${await response.text()}`);
+  }
+  return response.json();
 }
 
 export function useUser() {
-  const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
+  const queryClient = useQueryClient();
+
+  const { data: user, error, isLoading } = useQuery<User | null, Error>({
+    queryKey: ['user'],
+    queryFn: fetchUser,
+    staleTime: 1000 * 60 * 5,
+    retry: false
   });
 
-  const login = useCallback((userData: User) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
-  }, []);
+  const loginMutation = useMutation<RequestResult, Error, InsertUser>({
+    mutationFn: (userData) => handleRequest('/api/login', 'POST', userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
 
-  const logout = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem('user');
-  }, []);
+  const logoutMutation = useMutation<RequestResult, Error>({
+    mutationFn: () => handleRequest('/api/logout', 'POST'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
 
-  return { user, login, logout };
+  const registerMutation = useMutation<RequestResult, Error, InsertUser>({
+    mutationFn: (userData) => handleRequest('/api/register', 'POST', userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
+
+  const changePasswordMutation = useMutation<RequestResult, Error, { currentPassword: string; newPassword: string }>({
+    mutationFn: (passwordData) => handleRequest('/api/change-password', 'POST', passwordData as any),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
+
+  return {
+    user,
+    isLoading,
+    error,
+    login: loginMutation.mutateAsync,
+    logout: logoutMutation.mutateAsync,
+    register: registerMutation.mutateAsync,
+    changePassword: changePasswordMutation.mutateAsync,
+  } as const;
 }
