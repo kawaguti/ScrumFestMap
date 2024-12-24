@@ -1,0 +1,94 @@
+Device Flow が有効になっているケースでは、認証フローが少し異なります。以下のように修正してみましょう：
+
+```typescript
+interface GitHubAuthConfig {
+  appId: string;
+  privateKey: string;
+  deviceFlow: boolean;
+}
+
+class GitHubAuthService {
+  private readonly baseUrl = 'https://api.github.com';
+
+  constructor(private readonly config: GitHubAuthConfig) {}
+
+  private async generateJWT(): Promise<string> {
+    const now = Math.floor(Date.now() / 1000);
+    
+    const payload = {
+      iat: now - 60,           // 1分前
+      exp: now + 300,          // 5分後
+      iss: this.config.appId,
+      // Device Flow用の追加クレーム
+      sub: this.config.appId   // Device Flow時は必要
+    };
+
+    return sign(payload, this.config.privateKey, {
+      algorithm: 'RS256',
+      header: {
+        typ: 'JWT',
+        alg: 'RS256'
+      }
+    });
+  }
+
+  private createHeaders(token: string): Headers {
+    const headers = new Headers({
+      'Accept': 'application/vnd.github.v3+json',
+      'Authorization': `Bearer ${token}`,
+      'User-Agent': 'ScrumFestMap-GitHub-App',
+      'X-GitHub-Api-Version': '2022-11-28'
+    });
+
+    // Device Flow が有効な場合、追加ヘッダー
+    if (this.config.deviceFlow) {
+      headers.append('X-GitHub-Device-Flow', 'true');
+    }
+
+    return headers;
+  }
+
+  public async getFile(owner: string, repo: string, path: string): Promise<any> {
+    const token = await this.generateJWT();
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/contents/${path}`;
+
+    const response = await fetch(url, {
+      headers: this.createHeaders(token)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Response headers:', Object.fromEntries(response.headers));
+      throw new Error(`GitHub API Error: ${errorText}`);
+    }
+
+    return response.json();
+  }
+}
+
+// 使用例
+const authService = new GitHubAuthService({
+  appId: '1095272',
+  privateKey: process.env.GITHUB_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+  deviceFlow: true  // Device Flow を有効化
+});
+
+try {
+  const fileContent = await authService.getFile('owner', 'repo', 'all-events.md');
+  console.log('File content:', fileContent);
+} catch (error) {
+  console.error('Error:', error);
+}
+```
+
+主な変更点：
+1. Device Flow用のヘッダー追加
+2. JWTペイロードに `sub` クレームを追加
+3. API バージョンを v3 に明示的に指定
+4. エラーハンドリングの強化
+
+また、GitHub Apps の設定で：
+1. Single File の path が正確に設定されているか
+2. インストール先のリポジトリが正しく設定されているか
+
+も確認してください。

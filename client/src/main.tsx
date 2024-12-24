@@ -46,18 +46,18 @@ function Router() {
 }
 
 function App() {
-  return React.createElement(QueryClientProvider, { client: queryClient }, [
-    React.createElement(Router),
-    React.createElement(Toaster)
-  ]);
+  return (
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <Router />
+        <Toaster />
+      </QueryClientProvider>
+    </StrictMode>
+  );
 }
 
 const container = document.getElementById("root");
 if (!container) throw new Error('Failed to find the root element');
 
 const root = createRoot(container);
-root.render(
-  React.createElement(StrictMode, null,
-    React.createElement(App)
-  )
-);
+root.render(<App />);

@@ -50,26 +50,27 @@ class GitHubFileUpdater {
   private readonly privateKey: string;
   private readonly owner: string;
   private readonly repo: string;
+  private readonly deviceFlow: boolean;
 
-  constructor(appId: string, privateKey: string, owner: string, repo: string) {
+  constructor(appId: string, privateKey: string, owner: string, repo: string, deviceFlow = false) {
     try {
       this.appId = appId;
-
-      // 環境変数の\nを実際の改行に変換
       this.privateKey = this.formatPrivateKey(privateKey);
       this.owner = owner;
       this.repo = repo;
+      this.deviceFlow = deviceFlow;
 
-      console.log('GitHubFileUpdater initialized with:', {
+      addSyncDebugLog('info', 'GitHubFileUpdater initialized', {
         appId,
         owner,
         repo,
+        deviceFlow,
         privateKeyLength: this.privateKey.length,
-        privateKeyLines: this.privateKey.split('\n').length,
-        privateKeyStart: this.privateKey.substring(0, 50),
-        privateKeyEnd: this.privateKey.substring(this.privateKey.length - 50),
-        startsWithHeader: this.privateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
-        endsWithFooter: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----\n')
+        privateKeyFormat: {
+          startsWithHeader: this.privateKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
+          endsWithFooter: this.privateKey.endsWith('-----END RSA PRIVATE KEY-----\n'),
+          lineCount: this.privateKey.split('\n').length
+        }
       });
     } catch (error) {
       console.error('GitHubFileUpdater initialization error:', error);
@@ -85,7 +86,7 @@ class GitHubFileUpdater {
         containsRealNewline: key.includes('\n')
       });
 
-      // Remove any surrounding quotes if present
+      // Remove any surrounding quotes
       key = key.replace(/^["']|["']$/g, '');
 
       // First, handle Base64 encoded keys
@@ -144,10 +145,17 @@ class GitHubFileUpdater {
       const currentTime = Math.floor(Date.now() / 1000);
 
       const payload = {
-        iat: currentTime - 30,           // 現在時刻から30秒前（クロックスキュー対策）
-        exp: currentTime + (10 * 60),    // 現在時刻から10分後
+        iat: currentTime - 60,     // 1分前（クロックスキュー対策）
+        exp: currentTime + 600,    // 10分後
         iss: this.appId.toString()
       };
+
+      // Device Flow用の追加クレーム
+      if (this.deviceFlow) {
+        Object.assign(payload, {
+          sub: this.appId.toString()  // Device Flow時は必要
+        });
+      }
 
       addSyncDebugLog('info', 'Generating JWT', {
         timeInfo: {
@@ -158,7 +166,13 @@ class GitHubFileUpdater {
         }
       });
 
-      const token = jwt.sign(payload, this.privateKey, { algorithm: 'RS256' });
+      const token = jwt.sign(payload, this.privateKey, {
+        algorithm: 'RS256',
+        header: {
+          typ: 'JWT',
+          alg: 'RS256'
+        }
+      });
 
       addSyncDebugLog('info', 'JWT token generated', {
         tokenLength: token.length,
@@ -177,11 +191,16 @@ class GitHubFileUpdater {
   private getHeaders(): Headers {
     const token = this.generateJWT();
     const headers = new Headers({
-      'Accept': 'application/vnd.github+json',
+      'Accept': 'application/vnd.github.v3+json',  // v3を明示的に指定
       'Authorization': `Bearer ${token}`,
-      'X-GitHub-Api-Version': '2022-11-28',
-      'User-Agent': 'ScrumFestMap-GitHub-App'
+      'User-Agent': 'ScrumFestMap-GitHub-App',
+      'X-GitHub-Api-Version': '2022-11-28'
     });
+
+    // Device Flow が有効な場合、追加ヘッダー
+    if (this.deviceFlow) {
+      headers.append('X-GitHub-Device-Flow', 'true');
+    }
 
     addSyncDebugLog('info', 'Request headers prepared', {
       headers: Object.fromEntries(headers.entries())
@@ -339,14 +358,16 @@ export function setupRoutes(app: Express) {
       addSyncDebugLog('info', 'Creating GitHubFileUpdater', {
         appId: githubAppId,
         owner: 'kawaguti',
-        repo: 'ScrumFestMapViewer'
+        repo: 'ScrumFestMapViewer',
+        deviceFlow: true  // Device Flowを有効化
       });
 
       const github = new GitHubFileUpdater(
         githubAppId,
         githubPrivateKey,
         'kawaguti',
-        'ScrumFestMapViewer'
+        'ScrumFestMapViewer',
+        true  // Device Flowを有効化
       );
 
       const allEvents = await db
