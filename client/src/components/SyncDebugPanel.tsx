@@ -1,4 +1,4 @@
-import { useState, FC, PropsWithChildren } from "react";
+import { useState, FC } from "react";
 import {
   Dialog,
   DialogContent,
@@ -47,11 +47,7 @@ const AuthInstructions: FC<{
             variant="outline"
             size="sm"
             onClick={() => {
-              try {
-                navigator.clipboard.writeText(userCode);
-              } catch (error) {
-                console.error('クリップボードへのコピーに失敗しました:', error);
-              }
+              navigator.clipboard.writeText(userCode);
             }}
           >
             コピー
@@ -149,7 +145,7 @@ const DebugContent: FC<{
   );
 };
 
-const SyncDebugPanel: FC = () => {
+const SyncDebugPanel = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -157,28 +153,22 @@ const SyncDebugPanel: FC = () => {
   const { data: logs = [], isLoading, error } = useQuery<DebugLog[], Error>({
     queryKey: ['/api/admin/sync-debug-logs'],
     queryFn: async () => {
-      try {
-        const response = await fetch('/api/admin/sync-debug-logs', {
-          headers: {
-            'Accept': 'application/json',
-          },
-          credentials: 'include'
-        });
+      const response = await fetch('/api/admin/sync-debug-logs', {
+        headers: {
+          'Accept': 'application/json',
+        },
+        credentials: 'include'
+      });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || errorData.message || 'デバッグログの取得に失敗しました');
-        }
-
-        return response.json();
-      } catch (error) {
-        console.error('デバッグログ取得エラー:', error);
-        throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.message || 'デバッグログの取得に失敗しました');
       }
+
+      return response.json();
     },
     enabled: isOpen,
     refetchInterval: isOpen ? 1000 : false,
-    refetchOnWindowFocus: true,
   });
 
   const syncMutation = useMutation({
