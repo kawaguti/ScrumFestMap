@@ -24,12 +24,12 @@ interface AuthInstructionsProps {
   userCode: string;
 }
 
-const AuthInstructions: React.FC<AuthInstructionsProps> = React.memo(({ verificationUri, userCode }) => {
-  const handleCopy = React.useCallback(() => {
+const AuthInstructions: React.FC<AuthInstructionsProps> = ({ verificationUri, userCode }) => {
+  const handleCopy = () => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(userCode);
     }
-  }, [userCode]);
+  };
 
   return (
     <div className="bg-accent/20 p-4 rounded-lg space-y-4 my-4">
@@ -66,9 +66,7 @@ const AuthInstructions: React.FC<AuthInstructionsProps> = React.memo(({ verifica
       </p>
     </div>
   );
-});
-
-AuthInstructions.displayName = 'AuthInstructions';
+};
 
 interface DebugContentProps {
   logs: DebugLog[];
@@ -77,7 +75,7 @@ interface DebugContentProps {
   isSyncing: boolean;
 }
 
-const DebugContent: React.FC<DebugContentProps> = React.memo(({ 
+const DebugContent: React.FC<DebugContentProps> = ({ 
   logs, 
   isLoading, 
   error, 
@@ -153,9 +151,7 @@ const DebugContent: React.FC<DebugContentProps> = React.memo(({
       </div>
     </ScrollArea>
   );
-});
-
-DebugContent.displayName = 'DebugContent';
+};
 
 const SyncDebugPanel: React.FC = () => {
   const [open, setOpen] = React.useState(false);
