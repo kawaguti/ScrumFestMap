@@ -68,10 +68,9 @@ const AuthInstructions = React.memo(function AuthInstructions({ verificationUri,
 
 type LogEntryProps = {
   log: DebugLog;
-  index: number;
 };
 
-const LogEntry = React.memo(function LogEntry({ log, index }: LogEntryProps) {
+const LogEntry = React.memo(function LogEntry({ log }: LogEntryProps) {
   const isDeviceFlow = log.title === 'Device Flow started';
 
   return (
@@ -147,7 +146,7 @@ const DebugContent = React.memo(function DebugContent({
     <ScrollArea className="h-[calc(80vh-8rem)] rounded-md border p-4">
       <div className="space-y-4">
         {logs.map((log, index) => (
-          <LogEntry key={`${log.timestamp}-${index}`} log={log} index={index} />
+          <LogEntry key={`${log.timestamp}-${index}`} log={log} />
         ))}
         {logs.length === 0 && (
           <div className="text-center text-muted-foreground">
