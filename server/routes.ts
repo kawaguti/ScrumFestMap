@@ -208,7 +208,9 @@ export function setupRoutes(app: Express) {
   // GitHub同期エンドポイント
   app.post("/api/admin/sync-github", requireAdmin, async (req, res) => {
     clearSyncDebugLogs();
-    addSyncDebugLog('info', 'Starting GitHub sync process', {});
+    addSyncDebugLog('info', 'Starting GitHub sync process', {
+      timestamp: new Date().toISOString()
+    });
 
     try {
       const githubClientId = process.env.GITHUB_CLIENT_ID;
@@ -218,7 +220,6 @@ export function setupRoutes(app: Express) {
           hasClientId: !!githubClientId
         });
 
-        res.setHeader('Content-Type', 'application/json');
         return res.status(500).json({
           error: "GitHub認証情報が不足しています",
           details: "必要な環境変数が設定されていません",
@@ -234,6 +235,10 @@ export function setupRoutes(app: Express) {
         'ScrumFestMapViewer'
       );
 
+      addSyncDebugLog('info', 'Starting Device Flow authentication', {
+        timestamp: new Date().toISOString()
+      });
+
       // データベースからイベントを取得
       const allEvents = await db
         .select()
@@ -242,22 +247,28 @@ export function setupRoutes(app: Express) {
         .orderBy(desc(events.date));
 
       addSyncDebugLog('info', 'Events fetched from database', {
-        count: allEvents.length
+        count: allEvents.length,
+        timestamp: new Date().toISOString()
       });
 
       // マークダウンを生成
       const markdownContent = generateMarkdown(allEvents);
+
+      addSyncDebugLog('info', 'Markdown generated', {
+        contentLength: markdownContent.length,
+        timestamp: new Date().toISOString()
+      });
 
       // GitHubにファイルを更新
       const result = await github.updateAllEventsFile(markdownContent);
 
       addSyncDebugLog('info', 'Sync completed', {
         commitSha: result.commit.sha,
-        fileUrl: result.content.html_url
+        fileUrl: result.content.html_url,
+        timestamp: new Date().toISOString()
       });
 
-      res.setHeader('Content-Type', 'application/json');
-      res.json({
+      return res.json({
         success: true,
         message: "GitHubリポジトリにイベント一覧を同期しました",
         details: `更新されたファイル: ${result.content.html_url}`,
@@ -265,10 +276,17 @@ export function setupRoutes(app: Express) {
       });
 
     } catch (error) {
-      addSyncDebugLog('error', 'Sync process error', error);
+      console.error('Sync error:', error);
 
-      res.setHeader('Content-Type', 'application/json');
-      res.status(500).json({
+      addSyncDebugLog('error', 'Sync process error', {
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack
+        } : String(error),
+        timestamp: new Date().toISOString()
+      });
+
+      return res.status(500).json({
         error: "同期処理中にエラーが発生しました",
         details: error instanceof Error ? error.message : String(error),
         status: 500,

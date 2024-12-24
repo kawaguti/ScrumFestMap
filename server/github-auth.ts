@@ -6,6 +6,7 @@ interface DeviceFlowStartResponse {
   user_code: string;
   verification_uri: string;
   expires_in: number;
+  interval?: number;
 }
 
 interface TokenResponse {
@@ -18,6 +19,7 @@ export class GitHubDeviceAuthService {
   private readonly clientId: string;
   private readonly pollingInterval = 5000; // 5秒ごとにポーリング
   private deviceCode: string | null = null;
+  private lastPollTime: number = 0;
 
   constructor(clientId: string) {
     if (!clientId) {
@@ -39,19 +41,16 @@ export class GitHubDeviceAuthService {
         }
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('GitHub API Error:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers),
-          body: errorText
-        });
-        throw new Error(`GitHub API error: ${response.status} ${errorText}`);
+      const data = await response.json() as T;
+      console.log(`Response from ${url}:`, data);
+
+      if ('error' in (data as any)) {
+        const errorData = data as { error: string; error_description?: string };
+        if (errorData.error !== 'authorization_pending') {
+          throw new Error(errorData.error_description || errorData.error);
+        }
       }
 
-      const data = await response.json();
-      console.log(`Response from ${url}:`, data);
       return data;
     } catch (error) {
       console.error(`Error fetching from ${url}:`, error);
@@ -63,7 +62,7 @@ export class GitHubDeviceAuthService {
     try {
       console.log('Starting Device Flow with client ID:', this.clientId);
 
-      const data = await this.fetchWithJson<DeviceFlowStartResponse & { error?: string; error_description?: string }>(
+      const data = await this.fetchWithJson<DeviceFlowStartResponse>(
         'https://github.com/login/device/code',
         {
           method: 'POST',
@@ -74,12 +73,9 @@ export class GitHubDeviceAuthService {
         }
       );
 
-      if ('error' in data) {
-        console.error('Device Flow error:', data);
-        throw new Error(data.error_description || data.error || 'Unknown error');
-      }
-
       this.deviceCode = data.device_code;
+      this.lastPollTime = Date.now();
+
       console.log('Device Flow started successfully:', {
         verification_uri: data.verification_uri,
         user_code: data.user_code,
@@ -98,6 +94,12 @@ export class GitHubDeviceAuthService {
       throw new Error('Device flow not initiated');
     }
 
+    // ポーリング間隔を確保
+    const timeSinceLastPoll = Date.now() - this.lastPollTime;
+    if (timeSinceLastPoll < this.pollingInterval) {
+      await new Promise(resolve => setTimeout(resolve, this.pollingInterval - timeSinceLastPoll));
+    }
+
     try {
       console.log('Polling for token with device code');
       const data = await this.fetchWithJson<TokenResponse>(
@@ -111,6 +113,8 @@ export class GitHubDeviceAuthService {
           })
         }
       );
+
+      this.lastPollTime = Date.now();
 
       if (data.error) {
         if (data.error === 'authorization_pending') {
@@ -128,6 +132,9 @@ export class GitHubDeviceAuthService {
       return data.access_token;
     } catch (error) {
       console.error('Token polling error:', error);
+      if (error instanceof Error && error.message.includes('expired')) {
+        throw new Error('認証の有効期限が切れました。もう一度認証を開始してください。');
+      }
       throw new Error(`Token polling failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -139,15 +146,29 @@ export class GitHubDeviceAuthService {
 
     const startTime = Date.now();
     let token: string | null = null;
+    let attempts = 0;
 
     while (!token) {
       if (Date.now() - startTime > timeoutMs) {
         throw new Error('認証がタイムアウトしました。もう一度お試しください。');
       }
 
-      token = await this.pollForToken();
+      attempts++;
+      console.log(`Polling attempt ${attempts}...`);
 
-      if (!token) {
+      try {
+        token = await this.pollForToken();
+
+        if (!token) {
+          console.log(`Waiting ${this.pollingInterval}ms before next poll...`);
+          await new Promise(resolve => setTimeout(resolve, this.pollingInterval));
+        }
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('expired')) {
+          throw error; // 有効期限切れは即座にエラーとして処理
+        }
+        console.error(`Polling attempt ${attempts} failed:`, error);
+        // その他のエラーは一時的なものとして扱い、リトライ
         await new Promise(resolve => setTimeout(resolve, this.pollingInterval));
       }
     }
