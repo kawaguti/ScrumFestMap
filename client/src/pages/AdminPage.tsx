@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { useLocation } from "wouter";
+import SyncDebugPanel from "@/components/SyncDebugPanel";
 
 import {
   Card,
@@ -113,12 +114,12 @@ export default function AdminPage() {
         method: "DELETE",
         credentials: "include",
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || "イベントの削除に失敗しました");
       }
-      
+
       return response.json();
     },
     onSuccess: (_, deletedEventId) => {
@@ -175,9 +176,12 @@ export default function AdminPage() {
     <div className="container mx-auto py-6 space-y-6">
       <header className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">管理者ダッシュボード</h1>
-        <Button variant="outline" onClick={() => setLocation("/")}>
-          ホームへ戻る
-        </Button>
+        <div className="flex items-center gap-4">
+          <SyncDebugPanel />
+          <Button variant="outline" onClick={() => setLocation("/")}>
+            ホームへ戻る
+          </Button>
+        </div>
       </header>
 
       <div className="grid gap-6">

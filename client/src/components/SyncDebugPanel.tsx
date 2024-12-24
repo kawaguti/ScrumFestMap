@@ -1,4 +1,4 @@
-import { useState, memo, useCallback } from "react";
+import { useState, memo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,10 +19,7 @@ interface DebugLog {
   details: any;
 }
 
-const AuthInstructions = memo(function AuthInstructions({ 
-  verificationUri,
-  userCode,
-}: { 
+const AuthInstructions = memo(function AuthInstructions({ verificationUri, userCode }: { 
   verificationUri: string;
   userCode: string;
 }) {
@@ -81,7 +78,7 @@ const DebugLogEntry = memo(function DebugLogEntry({ log }: { log: DebugLog }) {
           {new Date(log.timestamp).toLocaleString('ja-JP')}
         </span>
       </div>
-      {isDeviceFlow ? (
+      {isDeviceFlow && log.details?.verification_uri && log.details?.user_code ? (
         <AuthInstructions
           verificationUri={log.details.verification_uri}
           userCode={log.details.user_code}
@@ -147,7 +144,7 @@ const DebugContent = memo(function DebugContent({
   );
 });
 
-export function SyncDebugPanel() {
+function SyncDebugPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -204,11 +201,6 @@ export function SyncDebugPanel() {
     },
   });
 
-  const handleSync = useCallback(() => {
-    if (syncMutation.isPending) return;
-    syncMutation.mutate();
-  }, [syncMutation]);
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -224,12 +216,12 @@ export function SyncDebugPanel() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleSync}
+              onClick={() => syncMutation.mutate()}
               disabled={syncMutation.isPending}
             >
-              {syncMutation.isPending ? (
+              {syncMutation.isPending && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : null}
+              )}
               GitHubと同期
             </Button>
           </DialogTitle>
@@ -246,3 +238,5 @@ export function SyncDebugPanel() {
     </Dialog>
   );
 }
+
+export default SyncDebugPanel;

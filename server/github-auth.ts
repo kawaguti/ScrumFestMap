@@ -25,6 +25,9 @@ export class GitHubDeviceAuthService {
   private accessToken?: string;
 
   constructor(clientId: string) {
+    if (!clientId) {
+      throw new Error('GitHub Client ID is required');
+    }
     this.clientId = clientId;
   }
 
@@ -38,14 +41,16 @@ export class GitHubDeviceAuthService {
       }
     });
 
-    console.log('Request URL:', url);
-    console.log('Request options:', {
-      method: options.method,
-      headers: options.headers,
-      body: options.body
-    });
-    console.log('Response status:', response.status);
-    console.log('Response headers:', Object.fromEntries(response.headers));
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('GitHub API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers),
+        body: errorText
+      });
+      throw new Error(`GitHub API error: ${response.status} ${errorText}`);
+    }
 
     const text = await response.text();
     try {
@@ -58,6 +63,8 @@ export class GitHubDeviceAuthService {
 
   async startDeviceFlow(): Promise<DeviceFlowStartResponse> {
     try {
+      console.log('Starting Device Flow with client ID:', this.clientId);
+
       const data = await this.fetchWithJson<DeviceFlowStartResponse & GitHubErrorResponse>(
         'https://github.com/login/device/code',
         {
@@ -70,6 +77,7 @@ export class GitHubDeviceAuthService {
       );
 
       if ('error' in data) {
+        console.error('Device Flow error:', data);
         throw new Error(data.error_description || data.error || 'Unknown error');
       }
 
@@ -79,12 +87,13 @@ export class GitHubDeviceAuthService {
       }
 
       this.deviceCode = data.device_code;
-      return {
-        device_code: data.device_code,
-        user_code: data.user_code,
+      console.log('Device Flow started successfully:', {
         verification_uri: data.verification_uri,
+        user_code: data.user_code,
         expires_in: data.expires_in
-      };
+      });
+
+      return data;
     } catch (error) {
       console.error('Device flow start error:', error);
       throw new Error(`Device flow start failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -97,6 +106,7 @@ export class GitHubDeviceAuthService {
     }
 
     try {
+      console.log('Polling for token with device code');
       const data = await this.fetchWithJson<DeviceFlowTokenResponse>(
         'https://github.com/login/oauth/access_token',
         {
@@ -111,8 +121,10 @@ export class GitHubDeviceAuthService {
 
       if (data.error) {
         if (data.error === 'authorization_pending') {
+          console.log('Authorization pending, waiting for user...');
           return '';  // まだ認証待ち
         }
+        console.error('Token polling error:', data);
         throw new Error(data.error_description || data.error);
       }
 
@@ -121,6 +133,7 @@ export class GitHubDeviceAuthService {
         throw new Error('Invalid token response from GitHub');
       }
 
+      console.log('Token received successfully');
       this.accessToken = data.access_token;
       return data.access_token;
     } catch (error) {
@@ -141,7 +154,6 @@ export class GitHubDeviceAuthService {
       'X-GitHub-Api-Version': '2022-11-28'
     });
   }
-
   async getFile(owner: string, repo: string, path: string) {
     try {
       const response = await fetch(

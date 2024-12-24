@@ -23,7 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
-import { SyncDebugPanel } from "@/components/SyncDebugPanel";
+import SyncDebugPanel from "@/components/SyncDebugPanel";
 
 async function fetchAllEvents(): Promise<Event[]> {
   const response = await fetch("/api/events");
