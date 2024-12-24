@@ -37,11 +37,26 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Client"
+args = "Server"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Server"
+args = "Client"
+
+[[workflows.workflow]]
+name = "Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "NODE_ENV=development tsx watch --clear-screen=false server/index.ts"
+waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Client"
@@ -57,18 +72,3 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "cd client && npm run dev"
 waitForPort = 3001
-
-[[workflows.workflow]]
-name = "Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "DEBUG=* tsx server/index.ts"
-waitForPort = 5000

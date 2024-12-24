@@ -1,9 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { setupRoutes } from "./routes.js";
-import { setupVite, serveStatic } from "./vite.js";
+import { setupRoutes } from "./routes";
+import { setupVite, serveStatic } from "./vite";
 import { createServer } from "http";
-import { setupAuth } from "./auth.js";
-import { db } from "../db/index.js";
+import { setupAuth } from "./auth";
+import { db } from "../db";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
@@ -11,7 +11,7 @@ import { dirname } from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-function log(message: string, error?: any) {
+function log(message: string) {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
@@ -20,17 +20,12 @@ function log(message: string, error?: any) {
   });
 
   console.log(`${formattedTime} [express] ${message}`);
-  if (error) {
-    console.error(`${formattedTime} [express] Error:`, error);
-  }
 }
 
 async function startServer() {
   try {
     log("Starting server initialization...");
     const app = express();
-    const server = createServer(app);
-
     app.use(express.json());
     app.use(express.urlencoded({ extended: false }));
 
@@ -54,6 +49,7 @@ async function startServer() {
       if (!value) {
         log(`Missing ${varName}`);
       } else {
+        // Private keyの場合は長さのみログ出力
         if (varName === 'GITHUB_PRIVATE_KEY') {
           log(`${varName} is set (length: ${value.length})`);
         } else {
@@ -62,13 +58,21 @@ async function startServer() {
       }
     });
 
+    if (missingEnvVars.length > 0) {
+      log(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+      throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+    } else {
+      log("All GitHub authentication variables are configured correctly");
+    }
+
     // データベース接続テスト
     try {
       log("Testing database connection...");
       await db.execute('SELECT 1');
       log("Database connection successful");
     } catch (dbError) {
-      log("Database connection failed", dbError);
+      log("Database connection failed");
+      console.error("Database Error:", dbError);
       throw dbError;
     }
 
@@ -77,16 +81,50 @@ async function startServer() {
     setupAuth(app);
     log("Authentication setup complete");
 
+    // リクエストロギングミドルウェア
+    app.use((req, res, next) => {
+      const start = Date.now();
+      const path = req.path;
+      let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+      const originalResJson = res.json;
+      res.json = function (bodyJson, ...args) {
+        capturedJsonResponse = bodyJson;
+        return originalResJson.apply(res, [bodyJson, ...args]);
+      };
+
+      res.on("finish", () => {
+        const duration = Date.now() - start;
+        if (path.startsWith("/api")) {
+          let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+          if (capturedJsonResponse) {
+            logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+          }
+
+          if (logLine.length > 80) {
+            logLine = logLine.slice(0, 79) + "…";
+          }
+
+          log(logLine);
+        }
+      });
+
+      next();
+    });
+
     // APIルートを設定
     log("Setting up API routes...");
     setupRoutes(app);
     log("API routes setup complete");
 
+    const server = createServer(app);
+
     // エラーハンドリングミドルウェア
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      log("Server Error:", err);
+      console.error("Server Error:", err);
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
+      log(`Error: ${message}`);
       res.status(status).json({
         error: message,
         details: isDevelopment ? err.stack || "No stack trace available" : undefined,
@@ -106,24 +144,23 @@ async function startServer() {
     const PORT = process.env.PORT || 5000;
     const HOST = '0.0.0.0';
 
+    // サーバー起動
     return new Promise((resolve) => {
       server.listen(Number(PORT), HOST, () => {
         log(`Server started in ${process.env.NODE_ENV || 'development'} mode`);
-        log(`Listening on ${HOST}:${PORT}`);
+        log(`Listening on port ${PORT}`);
         resolve(server);
-      }).on('error', (error: any) => {
-        log(`Failed to start server on port ${PORT}`, error);
-        process.exit(1);
       });
     });
   } catch (error) {
-    log("Fatal Startup Error", error);
+    console.error("Server startup error:", error);
+    log(`Fatal Startup Error: ${error instanceof Error ? error.message : String(error)}`);
     throw error;
   }
 }
 
 // サーバー起動
 startServer().catch((error) => {
-  log("Failed to start server", error);
+  console.error("Failed to start server:", error);
   process.exit(1);
 });
