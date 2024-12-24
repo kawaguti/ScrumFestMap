@@ -117,6 +117,12 @@ export function setupRoutes(app: Express) {
         })
           .from(eventHistory)
           .innerJoin(events, eq(events.id, eventHistory.eventId))
+          .where(
+            sql`${eventHistory.modifiedAt} > COALESCE(
+              (SELECT MAX(modifiedAt) FROM ${eventHistory} WHERE syncedToGitHub = true),
+              '1970-01-01'
+            )`
+          )
           .orderBy(desc(eventHistory.modifiedAt))
           .limit(5)
       ]);
