@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Bug, AlertCircle, ExternalLink } from "lucide-react";
+import { Loader2, Bug, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface DebugLog {
@@ -19,60 +19,11 @@ interface DebugLog {
   details: any;
 }
 
-type AuthInstructionsProps = {
-  verificationUri: string;
-  userCode: string;
-};
-
-const AuthInstructions = React.memo(function AuthInstructions({ verificationUri, userCode }: AuthInstructionsProps) {
-  return (
-    <div className="bg-accent/20 p-4 rounded-lg space-y-4 my-4">
-      <h3 className="font-semibold">GitHub認証手順</h3>
-      <ol className="list-decimal list-inside space-y-2">
-        <li>
-          <a
-            href={verificationUri}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline inline-flex items-center"
-          >
-            GitHub Device認証ページを開く
-            <ExternalLink className="h-4 w-4 ml-1" />
-          </a>
-        </li>
-        <li>
-          表示されたページで以下のコードを入力:
-          <code className="mx-2 px-2 py-1 bg-muted rounded font-mono">
-            {userCode}
-          </code>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (navigator.clipboard) {
-                navigator.clipboard.writeText(userCode);
-              }
-            }}
-          >
-            コピー
-          </Button>
-        </li>
-        <li>GitHubアカウントで認証を完了してください</li>
-      </ol>
-      <p className="text-sm text-muted-foreground mt-4">
-        ※ この認証コードの有効期限は15分です
-      </p>
-    </div>
-  );
-});
-
 type LogEntryProps = {
   log: DebugLog;
 };
 
 const LogEntry = React.memo(function LogEntry({ log }: LogEntryProps) {
-  const isDeviceFlow = log.title === 'Device Flow started';
-
   return (
     <div
       className={`p-4 rounded-lg ${
@@ -90,16 +41,9 @@ const LogEntry = React.memo(function LogEntry({ log }: LogEntryProps) {
           {new Date(log.timestamp).toLocaleString('ja-JP')}
         </span>
       </div>
-      {isDeviceFlow && log.details?.verification_uri && log.details?.user_code ? (
-        <AuthInstructions
-          verificationUri={log.details.verification_uri}
-          userCode={log.details.user_code}
-        />
-      ) : (
-        <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-48">
-          {JSON.stringify(log.details, null, 2)}
-        </pre>
-      )}
+      <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-48">
+        {JSON.stringify(log.details, null, 2)}
+      </pre>
     </div>
   );
 });

@@ -40,7 +40,7 @@ async function startServer() {
     log("Database URL is configured");
 
     // GitHub認証設定の確認
-    const requiredEnvVars = ['GITHUB_APP_ID', 'GITHUB_PRIVATE_KEY', 'GITHUB_INSTALLATION_ID', 'GITHUB_CLIENT_ID']; // Added GITHUB_INSTALLATION_ID
+    const requiredEnvVars = ['GITHUB_APP_ID', 'GITHUB_PRIVATE_KEY', 'GITHUB_INSTALLATION_ID']; 
     const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
     if (missingEnvVars.length > 0) {
       log(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
