@@ -19,17 +19,12 @@ interface DebugLog {
   details: any;
 }
 
-interface AuthInstructionsProps {
-  verificationUri: string;
-  userCode: string;
-}
-
-function AuthInstructions({ verificationUri, userCode }: AuthInstructionsProps) {
-  const handleCopy = React.useCallback(() => {
+function AuthInstructions({ verificationUri, userCode }: { verificationUri: string; userCode: string }) {
+  const handleCopy = () => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(userCode);
     }
-  }, [userCode]);
+  };
 
   return (
     <div className="bg-accent/20 p-4 rounded-lg space-y-4 my-4">
@@ -68,19 +63,12 @@ function AuthInstructions({ verificationUri, userCode }: AuthInstructionsProps) 
   );
 }
 
-interface DebugContentProps {
-  logs: DebugLog[];
-  isLoading: boolean;
-  error: Error | null;
-  isSyncing: boolean;
-}
-
-function DebugContent({ 
-  logs, 
-  isLoading, 
-  error, 
-  isSyncing 
-}: DebugContentProps) {
+function DebugContent({ logs, isLoading, error, isSyncing }: { 
+  logs: DebugLog[]; 
+  isLoading: boolean; 
+  error: Error | null; 
+  isSyncing: boolean; 
+}) {
   if (isLoading || isSyncing) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -111,7 +99,6 @@ function DebugContent({
       <div className="space-y-4">
         {logs.map((log, index) => {
           const isDeviceFlow = log.title === 'Device Flow started';
-
           return (
             <div
               key={`${log.timestamp}-${index}`}
@@ -239,10 +226,10 @@ export default function SyncDebugPanel() {
         </DialogHeader>
         <div className="flex-1 overflow-hidden">
           <DebugContent 
-            logs={logs}
-            isLoading={isLoading}
-            error={error}
-            isSyncing={syncMutation.isPending}
+            logs={logs} 
+            isLoading={isLoading} 
+            error={error} 
+            isSyncing={syncMutation.isPending} 
           />
         </div>
       </DialogContent>
