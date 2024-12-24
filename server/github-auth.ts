@@ -1,6 +1,7 @@
 
 import { createAppAuth } from '@octokit/auth-app';
 import { Octokit } from '@octokit/rest';
+import jwt from 'jsonwebtoken';
 
 interface GitHubUpdateResponse {
   commit: {
@@ -17,6 +18,19 @@ export class GitHubAppService {
     this.appId = appId;
     this.privateKey = privateKey;
     this.installationId = installationId;
+  }
+
+  private generateJWT(): string {
+    const now = Math.floor(Date.now() / 1000);
+    return jwt.sign(
+      {
+        iat: now - 60,
+        exp: now + (10 * 60),
+        iss: this.appId
+      },
+      this.privateKey,
+      { algorithm: 'RS256' }
+    );
   }
 
   private async getOctokit(): Promise<Octokit> {
