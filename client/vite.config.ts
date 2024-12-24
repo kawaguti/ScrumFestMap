@@ -10,13 +10,13 @@ export default defineConfig({
     port: 3001,
     strictPort: true,
     hmr: {
-      timeout: 5000,
       clientPort: 443
     }
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
+      '@': path.resolve(__dirname, './src'),
+      '@db': path.resolve(__dirname, '../db')
     }
   }
 })
