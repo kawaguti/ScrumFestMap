@@ -211,10 +211,10 @@ function generateMarkdown(events: Event[]): string {
       markdown += formattedParagraphs.join('\n\n') + '\n';
     }
 
+    // Webサイトと録画一覧を出力
     if (event.website) {
       markdown += `\n- Webサイト: ${event.website}\n`;
     }
-
     if (event.youtubePlaylist && event.youtubePlaylist.trim() !== "") {
       markdown += `- 録画一覧: ${event.youtubePlaylist}\n`;
     }
