@@ -21,21 +21,21 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/admin">
         {() => (
-          <React.Suspense fallback={<div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
+          <React.Suspense fallback={<LoadingSpinner />}>
             <AdminPage />
           </React.Suspense>
         )}
       </Route>
       <Route path="/my-events">
         {() => (
-          <React.Suspense fallback={<div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
+          <React.Suspense fallback={<LoadingSpinner />}>
             <MyEventsPage />
           </React.Suspense>
         )}
       </Route>
       <Route path="/events/:eventId/history">
         {() => (
-          <React.Suspense fallback={<div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
+          <React.Suspense fallback={<LoadingSpinner />}>
             <EventHistoryPage />
           </React.Suspense>
         )}
@@ -45,13 +45,29 @@ function Router() {
   );
 }
 
+// Extract loading spinner to avoid repetition
+function LoadingSpinner() {
+  return (
+    <div className="flex justify-center p-4">
+      <Loader2 className="h-6 w-6 animate-spin" />
+    </div>
+  );
+}
+
 function App() {
   return (
+    <QueryClientProvider client={queryClient}>
+      <Router />
+      <Toaster />
+    </QueryClientProvider>
+  );
+}
+
+// Wrap the entire app with StrictMode
+function Root() {
+  return (
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <Router />
-        <Toaster />
-      </QueryClientProvider>
+      <App />
     </StrictMode>
   );
 }
@@ -60,4 +76,4 @@ const container = document.getElementById("root");
 if (!container) throw new Error('Failed to find the root element');
 
 const root = createRoot(container);
-root.render(<App />);
+root.render(<Root />);
