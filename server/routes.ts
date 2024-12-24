@@ -46,7 +46,6 @@ interface GitHubUpdateResponse {
   };
 }
 
-// Device Flow認証のポーリングを制限するための定数
 const MAX_POLLING_ATTEMPTS = 24; // 2分間（5秒 × 24回）
 const POLLING_INTERVAL = 5000; // 5秒
 
@@ -67,9 +66,10 @@ class GitHubFileUpdater {
       this.deviceFlow = deviceFlow;
 
       if (deviceFlow) {
-        this.deviceAuthService = new GitHubDeviceAuthService({
-          client_id: process.env.GITHUB_CLIENT_ID || ''
-        });
+        if (!process.env.GITHUB_CLIENT_ID) {
+          throw new Error('GITHUB_CLIENT_ID is not set');
+        }
+        this.deviceAuthService = new GitHubDeviceAuthService(process.env.GITHUB_CLIENT_ID);
       }
 
       addSyncDebugLog('info', 'GitHubFileUpdater initialized', {
@@ -252,13 +252,12 @@ class GitHubFileUpdater {
     try {
       addSyncDebugLog('info', 'Starting file update', { url });
 
-      // Device Flow認証が有効な場合は、認証フローを開始
       if (this.deviceFlow && this.deviceAuthService) {
         const deviceFlow = await this.deviceAuthService.startDeviceFlow();
         addSyncDebugLog('info', 'Device Flow started', {
-          verificationUri: deviceFlow.verificationUri,
-          userCode: deviceFlow.userCode,
-          expiresIn: deviceFlow.expiresIn
+          verificationUri: deviceFlow.verification_uri,
+          userCode: deviceFlow.user_code,
+          expiresIn: deviceFlow.expires_in
         });
 
         try {
@@ -279,10 +278,10 @@ class GitHubFileUpdater {
             ? this.deviceAuthService.getHeaders()
             : this.getHeaders()
         }),
-        new Promise((_, reject) =>
+        new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('ファイル取得がタイムアウトしました')), 30000)
         )
-      ]) as Response;
+      ]);
 
       if (!fileResponse.ok) {
         const errorText = await fileResponse.text();
@@ -290,7 +289,7 @@ class GitHubFileUpdater {
           status: fileResponse.status,
           statusText: fileResponse.statusText,
           errorText,
-          headers: Object.fromEntries(fileResponse.headers.entries())
+          headers: Object.fromEntries(fileResponse.headers)
         });
         throw new Error(`ファイル取得エラー (${fileResponse.status}): ${errorText}`);
       }
@@ -314,10 +313,10 @@ class GitHubFileUpdater {
             sha: fileData.sha
           })
         }),
-        new Promise((_, reject) =>
+        new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('ファイル更新がタイムアウトしました')), 30000)
         )
-      ]) as Response;
+      ]);
 
       if (!updateResponse.ok) {
         const errorText = await updateResponse.text();
@@ -325,7 +324,7 @@ class GitHubFileUpdater {
           status: updateResponse.status,
           statusText: updateResponse.statusText,
           errorText,
-          headers: Object.fromEntries(updateResponse.headers.entries())
+          headers: Object.fromEntries(updateResponse.headers)
         });
         throw new Error(`ファイル更新エラー (${updateResponse.status}): ${errorText}`);
       }

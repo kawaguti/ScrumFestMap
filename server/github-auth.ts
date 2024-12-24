@@ -1,15 +1,28 @@
 import jwt from 'jsonwebtoken';
 
-interface DeviceFlowAuth {
-  client_id: string;
-  device_code?: string;
+interface DeviceFlowStartResponse {
+  device_code: string;
+  user_code: string;
+  verification_uri: string;
+  expires_in: number;
+}
+
+interface DeviceFlowTokenResponse {
   access_token?: string;
+  error?: string;
+  error_description?: string;
 }
 
 export class GitHubDeviceAuthService {
-  constructor(private config: DeviceFlowAuth) {}
+  private readonly clientId: string;
+  private deviceCode?: string;
+  private accessToken?: string;
 
-  async startDeviceFlow() {
+  constructor(clientId: string) {
+    this.clientId = clientId;
+  }
+
+  async startDeviceFlow(): Promise<DeviceFlowStartResponse> {
     const response = await fetch('https://github.com/login/device/code', {
       method: 'POST',
       headers: {
@@ -17,27 +30,28 @@ export class GitHubDeviceAuthService {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        client_id: this.config.client_id,
-        scope: 'repo' // Single fileアクセス用
+        client_id: this.clientId,
+        scope: 'repo'  // Single fileアクセス用
       })
     });
 
     if (!response.ok) {
-      throw new Error('Failed to start device flow');
+      throw new Error(`Device flow start failed: ${await response.text()}`);
     }
 
     const data = await response.json();
-    this.config.device_code = data.device_code;
+    this.deviceCode = data.device_code;
 
     return {
-      userCode: data.user_code,
-      verificationUri: data.verification_uri,
-      expiresIn: data.expires_in
+      device_code: data.device_code,
+      user_code: data.user_code,
+      verification_uri: data.verification_uri,
+      expires_in: data.expires_in
     };
   }
 
   async pollForToken(): Promise<string> {
-    if (!this.config.device_code) {
+    if (!this.deviceCode) {
       throw new Error('Device flow not initiated');
     }
 
@@ -48,41 +62,45 @@ export class GitHubDeviceAuthService {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        client_id: this.config.client_id,
-        device_code: this.config.device_code,
+        client_id: this.clientId,
+        device_code: this.deviceCode,
         grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
       })
     });
 
     if (!response.ok) {
-      throw new Error('Token polling failed');
+      throw new Error(`Token polling failed: ${await response.text()}`);
     }
 
-    const data = await response.json();
+    const data: DeviceFlowTokenResponse = await response.json();
+
     if (data.error) {
       if (data.error === 'authorization_pending') {
-        return ''; // まだ認証待ち
+        return '';  // まだ認証待ち
       }
-      throw new Error(data.error);
+      throw new Error(data.error_description || data.error);
     }
 
-    this.config.access_token = data.access_token;
+    if (!data.access_token) {
+      throw new Error('No access token in response');
+    }
+
+    this.accessToken = data.access_token;
     return data.access_token;
   }
 
   getHeaders(): Headers {
-    if (!this.config.access_token) {
+    if (!this.accessToken) {
       throw new Error('No access token available');
     }
 
     return new Headers({
       'Accept': 'application/vnd.github.v3+json',
-      'Authorization': `token ${this.config.access_token}`,
+      'Authorization': `Bearer ${this.accessToken}`,
       'User-Agent': 'ScrumFestMap-GitHub-App',
       'X-GitHub-Api-Version': '2022-11-28'
     });
   }
-
   async getFile(owner: string, repo: string, path: string) {
     const response = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,

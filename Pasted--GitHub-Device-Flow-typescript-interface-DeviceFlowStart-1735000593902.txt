@@ -1,0 +1,88 @@
+はい、GitHubのDevice Flowのレスポンスをパースする必要があります。正しい実装方法をお示しします：
+
+```typescript
+interface DeviceFlowStartResponse {
+  device_code: string;
+  user_code: string;
+  verification_uri: string;
+  expires_in: number;
+}
+
+class GitHubDeviceAuthService {
+  private readonly clientId: string;
+
+  constructor(clientId: string) {
+    this.clientId = clientId;
+  }
+
+  async startDeviceFlow(): Promise<DeviceFlowStartResponse> {
+    const response = await fetch('https://github.com/login/device/code', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',  // JSONレスポンスを要求
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        client_id: this.clientId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Device flow start failed: ${await response.text()}`);
+    }
+
+    // JSONとしてパース
+    const data = await response.json();
+    return {
+      device_code: data.device_code,
+      user_code: data.user_code,
+      verification_uri: data.verification_uri,
+      expires_in: data.expires_in
+    };
+  }
+
+  async pollForToken(deviceCode: string): Promise<string> {
+    const response = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',  // JSONレスポンスを要求
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        client_id: this.clientId,
+        device_code: deviceCode,
+        grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Token polling failed: ${await response.text()}`);
+    }
+
+    const data = await response.json();
+    return data.access_token;
+  }
+}
+```
+
+重要なポイント：
+1. `Accept: 'application/json'` ヘッダーを必ず指定して、JSONレスポンスを要求する
+2. レスポンスは `response.json()` でパースする
+3. HTMLが返ってきた場合は、APIエンドポイントが間違っている可能性がある
+
+使用例：
+```typescript
+const auth = new GitHubDeviceAuthService('Iv23lil36t8Vv89KPoBy');
+
+try {
+  const deviceFlow = await auth.startDeviceFlow();
+  console.log('User Code:', deviceFlow.user_code);
+  console.log('Verification URI:', deviceFlow.verification_uri);
+  
+  // ポーリング処理
+  const token = await auth.pollForToken(deviceFlow.device_code);
+  console.log('Access Token:', token);
+} catch (error) {
+  console.error('Auth Error:', error);
+}
+```

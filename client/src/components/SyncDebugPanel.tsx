@@ -1,5 +1,4 @@
-import * as React from "react";
-import { memo, useCallback } from "react";
+import { useState, memo, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -149,12 +148,21 @@ const DebugContent = memo(function DebugContent({
 });
 
 export function SyncDebugPanel() {
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: logs = [], isLoading, error } = useQuery<DebugLog[]>({
+  const { data: logs = [], isLoading, error } = useQuery<DebugLog[], Error>({
     queryKey: ['/api/admin/sync-debug-logs'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/sync-debug-logs', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch debug logs');
+      }
+      return response.json();
+    },
     enabled: isOpen,
   });
 
@@ -223,7 +231,7 @@ export function SyncDebugPanel() {
           <DebugContent 
             logs={logs}
             isLoading={isLoading}
-            error={error as Error | null}
+            error={error}
             isSyncing={syncMutation.isPending}
           />
         </div>
