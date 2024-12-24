@@ -46,6 +46,10 @@ interface GitHubUpdateResponse {
   };
 }
 
+// Device Flow認証のポーリングを制限するための定数
+const MAX_POLLING_ATTEMPTS = 24; // 2分間（5秒 × 24回）
+const POLLING_INTERVAL = 5000; // 5秒
+
 class GitHubFileUpdater {
   private readonly appId: string;
   private readonly privateKey: string;
@@ -212,6 +216,35 @@ class GitHubFileUpdater {
     return headers;
   }
 
+  private async pollForToken(): Promise<string> {
+    if (!this.deviceAuthService) {
+      throw new Error('Device Flow service not initialized');
+    }
+
+    let attempts = 0;
+    while (attempts < MAX_POLLING_ATTEMPTS) {
+      try {
+        const token = await this.deviceAuthService.pollForToken();
+        if (token) {
+          return token;
+        }
+
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL));
+      } catch (error) {
+        if (error instanceof Error && error.message === 'authorization_pending') {
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL));
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new Error('Device Flow認証がタイムアウトしました。もう一度お試しください。');
+  }
+
+
   public async updateAllEventsFile(newContent: string): Promise<GitHubUpdateResponse> {
     const filePath = 'all-events.md';
     const url = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${filePath}`;
@@ -228,24 +261,28 @@ class GitHubFileUpdater {
           expiresIn: deviceFlow.expiresIn
         });
 
-        // トークンを取得するまでポーリング
-        let token = '';
-        while (!token) {
-          await new Promise(resolve => setTimeout(resolve, 5000)); // 5秒待機
-          token = await this.deviceAuthService.pollForToken();
+        try {
+          const token = await this.pollForToken();
+          addSyncDebugLog('info', 'Device Flow authentication successful', {
+            tokenLength: token.length
+          });
+        } catch (error) {
+          addSyncDebugLog('error', 'Device Flow authentication failed', { error });
+          throw new Error(`認証に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
         }
-
-        addSyncDebugLog('info', 'Device Flow authentication successful', {
-          tokenLength: token.length
-        });
       }
 
-      // Get current file
-      const fileResponse = await fetch(url, {
-        headers: this.deviceFlow && this.deviceAuthService
-          ? this.deviceAuthService.getHeaders()
-          : this.getHeaders()
-      });
+      // Get current file with timeout
+      const fileResponse = await Promise.race([
+        fetch(url, {
+          headers: this.deviceFlow && this.deviceAuthService
+            ? this.deviceAuthService.getHeaders()
+            : this.getHeaders()
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('ファイル取得がタイムアウトしました')), 30000)
+        )
+      ]) as Response;
 
       if (!fileResponse.ok) {
         const errorText = await fileResponse.text();
@@ -264,18 +301,23 @@ class GitHubFileUpdater {
         contentLength: fileData.content?.length
       });
 
-      // Update file
-      const updateResponse = await fetch(url, {
-        method: 'PUT',
-        headers: this.deviceFlow && this.deviceAuthService
-          ? this.deviceAuthService.getHeaders()
-          : this.getHeaders(),
-        body: JSON.stringify({
-          message: 'Update all-events.md',
-          content: Buffer.from(newContent).toString('base64'),
-          sha: fileData.sha
-        })
-      });
+      // Update file with timeout
+      const updateResponse = await Promise.race([
+        fetch(url, {
+          method: 'PUT',
+          headers: this.deviceFlow && this.deviceAuthService
+            ? this.deviceAuthService.getHeaders()
+            : this.getHeaders(),
+          body: JSON.stringify({
+            message: 'Update all-events.md',
+            content: Buffer.from(newContent).toString('base64'),
+            sha: fileData.sha
+          })
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('ファイル更新がタイムアウトしました')), 30000)
+        )
+      ]) as Response;
 
       if (!updateResponse.ok) {
         const errorText = await updateResponse.text();
