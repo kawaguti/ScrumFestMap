@@ -7,6 +7,11 @@ interface GitHubUpdateResponse {
   }
 }
 
+interface GitHubFileContent {
+  content: string;
+  sha: string;
+}
+
 export class GitHubAppService {
   private readonly appId: string | undefined;
   private readonly privateKey: string | undefined;
@@ -18,7 +23,6 @@ export class GitHubAppService {
     this.privateKey = privateKey ? this.normalizePrivateKey(privateKey) : undefined;
     this.installationId = installationId;
 
-    // 初期化時の設定値をログ出力（秘密鍵は長さのみ）
     console.log(`App ID: ${this.appId ? 'Set' : 'Not set'}`);
     console.log(`Private Key: ${this.privateKey ? `Set (length: ${this.privateKey.length})` : 'Not set'}`);
     console.log(`Installation ID: ${this.installationId ? 'Set' : 'Not set'}`);
@@ -74,22 +78,13 @@ export class GitHubAppService {
     }
   }
 
-  async updateAllEventsFile(
-    newContent: string,
+  private async getCurrentFileContent(
+    octokit: Octokit,
     owner: string,
     repo: string,
     path: string
-  ): Promise<GitHubUpdateResponse> {
-    const config = this.validateConfig();
-    if (!config.isValid) {
-      throw new Error(config.message);
-    }
-
+  ): Promise<GitHubFileContent | null> {
     try {
-      const octokit = await this.getOctokit();
-      console.log('Octokit initialized successfully');
-
-      // Get current file to get its SHA
       const { data: currentFile } = await octokit.repos.getContent({
         owner,
         repo,
@@ -100,29 +95,112 @@ export class GitHubAppService {
         throw new Error('Unexpected response: path points to a directory');
       }
 
-      if (!('sha' in currentFile)) {
-        throw new Error('File SHA not found in response');
+      if (!('sha' in currentFile) || !('content' in currentFile)) {
+        throw new Error('Invalid file response format');
       }
 
-      console.log('Current file fetched successfully');
-
-      // Update file
-      const { data } = await octokit.repos.createOrUpdateFileContents({
-        owner,
-        repo,
-        path,
-        message: 'Update all-events.md',
-        content: Buffer.from(newContent).toString('base64'),
-        sha: currentFile.sha,
-      });
-
-      console.log('File updated successfully');
-
-      if (!data.commit?.sha) {
-        throw new Error('Commit SHA not found in response');
+      return {
+        content: Buffer.from(currentFile.content, 'base64').toString('utf-8'),
+        sha: currentFile.sha
+      };
+    } catch (error: any) {
+      if (error.status === 404) {
+        return null;
       }
+      throw error;
+    }
+  }
 
-      return { commit: { sha: data.commit.sha } };
+  private detectChangedEvents(currentContent: string, newContent: string): string[] {
+    const currentEvents = this.extractEventNames(currentContent);
+    const newEvents = this.extractEventNames(newContent);
+
+    const changes: string[] = [];
+
+    // 新規追加または変更されたイベントを検出
+    newEvents.forEach(event => {
+      if (!currentEvents.includes(event)) {
+        changes.push(`追加/更新: ${event}`);
+      }
+    });
+
+    // 削除されたイベントを検出
+    currentEvents.forEach(event => {
+      if (!newEvents.includes(event)) {
+        changes.push(`削除: ${event}`);
+      }
+    });
+
+    return changes;
+  }
+
+  private extractEventNames(content: string): string[] {
+    const eventPattern = /^## (.+?)$/gm;
+    const matches = content.match(eventPattern) || [];
+    return matches.map(match => match.replace('## ', '').trim());
+  }
+
+  async updateAllEventsFile(
+    newContent: string,
+    owner: string,
+    repo: string,
+    path: string
+  ): Promise<GitHubUpdateResponse | null> {
+    const config = this.validateConfig();
+    if (!config.isValid) {
+      throw new Error(config.message);
+    }
+
+    try {
+      const octokit = await this.getOctokit();
+      console.log('Octokit initialized successfully');
+
+      const currentFile = await this.getCurrentFileContent(octokit, owner, repo, path);
+
+      if (currentFile) {
+        const changes = this.detectChangedEvents(currentFile.content, newContent);
+
+        if (changes.length === 0) {
+          console.log('No changes detected in events, skipping GitHub update');
+          return null;
+        }
+
+        const commitMessage = `イベント情報を更新:\n${changes.join('\n')}`;
+        console.log(`Updating file with changes:\n${commitMessage}`);
+
+        const { data } = await octokit.repos.createOrUpdateFileContents({
+          owner,
+          repo,
+          path,
+          message: commitMessage,
+          content: Buffer.from(newContent).toString('base64'),
+          sha: currentFile.sha,
+        });
+
+        console.log('File updated successfully');
+
+        if (!data.commit?.sha) {
+          throw new Error('Commit SHA not found in response');
+        }
+
+        return { commit: { sha: data.commit.sha } };
+      } else {
+        // ファイルが存在しない場合は新規作成
+        console.log('File does not exist, creating new file');
+        const { data } = await octokit.repos.createOrUpdateFileContents({
+          owner,
+          repo,
+          path,
+          message: '初回: イベント一覧を作成',
+          content: Buffer.from(newContent).toString('base64'),
+        });
+
+        if (!data.commit?.sha) {
+          throw new Error('Commit SHA not found in response');
+        }
+
+        return { commit: { sha: data.commit.sha } };
+      }
     } catch (error) {
       console.error('File update failed:', error);
       throw error;
