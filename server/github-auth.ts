@@ -13,12 +13,22 @@ export class GitHubAppService {
   private readonly installationId: string;
 
   constructor(appId: string | undefined, privateKey: string | undefined, installationId: string | undefined) {
+    // Validate all required parameters at construction time
     if (!appId || !privateKey || !installationId) {
       throw new Error('Required GitHub authentication parameters are missing');
     }
-    this.appId = appId as string;
-    this.privateKey = privateKey as string;
-    this.installationId = installationId as string;
+
+    this.appId = appId;
+    this.privateKey = this.normalizePrivateKey(privateKey);
+    this.installationId = installationId;
+  }
+
+  private normalizePrivateKey(key: string): string {
+    // Ensure the private key is properly formatted with newlines
+    if (!key.includes('-----BEGIN RSA PRIVATE KEY-----')) {
+      return `-----BEGIN RSA PRIVATE KEY-----\n${key}\n-----END RSA PRIVATE KEY-----`;
+    }
+    return key;
   }
 
   private async getOctokit(): Promise<Octokit> {
@@ -37,7 +47,12 @@ export class GitHubAppService {
     }
   }
 
-  async updateAllEventsFile(newContent: string, owner: string, repo: string, path: string): Promise<GitHubUpdateResponse> {
+  async updateAllEventsFile(
+    newContent: string,
+    owner: string,
+    repo: string,
+    path: string
+  ): Promise<GitHubUpdateResponse> {
     try {
       const octokit = await this.getOctokit();
       console.log('Octokit initialized successfully');
@@ -53,6 +68,10 @@ export class GitHubAppService {
         throw new Error('Unexpected response: path points to a directory');
       }
 
+      if (!('sha' in currentFile)) {
+        throw new Error('File SHA not found in response');
+      }
+
       console.log('Current file fetched successfully');
 
       // Update file
@@ -66,6 +85,11 @@ export class GitHubAppService {
       });
 
       console.log('File updated successfully');
+
+      if (!data.commit?.sha) {
+        throw new Error('Commit SHA not found in response');
+      }
+
       return { commit: { sha: data.commit.sha } };
     } catch (error) {
       console.error('File update failed:', error);
