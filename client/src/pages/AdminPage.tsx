@@ -25,7 +25,6 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 
-// SyncDebugPanelコンポーネントを動的インポートに変更
 const SyncDebugPanel = React.lazy(() => import("@/components/SyncDebugPanel"));
 
 async function fetchAllUsers(): Promise<User[]> {
@@ -178,7 +177,7 @@ export default function AdminPage() {
       <header className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">管理者ダッシュボード</h1>
         <div className="flex items-center gap-4">
-          <Suspense fallback={<Loader2 className="h-4 w-4 animate-spin" />}>
+          <Suspense fallback={<div className="flex items-center"><Loader2 className="h-4 w-4 animate-spin" /></div>}>
             <SyncDebugPanel />
           </Suspense>
           <Button variant="outline" onClick={() => setLocation("/")}>

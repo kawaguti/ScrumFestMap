@@ -39,6 +39,16 @@ async function startServer() {
     }
     log("Database URL is configured");
 
+    // GitHub認証設定の確認
+    const requiredEnvVars = ['GITHUB_APP_ID', 'GITHUB_PRIVATE_KEY', 'GITHUB_CLIENT_ID'];
+    const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+    if (missingEnvVars.length > 0) {
+      log(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+      throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`); //Added to stop execution if missing env vars
+    } else {
+      log("GitHub authentication variables are configured");
+    }
+
     // データベース接続テスト
     try {
       log("Testing database connection...");
@@ -123,10 +133,6 @@ async function startServer() {
       server.listen(Number(PORT), HOST, () => {
         log(`Server started in ${process.env.NODE_ENV || 'development'} mode`);
         log(`Listening on port ${PORT}`);
-        if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-          const replitUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
-          log(`Replit production URL: ${replitUrl}`);
-        }
         resolve(server);
       });
     });

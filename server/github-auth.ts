@@ -23,6 +23,7 @@ export class GitHubDeviceAuthService {
   private readonly clientId: string;
   private deviceCode?: string;
   private accessToken?: string;
+  private readonly pollingInterval = 5000; // 5秒ごとにポーリング
 
   constructor(clientId: string) {
     if (!clientId) {
@@ -142,6 +143,40 @@ export class GitHubDeviceAuthService {
     }
   }
 
+  async waitForAuthentication(): Promise<string> {
+    if (!this.deviceCode) {
+      throw new Error('Device flow not initiated');
+    }
+
+    let attempts = 0;
+    const maxAttempts = 24; // 2分間（5秒 × 24回）
+
+    while (attempts < maxAttempts) {
+      try {
+        console.log(`Polling attempt ${attempts + 1}/${maxAttempts}`);
+        const token = await this.pollForToken();
+
+        if (token) {
+          return token;
+        }
+
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, this.pollingInterval));
+      } catch (error) {
+        if (error instanceof Error && 
+            (error.message.includes('authorization_pending') || 
+             error.message.includes('slow_down'))) {
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, this.pollingInterval));
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new Error('Authentication timed out');
+  }
+
   getHeaders(): Headers {
     if (!this.accessToken) {
       throw new Error('No access token available');
@@ -162,9 +197,6 @@ export class GitHubDeviceAuthService {
           headers: this.getHeaders()
         }
       );
-
-      console.log('File request headers:', Object.fromEntries(this.getHeaders()));
-      console.log('File response status:', response.status);
 
       if (!response.ok) {
         const text = await response.text();

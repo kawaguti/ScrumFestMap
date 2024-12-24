@@ -1,4 +1,4 @@
-import { useState, FC } from "react";
+import React, { useState, FC } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,10 +19,12 @@ interface DebugLog {
   details: any;
 }
 
-const AuthInstructions: FC<{ 
+interface AuthInstructionsProps {
   verificationUri: string;
   userCode: string;
-}> = ({ verificationUri, userCode }) => {
+}
+
+const AuthInstructions: React.FC<AuthInstructionsProps> = ({ verificationUri, userCode }) => {
   return (
     <div className="bg-accent/20 p-4 rounded-lg space-y-4 my-4">
       <h3 className="font-semibold">GitHub認証手順</h3>
@@ -46,9 +48,7 @@ const AuthInstructions: FC<{
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              navigator.clipboard.writeText(userCode);
-            }}
+            onClick={() => navigator.clipboard.writeText(userCode)}
           >
             コピー
           </Button>
@@ -62,12 +62,14 @@ const AuthInstructions: FC<{
   );
 };
 
-const DebugContent: FC<{ 
+interface DebugContentProps {
   logs: DebugLog[];
   isLoading: boolean;
   error: Error | null;
   isSyncing: boolean;
-}> = ({
+}
+
+const DebugContent: React.FC<DebugContentProps> = ({
   logs,
   isLoading,
   error,
@@ -145,8 +147,8 @@ const DebugContent: FC<{
   );
 };
 
-const SyncDebugPanel = () => {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+function SyncDebugPanel() {
+  const [isOpen, setIsOpen] = React.useState<boolean>(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -241,6 +243,6 @@ const SyncDebugPanel = () => {
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default SyncDebugPanel;

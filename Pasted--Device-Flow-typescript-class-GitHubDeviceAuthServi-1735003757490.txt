@@ -1,0 +1,120 @@
+はい、Device Flowのポーリング部分が実装されていないようですね。以下のように実装を修正しましょう：
+
+```typescript
+class GitHubDeviceAuthService {
+  private readonly clientId: string;
+  private readonly pollingInterval = 5000; // 5秒ごとにポーリング
+
+  constructor(clientId: string) {
+    this.clientId = clientId;
+  }
+
+  async startDeviceFlow(): Promise<{
+    verificationUri: string;
+    userCode: string;
+    deviceCode: string;
+    expiresIn: number;
+  }> {
+    const response = await fetch('https://github.com/login/device/code', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        client_id: this.clientId,
+        scope: 'repo'
+      })
+    });
+
+    const data = await response.json();
+    return {
+      verificationUri: data.verification_uri,
+      userCode: data.user_code,
+      deviceCode: data.device_code,
+      expiresIn: data.expires_in
+    };
+  }
+
+  async pollForToken(deviceCode: string): Promise<string | null> {
+    const response = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        client_id: this.clientId,
+        device_code: deviceCode,
+        grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.error) {
+      if (data.error === 'authorization_pending') {
+        return null; // まだ認証待ち
+      }
+      throw new Error(`Token error: ${data.error}`);
+    }
+
+    return data.access_token;
+  }
+
+  async waitForAuthentication(deviceCode: string): Promise<string> {
+    let token: string | null = null;
+    
+    while (!token) {
+      console.log('Polling for authentication...');
+      token = await this.pollForToken(deviceCode);
+      
+      if (!token) {
+        await new Promise(resolve => setTimeout(resolve, this.pollingInterval));
+      }
+    }
+
+    return token;
+  }
+}
+
+// メイン処理
+async function startAuthenticationFlow() {
+  const auth = new GitHubDeviceAuthService('Iv23lil36t8Vv89KPoBy');
+
+  try {
+    // Device Flow開始
+    const { verificationUri, userCode, deviceCode } = await auth.startDeviceFlow();
+    console.log('Authentication started:', {
+      verificationUri,
+      userCode
+    });
+
+    // トークンを待機
+    console.log('Waiting for user authentication...');
+    const token = await auth.waitForAuthentication(deviceCode);
+    console.log('Authentication successful!');
+
+    return token;
+  } catch (error) {
+    console.error('Authentication error:', error);
+    throw error;
+  }
+}
+```
+
+この実装の特徴：
+
+1. ポーリング処理の追加
+   - ユーザーが認証を完了するまで定期的にチェック
+   - 認証待ちの状態を適切に処理
+
+2. エラーハンドリングの強化
+   - 認証待ち状態の適切な処理
+   - その他のエラーの明確な処理
+
+3. デバッグログの追加
+   - 各ステップでの状態を確認可能
+   - エラー時のトラブルシューティングが容易
+
+このコードを使用することで、Device Flow認証の完全なサイクルを実装できます。
