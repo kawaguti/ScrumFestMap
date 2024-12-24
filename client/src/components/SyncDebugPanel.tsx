@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, FC, PropsWithChildren } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,10 +19,10 @@ interface DebugLog {
   details: any;
 }
 
-function AuthInstructions({ verificationUri, userCode }: { 
+const AuthInstructions: FC<{ 
   verificationUri: string;
   userCode: string;
-}) {
+}> = ({ verificationUri, userCode }) => {
   return (
     <div className="bg-accent/20 p-4 rounded-lg space-y-4 my-4">
       <h3 className="font-semibold">GitHub認証手順</h3>
@@ -64,19 +64,19 @@ function AuthInstructions({ verificationUri, userCode }: {
       </p>
     </div>
   );
-}
+};
 
-function DebugContent({ 
-  logs, 
-  isLoading, 
-  error,
-  isSyncing,
-}: {
+const DebugContent: FC<{ 
   logs: DebugLog[];
   isLoading: boolean;
   error: Error | null;
   isSyncing: boolean;
-}) {
+}> = ({
+  logs,
+  isLoading,
+  error,
+  isSyncing,
+}) => {
   if (isLoading || isSyncing) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -147,10 +147,9 @@ function DebugContent({
       </div>
     </ScrollArea>
   );
-}
+};
 
-export default function SyncDebugPanel() {
-  // 明示的な型付けとデフォルト値の設定
+const SyncDebugPanel: FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -179,6 +178,7 @@ export default function SyncDebugPanel() {
     },
     enabled: isOpen,
     refetchInterval: isOpen ? 1000 : false,
+    refetchOnWindowFocus: true,
   });
 
   const syncMutation = useMutation({
@@ -251,4 +251,6 @@ export default function SyncDebugPanel() {
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export default SyncDebugPanel;

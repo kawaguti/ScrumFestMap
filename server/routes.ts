@@ -29,6 +29,17 @@ function addSyncDebugLog(type: 'info' | 'error', title: string, details: any) {
   });
 }
 
+// 管理者権限チェックミドルウェア
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated() || !req.user?.isAdmin) {
+    return res.status(403).json({ 
+      error: "管理者権限が必要です",
+      status: 403
+    });
+  }
+  next();
+}
+
 interface GitHubFileResponse {
   sha: string;
   content: string;
@@ -366,14 +377,9 @@ function generateMarkdown(events: Event[]): string {
   return markdown;
 }
 
-function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.isAuthenticated() || !req.user?.isAdmin) {
-    return res.status(403).json({ error: "管理者権限が必要です" });
-  }
-  next();
-}
 
 export function setupRoutes(app: Express) {
+  // APIルートの設定
   app.get("/api/events", async (req, res) => {
     try {
       console.log("Fetching events from database...");
@@ -383,28 +389,36 @@ export function setupRoutes(app: Express) {
         .where(eq(events.isArchived, false))
         .orderBy(desc(events.date));
 
-      console.log(`Found ${allEvents.length} events`);
+      // 明示的にContent-Typeを設定
+      res.setHeader('Content-Type', 'application/json');
       res.json(allEvents);
     } catch (error) {
       console.error("Error fetching events:", error);
       res.status(500).json({
         error: "イベントの取得に失敗しました",
-        details: error instanceof Error ? error.message : "不明なエラー"
+        details: error instanceof Error ? error.message : "不明なエラー",
+        status: 500
       });
     }
   });
 
   // デバッグログを取得するエンドポイント
   app.get("/api/admin/sync-debug-logs", requireAdmin, (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
     res.json(syncDebugLogs);
   });
 
   // デバッグログをクリアするエンドポイント
   app.post("/api/admin/clear-sync-debug-logs", requireAdmin, (req, res) => {
     clearSyncDebugLogs();
-    res.json({ message: "デバッグログをクリアしました" });
+    res.setHeader('Content-Type', 'application/json');
+    res.json({ 
+      message: "デバッグログをクリアしました",
+      status: 200 
+    });
   });
 
+  // GitHub同期エンドポイント
   app.post("/api/admin/sync-github", requireAdmin, async (req, res) => {
     clearSyncDebugLogs();
     addSyncDebugLog('info', 'Starting GitHub sync process', {});
@@ -412,63 +426,52 @@ export function setupRoutes(app: Express) {
     try {
       const githubAppId = process.env.GITHUB_APP_ID;
       const githubPrivateKey = process.env.GITHUB_PRIVATE_KEY;
+      const githubClientId = process.env.GITHUB_CLIENT_ID;
 
-      if (!githubAppId || !githubPrivateKey) {
+      if (!githubAppId || !githubPrivateKey || !githubClientId) {
         addSyncDebugLog('error', 'Missing GitHub credentials', {
           hasAppId: !!githubAppId,
-          hasPrivateKey: !!githubPrivateKey
+          hasPrivateKey: !!githubPrivateKey,
+          hasClientId: !!githubClientId
         });
+
+        res.setHeader('Content-Type', 'application/json');
         return res.status(500).json({
           error: "GitHub認証情報が不足しています",
-          details: "環境変数GITHUB_APP_IDとGITHUB_PRIVATE_KEYを設定してください"
+          details: "必要な環境変数が設定されていません",
+          status: 500,
+          debugLogs: syncDebugLogs
         });
       }
 
-      addSyncDebugLog('info', 'Creating GitHubFileUpdater', {
-        appId: githubAppId,
-        owner: 'kawaguti',
-        repo: 'ScrumFestMapViewer',
-        deviceFlow: true  // Device Flowを有効化
+      // GitHubデバイス認証を開始
+      const deviceAuth = new GitHubDeviceAuthService(githubClientId);
+      const deviceFlow = await deviceAuth.startDeviceFlow();
+
+      addSyncDebugLog('info', 'Device Flow started', {
+        verification_uri: deviceFlow.verification_uri,
+        user_code: deviceFlow.user_code,
+        expires_in: deviceFlow.expires_in
       });
 
-      const github = new GitHubFileUpdater(
-        githubAppId,
-        githubPrivateKey,
-        'kawaguti',
-        'ScrumFestMapViewer',
-        true  // Device Flowを有効化
-      );
-
-      const allEvents = await db
-        .select()
-        .from(events)
-        .where(eq(events.isArchived, false))
-        .orderBy(desc(events.date));
-
-      addSyncDebugLog('info', 'Events fetched from database', {
-        count: allEvents.length
-      });
-
-      const markdownContent = generateMarkdown(allEvents);
-      const result = await github.updateAllEventsFile(markdownContent);
-
-      addSyncDebugLog('info', 'Sync completed', {
-        commitSha: result.commit.sha,
-        fileUrl: result.content.html_url
-      });
-
+      res.setHeader('Content-Type', 'application/json');
       res.json({
         success: true,
-        message: "GitHubリポジトリにイベント一覧を同期しました",
-        details: `更新されたファイル: ${result.content.html_url}`,
+        message: "GitHubデバイス認証を開始しました",
+        verification_uri: deviceFlow.verification_uri,
+        user_code: deviceFlow.user_code,
+        expires_in: deviceFlow.expires_in,
         debugLogs: syncDebugLogs
       });
 
     } catch (error) {
       addSyncDebugLog('error', 'Sync process error', error);
+
+      res.setHeader('Content-Type', 'application/json');
       res.status(500).json({
         error: "同期処理中にエラーが発生しました",
         details: error instanceof Error ? error.message : String(error),
+        status: 500,
         debugLogs: syncDebugLogs
       });
     }

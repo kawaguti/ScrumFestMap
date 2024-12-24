@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { useLocation } from "wouter";
@@ -23,7 +23,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
-import { Suspense } from "react";
 
 // SyncDebugPanelコンポーネントを動的インポートに変更
 const SyncDebugPanel = React.lazy(() => import("@/components/SyncDebugPanel"));
