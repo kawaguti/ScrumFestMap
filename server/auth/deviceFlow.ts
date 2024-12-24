@@ -26,6 +26,7 @@ export class GitHubDeviceAuthService {
   private readonly clientId: string;
   private pollingInterval: number;
   private readonly maxRetries: number;
+  private readonly headers: HeadersInit;
 
   constructor(
     clientId: string,
@@ -34,6 +35,12 @@ export class GitHubDeviceAuthService {
     this.clientId = clientId;
     this.pollingInterval = options.pollingInterval;
     this.maxRetries = options.maxRetries;
+    this.headers = {
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json',
+      'User-Agent': 'ScrumFestMap-DeviceFlow',
+      'X-GitHub-Api-Version': '2022-11-28'
+    };
   }
 
   async authenticateWithDeviceFlow(): Promise<string> {
@@ -62,17 +69,21 @@ export class GitHubDeviceAuthService {
 
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
+        console.log('Starting Device Flow attempt:', attempt + 1);
         const response = await fetch('https://github.com/login/device/code', {
           method: 'POST',
           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            ...this.headers,
+            'Accept': 'application/json'  // Device Flow APIは標準のJSONを使用
           },
           body: JSON.stringify({
             client_id: this.clientId,
             scope: 'repo'
           })
         });
+
+        console.log('Device Flow response status:', response.status);
+        console.log('Device Flow response headers:', Object.fromEntries(response.headers.entries()));
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -82,7 +93,12 @@ export class GitHubDeviceAuthService {
           );
         }
 
-        const data = await response.json();
+        const rawData = await response.text();
+        console.log('Raw Device Flow response:', rawData);
+
+        const data = JSON.parse(rawData);
+        console.log('Parsed Device Flow response:', data);
+
         const validatedData = deviceFlowResponseSchema.parse(data);
         return validatedData;
       } catch (error) {
@@ -110,11 +126,17 @@ export class GitHubDeviceAuthService {
 
     while (Date.now() - startTime < timeout) {
       try {
-        const response = await fetch('https://github.com/login/oauth/access_token', {
+        console.log(`Polling attempt ${pollCount + 1}/180`);
+        console.log('Polling for token with device code:', deviceCode);
+
+        const url = 'https://github.com/login/oauth/access_token';
+        console.log('Token request URL:', url);
+
+        const response = await fetch(url, {
           method: 'POST',
           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            ...this.headers,
+            'Accept': 'application/json'  // OAuth endpointは標準のJSONを使用
           },
           body: JSON.stringify({
             client_id: this.clientId,
@@ -123,6 +145,9 @@ export class GitHubDeviceAuthService {
           })
         });
 
+        console.log('Token response status:', response.status);
+        console.log('Token response headers:', Object.fromEntries(response.headers.entries()));
+
         if (!response.ok) {
           throw new DeviceFlowError(
             `Token request failed: ${await response.text()}`,
@@ -130,36 +155,39 @@ export class GitHubDeviceAuthService {
           );
         }
 
-        const data = await tokenResponseSchema.parse(await response.json());
-        pollCount++;
+        const rawData = await response.text();
+        console.log('Raw token response:', rawData);
 
-        console.log('Token polling response:', {
-          attempt: pollCount,
+        const data = JSON.parse(rawData);
+        console.log('Parsed token response:', {
           hasToken: !!data.access_token,
           error: data.error,
-          errorDescription: data.error_description,
-          elapsedTime: Math.round((Date.now() - startTime) / 1000),
-          currentInterval
+          errorDescription: data.error_description
         });
 
-        if (data.access_token) {
-          return data.access_token;
+        const validatedData = tokenResponseSchema.parse(data);
+        pollCount++;
+
+        if (validatedData.access_token) {
+          return validatedData.access_token;
         }
 
-        if (data.error === 'authorization_pending') {
+        if (validatedData.error === 'authorization_pending') {
+          console.log('Authorization is still pending');
           await new Promise(resolve => setTimeout(resolve, currentInterval));
           continue;
         }
 
-        if (data.error === 'slow_down') {
+        if (validatedData.error === 'slow_down') {
           currentInterval = Math.min(currentInterval * 1.5, 15000); // Cap at 15 seconds
+          console.log('Received slow_down signal, increasing interval to:', currentInterval);
           await new Promise(resolve => setTimeout(resolve, currentInterval));
           continue;
         }
 
         throw new DeviceFlowError(
-          `Authentication error: ${data.error_description || data.error}`,
-          data.error || 'UNKNOWN_ERROR'
+          `Authentication error: ${validatedData.error_description || validatedData.error}`,
+          validatedData.error || 'UNKNOWN_ERROR'
         );
       } catch (error) {
         console.error('Polling error:', error);
@@ -170,6 +198,7 @@ export class GitHubDeviceAuthService {
 
         // For network errors, implement exponential backoff
         const backoffTime = Math.min(1000 * Math.pow(2, pollCount % 4), 10000);
+        console.log('Network error, backing off for:', backoffTime, 'ms');
         await new Promise(resolve => setTimeout(resolve, backoffTime));
       }
     }
