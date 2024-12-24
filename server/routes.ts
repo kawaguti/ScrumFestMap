@@ -105,14 +105,29 @@ export function setupRoutes(app: Express) {
         process.env.GITHUB_INSTALLATION_ID
       );
 
-      const allEvents = await db
-        .select()
-        .from(events)
-        .where(eq(events.isArchived, false))
-        .orderBy(desc(events.date));
+      const [allEvents, latestHistory] = await Promise.all([
+        db.select()
+          .from(events)
+          .where(eq(events.isArchived, false))
+          .orderBy(desc(events.date)),
+        db.select({
+          eventName: events.name,
+          column: eventHistory.modifiedColumn,
+          modifiedAt: eventHistory.modifiedAt
+        })
+          .from(eventHistory)
+          .innerJoin(events, eq(events.id, eventHistory.eventId))
+          .orderBy(desc(eventHistory.modifiedAt))
+          .limit(5)
+      ]);
 
-      addSyncDebugLog('info', 'Events fetched from database', {
-        count: allEvents.length
+      const changes = latestHistory
+        .map(h => `${h.eventName}の${columnNameMap[h.column] || h.column}を更新`)
+        .join("、");
+
+      addSyncDebugLog('info', 'Events and history fetched from database', {
+        eventCount: allEvents.length,
+        recentChanges: changes
       });
 
       // マークダウンを生成
@@ -128,7 +143,7 @@ export function setupRoutes(app: Express) {
         'kawaguti',
         'ScrumFestMapViewer',
         'all-events.md',
-        `Update events: ${allEvents.map(e => e.name).join(", ")}`
+        changes ? `Update events: ${changes}` : 'Regular sync'
       );
 
       addSyncDebugLog('info', 'File update succeeded', {
