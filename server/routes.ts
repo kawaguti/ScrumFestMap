@@ -171,11 +171,46 @@ function generateMarkdown(events: Event[]): string {
 
   sortedEvents.forEach(event => {
     markdown += `## ${event.name}\n\n`;
-    markdown += `- 開催日: ${new Date(event.date).toLocaleDateString('ja-JP')}\n`;
     markdown += `- 開催地: ${event.prefecture}\n`;
-    if (event.website) markdown += `- Webサイト: ${event.website}\n`;
-    if (event.youtubePlaylist) markdown += `- 録画一覧: ${event.youtubePlaylist}\n`;
-    if (event.description) markdown += `\n${event.description}\n`;
+
+    // 座標の出力
+    if (event.coordinates) {
+      const coordinates = typeof event.coordinates === 'string' 
+        ? event.coordinates.split(',').map(coord => coord.trim())
+        : event.coordinates;
+
+      if (Array.isArray(coordinates)) {
+        const [lat, lng] = coordinates;
+        markdown += `- 座標: \`[${lng}, ${lat}]\` (Leaflet形式)\n`;
+      }
+    }
+
+    markdown += `- 開催日: ${new Date(event.date).toLocaleDateString('ja-JP', { 
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      weekday: 'short'
+    })}\n\n`;
+
+    if (event.description) {
+      const paragraphs = event.description.trim().split(/\n\s*\n/);
+      const formattedParagraphs = paragraphs.map(para => {
+        if (para.includes('\n- ')) {
+          return para;
+        }
+        return para.replace(/\s*\n\s*/g, ' ').trim();
+      });
+      markdown += formattedParagraphs.join('\n\n') + '\n';
+    }
+
+    if (event.website) {
+      markdown += `\n- Webサイト: ${event.website}\n`;
+    }
+
+    if (event.youtubePlaylist && event.youtubePlaylist.trim() !== "") {
+      markdown += `- 録画一覧: ${event.youtubePlaylist}\n`;
+    }
+
     markdown += '\n---\n\n';
   });
 
