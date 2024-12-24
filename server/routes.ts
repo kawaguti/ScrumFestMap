@@ -121,6 +121,15 @@ export function setupRoutes(app: Express) {
           .limit(5)
       ]);
 
+      if (latestHistory.length === 0) {
+        addSyncDebugLog('info', 'No recent changes found, skipping sync', {});
+        return res.json({
+          success: true,
+          message: "変更点がないため、同期をスキップしました",
+          debugLogs: syncDebugLogs
+        });
+      }
+
       const changes = latestHistory
         .map(h => `${h.eventName}の${columnNameMap[h.column] || h.column}を更新`)
         .join("、");
