@@ -22,36 +22,6 @@ function log(message: string) {
   console.log(`${formattedTime} [express] ${message}`);
 }
 
-// グレースフルシャットダウンの処理を追加
-async function gracefulShutdown(server: any) {
-  log("Received shutdown signal. Starting graceful shutdown...");
-
-  return new Promise((resolve) => {
-    server.close(async () => {
-      log("Server closed. Cleaning up...");
-      try {
-        // データベース接続のクローズ
-        try {
-          await db.execute('SELECT 1');  // Final query to ensure connection is alive
-          log("Database connection closed");
-        } catch (err) {
-          console.error("Error during database shutdown:", err);
-        }
-        resolve(true);
-      } catch (err) {
-        console.error("Error closing database connections:", err);
-        resolve(false);
-      }
-    });
-
-    // 既存の接続の完了を待つ（10秒後にタイムアウト）
-    setTimeout(() => {
-      log("Shutdown timeout reached. Forcing exit...");
-      resolve(false);
-    }, 10000);
-  });
-}
-
 async function startServer() {
   try {
     log("Starting server initialization...");
@@ -148,27 +118,6 @@ async function startServer() {
     log("API routes setup complete");
 
     const server = createServer(app);
-
-    // シャットダウンシグナルのハンドリング
-    process.on('SIGTERM', async () => {
-      log("SIGTERM received");
-      const success = await gracefulShutdown(server);
-      process.exit(success ? 0 : 1);
-    });
-
-    process.on('SIGINT', async () => {
-      log("SIGINT received");
-      const success = await gracefulShutdown(server);
-      process.exit(success ? 0 : 1);
-    });
-
-    // 未処理の例外をハンドリング
-    process.on('uncaughtException', async (error) => {
-      console.error("Uncaught Exception:", error);
-      log("Critical error occurred. Starting graceful shutdown...");
-      await gracefulShutdown(server);
-      process.exit(1);
-    });
 
     // エラーハンドリングミドルウェア
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
