@@ -1,4 +1,5 @@
-import { useState, memo } from "react";
+import * as React from "react";
+import { memo, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Bug, AlertCircle } from "lucide-react";
+import { Loader2, Bug, AlertCircle, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface DebugLog {
@@ -19,7 +20,53 @@ interface DebugLog {
   details: any;
 }
 
+const AuthInstructions = memo(function AuthInstructions({ 
+  verificationUri,
+  userCode,
+}: { 
+  verificationUri: string;
+  userCode: string;
+}) {
+  return (
+    <div className="bg-accent/20 p-4 rounded-lg space-y-4 my-4">
+      <h3 className="font-semibold">GitHub認証手順</h3>
+      <ol className="list-decimal list-inside space-y-2">
+        <li>
+          <a
+            href={verificationUri}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline inline-flex items-center"
+          >
+            GitHub Device認証ページを開く
+            <ExternalLink className="h-4 w-4 ml-1" />
+          </a>
+        </li>
+        <li>
+          表示されたページで以下のコードを入力:
+          <code className="mx-2 px-2 py-1 bg-muted rounded font-mono">
+            {userCode}
+          </code>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigator.clipboard.writeText(userCode)}
+          >
+            コピー
+          </Button>
+        </li>
+        <li>GitHubアカウントで認証を完了してください</li>
+      </ol>
+      <p className="text-sm text-muted-foreground mt-4">
+        ※ この認証コードの有効期限は15分です
+      </p>
+    </div>
+  );
+});
+
 const DebugLogEntry = memo(function DebugLogEntry({ log }: { log: DebugLog }) {
+  const isDeviceFlow = log.title === 'Device Flow started';
+
   return (
     <div
       className={`p-4 rounded-lg ${
@@ -35,9 +82,16 @@ const DebugLogEntry = memo(function DebugLogEntry({ log }: { log: DebugLog }) {
           {new Date(log.timestamp).toLocaleString('ja-JP')}
         </span>
       </div>
-      <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-48">
-        {JSON.stringify(log.details, null, 2)}
-      </pre>
+      {isDeviceFlow ? (
+        <AuthInstructions
+          verificationUri={log.details.verificationUri}
+          userCode={log.details.userCode}
+        />
+      ) : (
+        <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-48">
+          {JSON.stringify(log.details, null, 2)}
+        </pre>
+      )}
     </div>
   );
 });
@@ -95,7 +149,7 @@ const DebugContent = memo(function DebugContent({
 });
 
 export function SyncDebugPanel() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = React.useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -135,10 +189,10 @@ export function SyncDebugPanel() {
     },
   });
 
-  const handleSync = () => {
+  const handleSync = useCallback(() => {
     if (syncMutation.isPending) return;
     syncMutation.mutate();
-  };
+  }, [syncMutation]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
