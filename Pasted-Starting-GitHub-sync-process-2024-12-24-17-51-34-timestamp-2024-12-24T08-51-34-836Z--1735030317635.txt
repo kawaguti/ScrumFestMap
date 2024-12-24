@@ -1,0 +1,13 @@
+Starting GitHub sync process
+2024/12/24 17:51:34
+{
+  "timestamp": "2024-12-24T08:51:34.836Z"
+}
+Sync process error
+2024/12/24 17:51:34
+{
+  "error": {
+    "message": "GitHub App credentials are missing",
+    "stack": "Error: GitHub App credentials are missing\n    at <anonymous> (/home/runner/ScrumFestMap/server/routes.ts:84:15)\n    at Layer.handle [as handle_request] (/home/runner/ScrumFestMap/node_modules/express/lib/router/layer.js:95:5)\n    at next (/home/runner/ScrumFestMap/node_modules/express/lib/router/route.js:149:13)\n    at requireAdmin (/home/runner/ScrumFestMap/server/routes.ts:37:3)\n    at Layer.handle [as handle_request] (/home/runner/ScrumFestMap/node_modules/express/lib/router/layer.js:95:5)\n    at next (/home/runner/ScrumFestMap/node_modules/express/lib/router/route.js:149:13)\n    at Route.dispatch (/home/runner/ScrumFestMap/node_modules/express/lib/router/route.js:119:3)\n    at Layer.handle [as handle_request] (/home/runner/ScrumFestMap/node_modules/express/lib/router/layer.js:95:5)\n    at /home/runner/ScrumFestMap/node_modules/express/lib/router/index.js:284:15\n    at Function.process_params (/home/runner/ScrumFestMap/node_modules/express/lib/router/index.js:346:12)\n    at next (/home/runner/ScrumFestMap/node_modules/express/lib/router/index.js:280:10)\n    at <anonymous> (/home/runner/ScrumFestMap/server/index.ts:96:7)\n    at Layer.handle [as handle_request] (/home/runner/ScrumFestMap/node_modules/express/lib/router/layer.js:95:5)\n    at trim_prefix (/home/runner/ScrumFestMap/node_modules/express/lib/router/index.js:328:13)\n    at /home/runner/ScrumFestMap/node_modules/express/lib/router/index.js:286:9\n    at Function.process_params (/home/runner/ScrumFestMap/node_modules/express/lib/router/index.js:346:12)\n    at next (/home/runner/ScrumFestMap/node_modules/express/lib/router/index.js:280:10)\n    at strategy.pass (/home/runner/ScrumFestMap/node_modules/passport/lib/middleware/authenticate.js:355:9)\n    at /home/runner/ScrumFestMap/node_modules/passport/lib/strategies/session.js:120:12\n    at pass (/home/runner/ScrumFestMap/node_modules/passport/lib/authenticator.js:352:31)\n    at deserialized (/home/runner/ScrumFestMap/node_modules/passport/lib/authenticator.js:364:7)\n    at <anonymous> (/home/runner/ScrumFestMap/server/auth.ts:98:7)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)"
+  }
+}
