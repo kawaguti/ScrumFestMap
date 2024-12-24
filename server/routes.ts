@@ -118,9 +118,11 @@ export function setupRoutes(app: Express) {
           .from(eventHistory)
           .innerJoin(events, eq(events.id, eventHistory.eventId))
           .where(
-            sql`${eventHistory.modifiedAt} > COALESCE(
-              (SELECT MAX(modified_at) FROM ${eventHistory} WHERE synced_to_github = true),
-              '1970-01-01'
+            sql`${eventHistory.modifiedAt} > (
+              SELECT COALESCE(
+                (SELECT value::timestamp FROM app_settings WHERE key = 'last_github_sync'),
+                '1970-01-01'::timestamp
+              )
             )`
           )
           .orderBy(desc(eventHistory.modifiedAt))
