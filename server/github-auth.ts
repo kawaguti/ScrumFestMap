@@ -18,7 +18,7 @@ interface TokenResponse {
 export class GitHubDeviceAuthService {
   private readonly clientId: string;
   private readonly apiUrl = 'https://github.com';
-  private readonly pollingInterval = 5000;
+  private readonly pollingInterval = 5000; // 5秒ごとにポーリング
   private deviceCode: string | null = null;
 
   constructor(clientId: string) {
@@ -142,17 +142,19 @@ export class GitHubDeviceAuthService {
   }
 
   async authenticate(): Promise<string> {
-    const flow = await this.startDeviceFlow();
-    console.log('Device Flow started successfully:', {
-      verification_uri: flow.verification_uri,
-      user_code: flow.user_code,
-      expires_in: flow.expires_in
-    });
+    if (!this.deviceCode) {
+      const flow = await this.startDeviceFlow();
+      console.log('Device Flow started successfully:', {
+        verification_uri: flow.verification_uri,
+        user_code: flow.user_code,
+        expires_in: flow.expires_in
+      });
+    }
 
     let attempts = 0;
     const maxAttempts = 180; // 15分 (900秒) / 5秒 = 180回
     const startTime = Date.now();
-    const timeoutMs = flow.expires_in * 1000;
+    const timeoutMs = 900000; // 15分
 
     while (attempts < maxAttempts) {
       if (Date.now() - startTime > timeoutMs) {

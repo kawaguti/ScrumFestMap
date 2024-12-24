@@ -1,0 +1,95 @@
+実装をより具体的に追跡できるようにしましょう。各ステップでログを追加し、エラーハンドリングを強化します：
+
+```typescript
+class GitHubDeviceAuthService {
+  private readonly clientId: string;
+
+  constructor(clientId: string) {
+    this.clientId = clientId;
+    console.log('Device Auth Service Initialized:', { clientId });
+  }
+
+  // Device Flow開始時のログ出力
+  private logRequestDetails(url: string, options: RequestInit) {
+    console.log('Request Details:', {
+      url,
+      method: options.method,
+      headers: options.headers,
+      body: options.body
+    });
+  }
+
+  // レスポンス詳細のログ出力
+  private async logResponseDetails(response: Response) {
+    console.log('Response Details:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers),
+      ok: response.ok
+    });
+
+    const text = await response.text();
+    console.log('Response Text:', text);
+    return text;
+  }
+
+  async startDeviceFlow() {
+    console.log('Starting Device Flow Authentication...');
+
+    const url = 'https://github.com/login/device/code';
+    const options = {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        client_id: this.clientId,
+        scope: 'repo'
+      })
+    };
+
+    this.logRequestDetails(url, options);
+
+    try {
+      const response = await fetch(url, options);
+      const responseText = await this.logResponseDetails(response);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      try {
+        const data = JSON.parse(responseText);
+        console.log('Parsed Response:', data);
+
+        if (!data.device_code || !data.user_code || !data.verification_uri) {
+          throw new Error('Invalid response format');
+        }
+
+        return {
+          verificationUri: data.verification_uri,
+          userCode: data.user_code,
+          deviceCode: data.device_code,
+          expiresIn: data.expires_in
+        };
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError);
+        throw new Error('Failed to parse device flow response');
+      }
+    } catch (fetchError) {
+      console.error('Fetch Error:', fetchError);
+      throw new Error('Device flow request failed');
+    }
+  }
+}
+```
+
+このコードは、以下のようなログを生成するはずです：
+1. サービスの初期化
+2. リクエストの詳細（URL、ヘッダー、ボディ）
+3. レスポンスの詳細（ステータス、ヘッダー）
+4. 生のレスポンステキスト
+5. パース結果
+
+これらのログがあれば、どこで処理が停止しているのかを特定できるはずです。実行してみて、出力されたログを共有していただけますでしょうか？

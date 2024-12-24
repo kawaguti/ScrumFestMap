@@ -76,6 +76,14 @@ class GitHubFileUpdater {
       addSyncDebugLog('info', 'Starting file update', { url });
 
       // Device Flow認証を開始
+      const flow = await this.deviceAuthService.startDeviceFlow();
+      addSyncDebugLog('info', 'Device Flow started', {
+        verification_uri: flow.verification_uri,
+        user_code: flow.user_code,
+        expires_in: flow.expires_in
+      });
+
+      // トークンを待機
       const token = await this.deviceAuthService.authenticate();
       addSyncDebugLog('info', 'Device Flow authentication successful', {
         tokenLength: token.length
