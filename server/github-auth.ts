@@ -1,3 +1,4 @@
+
 import type { RequestInit } from 'node-fetch';
 import fetch from 'node-fetch';
 
@@ -14,6 +15,12 @@ interface TokenResponse {
   error?: string;
   error_description?: string;
   error_uri?: string;
+}
+
+interface GitHubUpdateResponse {
+  commit: {
+    sha: string;
+  }
 }
 
 export class GitHubDeviceAuthService {
@@ -41,12 +48,12 @@ export class GitHubDeviceAuthService {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: JSON.stringify({
+        body: new URLSearchParams({
           client_id: this.clientId,
           scope: 'repo'
-        })
+        }).toString()
       });
 
       console.log('Device code response status:', response.status);
@@ -90,13 +97,13 @@ export class GitHubDeviceAuthService {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: JSON.stringify({
+        body: new URLSearchParams({
           client_id: this.clientId,
           device_code: this.deviceCode,
           grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
-        })
+        }).toString()
       });
 
       console.log('Token response status:', response.status);
@@ -190,30 +197,23 @@ export class GitHubDeviceAuthService {
       'X-GitHub-Api-Version': '2022-11-28'
     };
   }
-}
 
-// Added this function based on the context of the edited snippet.  Assumes addSyncDebugLog is defined elsewhere.
-// This function was added because the modified snippet included this function call.
-public async updateAllEventsFile(newContent: string, deviceAuthService: GitHubDeviceAuthService, owner: string, repo: string, sha: string): Promise<GitHubUpdateResponse> {
+  async updateAllEventsFile(newContent: string, owner: string, repo: string, sha: string): Promise<GitHubUpdateResponse> {
     try {
-      // まずDevice Flow認証を完了
-      const token = await deviceAuthService.authenticate();
-      addSyncDebugLog('info', 'Authentication completed', {
-        tokenLength: token.length
-      });
+      const token = await this.authenticate();
+      console.log('Authentication completed', { tokenLength: token.length });
 
-      // 認証後にファイル更新を開始
       const filePath = 'all-events.md';
       const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
-      addSyncDebugLog('info', 'Starting file update', { url });
+      console.log('Starting file update', { url });
 
       const response = await fetch(url, {
         method: 'PUT',
-        headers: deviceAuthService.getHeaders(token),
+        headers: this.getHeaders(token),
         body: JSON.stringify({
           message: 'Update all-events.md',
           content: Buffer.from(newContent).toString('base64'),
-          sha: sha // Assuming this.sha is available
+          sha: sha
         })
       });
 
@@ -223,20 +223,11 @@ public async updateAllEventsFile(newContent: string, deviceAuthService: GitHubDe
       }
 
       const updatedFileData = await response.json() as GitHubUpdateResponse;
-      addSyncDebugLog('info', 'File updated successfully', updatedFileData);
+      console.log('File updated successfully', updatedFileData);
       return updatedFileData;
     } catch (error) {
-      addSyncDebugLog('error', 'File update failed', { error });
+      console.error('File update failed', error);
       throw error;
     }
   }
-
-interface GitHubUpdateResponse {
-  commit: {
-    sha: string;
-  }
-}
-
-function addSyncDebugLog(level: string, message: string, data?: object) {
-  console.log(`[${level}]: ${message}`, data)
 }
