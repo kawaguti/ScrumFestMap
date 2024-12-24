@@ -130,6 +130,15 @@ export function setupRoutes(app: Express) {
         });
       }
 
+      const columnNameMap: Record<string, string> = {
+        name: '名前',
+        date: '開催日',
+        prefecture: '開催地',
+        website: 'Webサイト',
+        description: '説明',
+        youtubePlaylist: '録画一覧'
+      };
+
       const changes = latestHistory
         .map(h => `${h.eventName}の${columnNameMap[h.column] || h.column}を更新`)
         .join("、");
