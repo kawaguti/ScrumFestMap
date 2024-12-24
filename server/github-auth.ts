@@ -13,25 +13,43 @@ export class GitHubAppService {
   private readonly installationId: string | undefined;
 
   constructor(appId: string | undefined, privateKey: string | undefined, installationId: string | undefined) {
+    console.log('Initializing GitHubAppService...');
     this.appId = appId;
     this.privateKey = privateKey ? this.normalizePrivateKey(privateKey) : undefined;
     this.installationId = installationId;
+
+    // 初期化時の設定値をログ出力（秘密鍵は長さのみ）
+    console.log(`App ID: ${this.appId ? 'Set' : 'Not set'}`);
+    console.log(`Private Key: ${this.privateKey ? `Set (length: ${this.privateKey.length})` : 'Not set'}`);
+    console.log(`Installation ID: ${this.installationId ? 'Set' : 'Not set'}`);
   }
 
   private normalizePrivateKey(key: string): string {
+    console.log('Normalizing private key...');
     if (!key.includes('-----BEGIN RSA PRIVATE KEY-----')) {
+      console.log('Adding RSA private key headers');
       return `-----BEGIN RSA PRIVATE KEY-----\n${key}\n-----END RSA PRIVATE KEY-----`;
     }
+    console.log('Private key already has proper format');
     return key;
   }
 
   private validateConfig(): { isValid: boolean; message?: string } {
+    console.log('Validating GitHub App configuration...');
     if (!this.appId || !this.privateKey || !this.installationId) {
+      const missing = [
+        !this.appId && 'GITHUB_APP_ID',
+        !this.privateKey && 'GITHUB_PRIVATE_KEY',
+        !this.installationId && 'GITHUB_INSTALLATION_ID'
+      ].filter(Boolean).join(', ');
+
+      console.log(`Invalid configuration: Missing ${missing}`);
       return {
         isValid: false,
-        message: "GitHub認証の設定が不完全です。GITHUB_APP_ID, GITHUB_PRIVATE_KEY, GITHUB_INSTALLATION_IDが必要です。"
+        message: `GitHub認証の設定が不完全です。${missing}が必要です。`
       };
     }
+    console.log('GitHub App configuration is valid');
     return { isValid: true };
   }
 

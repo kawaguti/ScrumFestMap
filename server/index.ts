@@ -39,14 +39,30 @@ async function startServer() {
     }
     log("Database URL is configured");
 
-    // GitHub認証設定の確認
-    const requiredEnvVars = ['GITHUB_APP_ID', 'GITHUB_PRIVATE_KEY', 'GITHUB_INSTALLATION_ID']; 
+    // GitHub認証設定の詳細確認
+    const requiredEnvVars = ['GITHUB_APP_ID', 'GITHUB_PRIVATE_KEY', 'GITHUB_INSTALLATION_ID'];
     const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+    log("Checking GitHub authentication variables...");
+    requiredEnvVars.forEach(varName => {
+      const value = process.env[varName];
+      if (!value) {
+        log(`Missing ${varName}`);
+      } else {
+        // Private keyの場合は長さのみログ出力
+        if (varName === 'GITHUB_PRIVATE_KEY') {
+          log(`${varName} is set (length: ${value.length})`);
+        } else {
+          log(`${varName} is set`);
+        }
+      }
+    });
+
     if (missingEnvVars.length > 0) {
       log(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
-      throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`); 
+      throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
     } else {
-      log("GitHub authentication variables are configured");
+      log("All GitHub authentication variables are configured correctly");
     }
 
     // データベース接続テスト
