@@ -16,9 +16,9 @@ export class GitHubAppService {
     if (!appId || !privateKey || !installationId) {
       throw new Error('Required GitHub authentication parameters are missing');
     }
-    this.appId = appId;
-    this.privateKey = privateKey;
-    this.installationId = installationId;
+    this.appId = appId as string;
+    this.privateKey = privateKey as string;
+    this.installationId = installationId as string;
   }
 
   private async getOctokit(): Promise<Octokit> {
