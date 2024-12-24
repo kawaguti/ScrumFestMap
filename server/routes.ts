@@ -119,7 +119,7 @@ export function setupRoutes(app: Express) {
           .innerJoin(events, eq(events.id, eventHistory.eventId))
           .where(
             sql`${eventHistory.modifiedAt} > COALESCE(
-              (SELECT MAX(modified_at) FROM ${eventHistory} WHERE synced_to_github = true),
+              (SELECT MAX(modified_at) FROM ${eventHistory} WHERE "syncedToGitHub" = true),
               '1970-01-01'::timestamp
             )`
           )
