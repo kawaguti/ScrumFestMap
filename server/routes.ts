@@ -56,6 +56,7 @@ interface GitHubUpdateResponse {
   };
 }
 
+// GitHubファイル更新クラスの実装を修正
 class GitHubFileUpdater {
   private readonly owner: string;
   private readonly repo: string;
@@ -75,15 +76,7 @@ class GitHubFileUpdater {
       addSyncDebugLog('info', 'Starting file update', { url });
 
       // Device Flow認証を開始
-      const deviceFlow = await this.deviceAuthService.startDeviceFlow();
-      addSyncDebugLog('info', 'Device Flow started', {
-        verificationUri: deviceFlow.verification_uri,
-        userCode: deviceFlow.user_code,
-        expiresIn: deviceFlow.expires_in
-      });
-
-      // トークンを取得するまで待機
-      const token = await this.deviceAuthService.waitForAuthentication();
+      const token = await this.deviceAuthService.authenticate();
       addSyncDebugLog('info', 'Device Flow authentication successful', {
         tokenLength: token.length
       });

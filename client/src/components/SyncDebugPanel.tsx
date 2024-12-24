@@ -24,7 +24,7 @@ interface AuthInstructionsProps {
   userCode: string;
 }
 
-const AuthInstructions: React.FC<AuthInstructionsProps> = ({ verificationUri, userCode }) => {
+const AuthInstructions = ({ verificationUri, userCode }: AuthInstructionsProps) => {
   const handleCopy = () => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(userCode);
@@ -75,12 +75,12 @@ interface DebugContentProps {
   isSyncing: boolean;
 }
 
-const DebugContent: React.FC<DebugContentProps> = ({ 
+const DebugContent = ({ 
   logs, 
   isLoading, 
   error, 
   isSyncing 
-}) => {
+}: DebugContentProps) => {
   if (isLoading || isSyncing) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -153,7 +153,7 @@ const DebugContent: React.FC<DebugContentProps> = ({
   );
 };
 
-const SyncDebugPanel: React.FC = () => {
+const SyncDebugPanel = () => {
   const [open, setOpen] = React.useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();

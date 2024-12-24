@@ -1,0 +1,134 @@
+Device Flowの実装でポーリング部分が正しく動作していないようです。修正したバージョンを示します：
+
+```typescript
+class GitHubDeviceAuthService {
+  private readonly clientId: string;
+  private readonly pollingInterval = 5000;
+  private deviceCode: string | null = null;
+
+  constructor(clientId: string) {
+    this.clientId = clientId;
+  }
+
+  async startDeviceFlow(): Promise<{
+    verificationUri: string;
+    userCode: string;
+    deviceCode: string;
+    expiresIn: number;
+  }> {
+    const response = await fetch('https://github.com/login/device/code', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        client_id: this.clientId,
+        scope: 'repo'
+      })
+    });
+
+    const data = await response.json();
+    this.deviceCode = data.device_code;  // 保存
+
+    return {
+      verificationUri: data.verification_uri,
+      userCode: data.user_code,
+      deviceCode: data.device_code,
+      expiresIn: data.expires_in
+    };
+  }
+
+  // ポーリング処理を別メソッドとして実装
+  private async pollOnce(): Promise<string | null> {
+    console.log('Polling for token...', this.deviceCode);
+    
+    const response = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        client_id: this.clientId,
+        device_code: this.deviceCode,
+        grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Token polling failed: ${await response.text()}`);
+    }
+
+    const data = await response.json();
+    console.log('Poll response:', data);
+
+    if (data.error === 'authorization_pending') {
+      return null;
+    }
+
+    return data.access_token || null;
+  }
+
+  // メインのポーリングループ
+  async startPolling(onCode: (code: string) => void): Promise<void> {
+    const startTime = Date.now();
+    const timeoutMs = 900000; // 15分
+
+    while (true) {
+      if (Date.now() - startTime > timeoutMs) {
+        throw new Error('Authentication timeout');
+      }
+
+      try {
+        const token = await this.pollOnce();
+        if (token) {
+          onCode(token);
+          break;
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+        throw error;
+      }
+
+      // 5秒待機
+      await new Promise(resolve => setTimeout(resolve, this.pollingInterval));
+    }
+  }
+
+  // 認証フローを開始し、コールバックで結果を通知
+  async authenticate(callback: (token: string) => void): Promise<void> {
+    const flow = await this.startDeviceFlow();
+    console.log('Device Flow started:', {
+      userCode: flow.userCode,
+      verificationUri: flow.verificationUri
+    });
+
+    // ポーリングを開始
+    await this.startPolling(callback);
+  }
+}
+
+// 使用例
+async function updateFile() {
+  const auth = new GitHubDeviceAuthService('Iv23lil36t8Vv89KPoBy');
+  
+  try {
+    await auth.authenticate((token) => {
+      console.log('Token received:', token);
+      // ここでファイル更新処理を実行
+    });
+  } catch (error) {
+    console.error('Authentication failed:', error);
+  }
+}
+```
+
+主な変更点：
+1. ポーリング処理を明確に分離
+2. コールバックベースの設計に変更
+3. 詳細なログ出力の追加
+4. エラーハンドリングの強化
+5. タイムアウト処理の追加
+
+この実装では、認証コードを取得した後、自動的にポーリングを開始し、トークンが取得できたらコールバックで通知します。
