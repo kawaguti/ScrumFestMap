@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import themePlugin from "@replit/vite-plugin-shadcn-theme-json"
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), themePlugin()],
   server: {
     host: '0.0.0.0',
     port: 3001,
@@ -11,6 +12,9 @@ export default defineConfig({
     hmr: {
       clientPort: 443
     }
+  },
+  css: {
+    postcss: './postcss.config.js',
   },
   resolve: {
     alias: {
