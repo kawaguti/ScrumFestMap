@@ -64,13 +64,11 @@ export class GitHubDeviceAuthService {
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
         console.log('Starting Device Flow attempt:', attempt + 1);
-        const response = await fetch('https://api.github.com/login/device/code', {
+        const response = await fetch('https://github.com/login/oauth/device/code', {
           method: 'POST',
           headers: {
-            'Accept': 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'Content-Type': 'application/json',
-            'User-Agent': 'ScrumFestMap-DeviceFlow'
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             client_id: this.clientId,
@@ -125,13 +123,11 @@ export class GitHubDeviceAuthService {
         const url = 'https://github.com/login/oauth/access_token';
         console.log('Token request URL:', url);
 
-        const response = await fetch('https://api.github.com/login/oauth/access_token', {
+        const response = await fetch('https://github.com/login/oauth/access_token', {
           method: 'POST',
           headers: {
-            'Accept': 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'Content-Type': 'application/json',
-            'User-Agent': 'ScrumFestMap-DeviceFlow'
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             client_id: this.clientId,
