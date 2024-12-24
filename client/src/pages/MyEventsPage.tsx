@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { useLocation } from "wouter";
@@ -23,9 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { generateEventMarkdown, downloadMarkdown } from "@/lib/eventMarkdown";
-
-// SyncDebugPanelコンポーネントを動的インポートに変更
-const SyncDebugPanel = React.lazy(() => import("@/components/SyncDebugPanel"));
+import SyncDebugPanel from "@/components/SyncDebugPanel";
 
 async function fetchAllEvents(): Promise<Event[]> {
   const response = await fetch("/api/events");
@@ -136,9 +134,7 @@ export default function MyEventsPage() {
                     )}
                     GitHubに同期
                   </Button>
-                  <Suspense fallback={<Loader2 className="h-4 w-4 animate-spin" />}>
-                    <SyncDebugPanel />
-                  </Suspense>
+                  <SyncDebugPanel />
                 </div>
               )}
             </div>

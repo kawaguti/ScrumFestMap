@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { useLocation } from "wouter";
@@ -25,7 +25,8 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 
-const SyncDebugPanel = React.lazy(() => import("@/components/SyncDebugPanel"));
+// SyncDebugPanelを通常のインポートに変更
+import SyncDebugPanel from "@/components/SyncDebugPanel";
 
 async function fetchAllUsers(): Promise<User[]> {
   const response = await fetch("/api/admin/users", {
@@ -52,6 +53,15 @@ export default function AdminPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // ユーザーの認証状態確認
+  useEffect(() => {
+    if (!user) {
+      setLocation("/auth");
+    } else if (!user.isAdmin) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
 
   // Mutations
   const promoteMutation = useMutation({
@@ -123,15 +133,11 @@ export default function AdminPage() {
       return response.json();
     },
     onSuccess: (_, deletedEventId) => {
-      // イベントリストから削除されたイベントを即座に除外
       queryClient.setQueryData<Event[]>(["admin", "events"], (oldEvents) => {
         if (!oldEvents) return [];
         return oldEvents.filter((event) => event.id !== deletedEventId);
       });
-
-      // グローバルイベントリストも更新
       queryClient.invalidateQueries({ queryKey: ["events"] });
-
       toast({
         title: "削除完了",
         description: "イベントを削除しました。",
@@ -146,15 +152,6 @@ export default function AdminPage() {
       });
     },
   });
-
-  // ユーザーがログインしていないか管理者でない場合のリダイレクト
-  useEffect(() => {
-    if (!user) {
-      setLocation("/auth");
-    } else if (!user.isAdmin) {
-      setLocation("/");
-    }
-  }, [user, setLocation]);
 
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
     queryKey: ["admin", "users"],
@@ -177,9 +174,7 @@ export default function AdminPage() {
       <header className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">管理者ダッシュボード</h1>
         <div className="flex items-center gap-4">
-          <Suspense fallback={<div className="flex items-center"><Loader2 className="h-4 w-4 animate-spin" /></div>}>
-            <SyncDebugPanel />
-          </Suspense>
+          <SyncDebugPanel />
           <Button variant="outline" onClick={() => setLocation("/")}>
             ホームへ戻る
           </Button>

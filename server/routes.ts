@@ -3,7 +3,6 @@ import { db } from "../db";
 import { users, events, eventHistory, insertEventSchema } from "../db/schema";
 import type { Event } from "../db/schema";
 import { eq, desc } from "drizzle-orm";
-import jwt from 'jsonwebtoken';
 import { GitHubDeviceAuthService } from './github-auth';
 
 // デバッグ情報を保存するための配列
@@ -57,204 +56,16 @@ interface GitHubUpdateResponse {
   };
 }
 
-const MAX_POLLING_ATTEMPTS = 24; // 2分間（5秒 × 24回）
-const POLLING_INTERVAL = 5000; // 5秒
-
 class GitHubFileUpdater {
-  private readonly appId: string;
-  private readonly privateKey: string;
   private readonly owner: string;
   private readonly repo: string;
-  private readonly deviceFlow: boolean;
-  private deviceAuthService?: GitHubDeviceAuthService;
+  private deviceAuthService: GitHubDeviceAuthService;
 
-  constructor(appId: string, privateKey: string, owner: string, repo: string, deviceFlow = false) {
-    try {
-      this.appId = appId;
-      this.privateKey = this.formatPrivateKey(privateKey);
-      this.owner = owner;
-      this.repo = repo;
-      this.deviceFlow = deviceFlow;
-
-      if (deviceFlow) {
-        if (!process.env.GITHUB_CLIENT_ID) {
-          throw new Error('GITHUB_CLIENT_ID is not set');
-        }
-        this.deviceAuthService = new GitHubDeviceAuthService(process.env.GITHUB_CLIENT_ID);
-      }
-
-      addSyncDebugLog('info', 'GitHubFileUpdater initialized', {
-        appId,
-        owner,
-        repo,
-        deviceFlow,
-        hasDeviceAuthService: !!this.deviceAuthService
-      });
-    } catch (error) {
-      console.error('GitHubFileUpdater initialization error:', error);
-      throw new Error(`GitHub認証の初期化に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
-    }
+  constructor(clientId: string, owner: string, repo: string) {
+    this.owner = owner;
+    this.repo = repo;
+    this.deviceAuthService = new GitHubDeviceAuthService(clientId);
   }
-
-  private formatPrivateKey(key: string): string {
-    try {
-      addSyncDebugLog('info', 'Processing private key', {
-        originalLength: key.length,
-        containsSlashN: key.includes('\\n'),
-        containsRealNewline: key.includes('\n')
-      });
-
-      // Remove any surrounding quotes
-      key = key.replace(/^["']|["']$/g, '');
-
-      // First, handle Base64 encoded keys
-      if (/^[A-Za-z0-9+/=]+$/.test(key.replace(/[\r\n\s]/g, ''))) {
-        try {
-          const decodedKey = Buffer.from(key, 'base64').toString('utf-8');
-          if (decodedKey.includes('-----BEGIN')) {
-            key = decodedKey;
-            addSyncDebugLog('info', 'Decoded Base64 key', {
-              decodedLength: key.length,
-              isValidFormat: key.includes('-----BEGIN')
-            });
-          }
-        } catch (error) {
-          addSyncDebugLog('error', 'Base64 decoding failed', { error });
-        }
-      }
-
-      // Convert \n to real newlines and clean up the format
-      let formattedKey = key
-        .replace(/\\n/g, '\n')
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0)
-        .join('\n');
-
-      // Ensure proper header and footer
-      if (!formattedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----')) {
-        formattedKey = '-----BEGIN RSA PRIVATE KEY-----\n' + formattedKey;
-      }
-      if (!formattedKey.includes('-----END RSA PRIVATE KEY-----')) {
-        formattedKey += '\n-----END RSA PRIVATE KEY-----';
-      }
-      if (!formattedKey.endsWith('\n')) {
-        formattedKey += '\n';
-      }
-
-      addSyncDebugLog('info', 'Private key formatted', {
-        finalLength: formattedKey.length,
-        lineCount: formattedKey.split('\n').length,
-        hasValidHeader: formattedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----'),
-        hasValidFooter: formattedKey.includes('-----END RSA PRIVATE KEY-----'),
-        endsWithNewline: formattedKey.endsWith('\n')
-      });
-
-      return formattedKey;
-
-    } catch (error) {
-      addSyncDebugLog('error', 'Private key formatting failed', { error });
-      throw new Error(`Failed to format private key: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  private generateJWT(): string {
-    try {
-      const currentTime = Math.floor(Date.now() / 1000);
-
-      const payload = {
-        iat: currentTime - 30,     // 現在時刻から30秒前
-        exp: currentTime + 600,    // 現在時刻から10分後
-        iss: this.appId.toString() // GitHub App ID
-      };
-
-      // Device Flow用の追加クレーム
-      if (this.deviceFlow) {
-        Object.assign(payload, {
-          sub: this.appId.toString()  // Device Flow時は必要
-        });
-      }
-
-      addSyncDebugLog('info', 'Generating JWT', {
-        timeInfo: {
-          currentTimestamp: currentTime,
-          currentTimeISO: new Date(currentTime * 1000).toISOString(),
-          iatTimeISO: new Date(payload.iat * 1000).toISOString(),
-          expTimeISO: new Date(payload.exp * 1000).toISOString()
-        }
-      });
-
-      const token = jwt.sign(payload, this.privateKey, {
-        algorithm: 'RS256',
-        header: {
-          typ: 'JWT',
-          alg: 'RS256'
-        }
-      });
-
-      addSyncDebugLog('info', 'JWT token generated', {
-        tokenLength: token.length,
-        decodedHeader: JSON.parse(Buffer.from(token.split('.')[0], 'base64').toString()),
-        decodedPayload: JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
-      });
-
-      return token;
-
-    } catch (error) {
-      addSyncDebugLog('error', 'JWT generation failed', { error });
-      throw new Error(`JWT generation failed: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  private getHeaders(): Headers {
-    const token = this.generateJWT();
-    const headers = new Headers({
-      'Accept': 'application/vnd.github.v3+json',  // v3を明示的に指定
-      'Authorization': `Bearer ${token}`,
-      'User-Agent': 'ScrumFestMap-GitHub-App',
-      'X-GitHub-Api-Version': '2022-11-28'
-    });
-
-    // Device Flow が有効な場合、追加ヘッダー
-    if (this.deviceFlow) {
-      headers.append('X-GitHub-Device-Flow', 'true');
-    }
-
-    addSyncDebugLog('info', 'Request headers prepared', {
-      headers: Object.fromEntries(headers.entries())
-    });
-
-    return headers;
-  }
-
-  private async pollForToken(): Promise<string> {
-    if (!this.deviceAuthService) {
-      throw new Error('Device Flow service not initialized');
-    }
-
-    let attempts = 0;
-    while (attempts < MAX_POLLING_ATTEMPTS) {
-      try {
-        const token = await this.deviceAuthService.pollForToken();
-        if (token) {
-          return token;
-        }
-
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL));
-      } catch (error) {
-        if (error instanceof Error && error.message === 'authorization_pending') {
-          attempts++;
-          await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL));
-          continue;
-        }
-        throw error;
-      }
-    }
-
-    throw new Error('Device Flow認証がタイムアウトしました。もう一度お試しください。');
-  }
-
 
   public async updateAllEventsFile(newContent: string): Promise<GitHubUpdateResponse> {
     const filePath = 'all-events.md';
@@ -263,44 +74,31 @@ class GitHubFileUpdater {
     try {
       addSyncDebugLog('info', 'Starting file update', { url });
 
-      if (this.deviceFlow && this.deviceAuthService) {
-        const deviceFlow = await this.deviceAuthService.startDeviceFlow();
-        addSyncDebugLog('info', 'Device Flow started', {
-          verificationUri: deviceFlow.verification_uri,
-          userCode: deviceFlow.user_code,
-          expiresIn: deviceFlow.expires_in
-        });
+      // Device Flow認証を開始
+      const deviceFlow = await this.deviceAuthService.startDeviceFlow();
+      addSyncDebugLog('info', 'Device Flow started', {
+        verificationUri: deviceFlow.verification_uri,
+        userCode: deviceFlow.user_code,
+        expiresIn: deviceFlow.expires_in
+      });
 
-        try {
-          const token = await this.pollForToken();
-          addSyncDebugLog('info', 'Device Flow authentication successful', {
-            tokenLength: token.length
-          });
-        } catch (error) {
-          addSyncDebugLog('error', 'Device Flow authentication failed', { error });
-          throw new Error(`認証に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
-        }
-      }
+      // トークンを取得するまで待機
+      const token = await this.deviceAuthService.waitForAuthentication();
+      addSyncDebugLog('info', 'Device Flow authentication successful', {
+        tokenLength: token.length
+      });
 
-      // Get current file with timeout
-      const fileResponse = await Promise.race([
-        fetch(url, {
-          headers: this.deviceFlow && this.deviceAuthService
-            ? this.deviceAuthService.getHeaders()
-            : this.getHeaders()
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('ファイル取得がタイムアウトしました')), 30000)
-        )
-      ]);
+      // 現在のファイルを取得
+      const fileResponse = await fetch(url, {
+        headers: this.deviceAuthService.getHeaders(token)
+      });
 
       if (!fileResponse.ok) {
         const errorText = await fileResponse.text();
         addSyncDebugLog('error', 'File fetch failed', {
           status: fileResponse.status,
           statusText: fileResponse.statusText,
-          errorText,
-          headers: Object.fromEntries(fileResponse.headers)
+          errorText
         });
         throw new Error(`ファイル取得エラー (${fileResponse.status}): ${errorText}`);
       }
@@ -311,31 +109,23 @@ class GitHubFileUpdater {
         contentLength: fileData.content?.length
       });
 
-      // Update file with timeout
-      const updateResponse = await Promise.race([
-        fetch(url, {
-          method: 'PUT',
-          headers: this.deviceFlow && this.deviceAuthService
-            ? this.deviceAuthService.getHeaders()
-            : this.getHeaders(),
-          body: JSON.stringify({
-            message: 'Update all-events.md',
-            content: Buffer.from(newContent).toString('base64'),
-            sha: fileData.sha
-          })
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('ファイル更新がタイムアウトしました')), 30000)
-        )
-      ]);
+      // ファイルを更新
+      const updateResponse = await fetch(url, {
+        method: 'PUT',
+        headers: this.deviceAuthService.getHeaders(token),
+        body: JSON.stringify({
+          message: 'Update all-events.md',
+          content: Buffer.from(newContent).toString('base64'),
+          sha: fileData.sha
+        })
+      });
 
       if (!updateResponse.ok) {
         const errorText = await updateResponse.text();
         addSyncDebugLog('error', 'File update failed', {
           status: updateResponse.status,
           statusText: updateResponse.statusText,
-          errorText,
-          headers: Object.fromEntries(updateResponse.headers)
+          errorText
         });
         throw new Error(`ファイル更新エラー (${updateResponse.status}): ${errorText}`);
       }
@@ -347,7 +137,6 @@ class GitHubFileUpdater {
       });
 
       return result;
-
     } catch (error) {
       addSyncDebugLog('error', 'GitHub API Error', error);
       throw error;
@@ -377,7 +166,6 @@ function generateMarkdown(events: Event[]): string {
   return markdown;
 }
 
-
 export function setupRoutes(app: Express) {
   // APIルートの設定
   app.get("/api/events", async (req, res) => {
@@ -389,7 +177,6 @@ export function setupRoutes(app: Express) {
         .where(eq(events.isArchived, false))
         .orderBy(desc(events.date));
 
-      // 明示的にContent-Typeを設定
       res.setHeader('Content-Type', 'application/json');
       res.json(allEvents);
     } catch (error) {
@@ -424,14 +211,10 @@ export function setupRoutes(app: Express) {
     addSyncDebugLog('info', 'Starting GitHub sync process', {});
 
     try {
-      const githubAppId = process.env.GITHUB_APP_ID;
-      const githubPrivateKey = process.env.GITHUB_PRIVATE_KEY;
       const githubClientId = process.env.GITHUB_CLIENT_ID;
 
-      if (!githubAppId || !githubPrivateKey || !githubClientId) {
+      if (!githubClientId) {
         addSyncDebugLog('error', 'Missing GitHub credentials', {
-          hasAppId: !!githubAppId,
-          hasPrivateKey: !!githubPrivateKey,
           hasClientId: !!githubClientId
         });
 
@@ -446,11 +229,9 @@ export function setupRoutes(app: Express) {
 
       // GitHubファイル更新インスタンスを作成
       const github = new GitHubFileUpdater(
-        githubAppId,
-        githubPrivateKey,
+        githubClientId,
         'kawaguti',
-        'ScrumFestMapViewer',
-        true  // Device Flowを有効化
+        'ScrumFestMapViewer'
       );
 
       // データベースからイベントを取得

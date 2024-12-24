@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import {RequestInit} from 'node-fetch';
 
 interface DeviceFlowStartResponse {
   device_code: string;
@@ -7,23 +7,16 @@ interface DeviceFlowStartResponse {
   expires_in: number;
 }
 
-interface DeviceFlowTokenResponse {
+interface TokenResponse {
   access_token?: string;
-  error?: string;
-  error_description?: string;
-}
-
-interface GitHubErrorResponse {
-  message?: string;
   error?: string;
   error_description?: string;
 }
 
 export class GitHubDeviceAuthService {
   private readonly clientId: string;
-  private deviceCode?: string;
-  private accessToken?: string;
   private readonly pollingInterval = 5000; // 5秒ごとにポーリング
+  private deviceCode: string | null = null;
 
   constructor(clientId: string) {
     if (!clientId) {
@@ -53,26 +46,20 @@ export class GitHubDeviceAuthService {
       throw new Error(`GitHub API error: ${response.status} ${errorText}`);
     }
 
-    const text = await response.text();
-    try {
-      return JSON.parse(text);
-    } catch (e) {
-      console.error('Failed to parse JSON response:', text);
-      throw new Error('Invalid JSON response from GitHub API');
-    }
+    return response.json();
   }
 
   async startDeviceFlow(): Promise<DeviceFlowStartResponse> {
     try {
       console.log('Starting Device Flow with client ID:', this.clientId);
 
-      const data = await this.fetchWithJson<DeviceFlowStartResponse & GitHubErrorResponse>(
+      const data = await this.fetchWithJson<DeviceFlowStartResponse & { error?: string; error_description?: string }>(
         'https://github.com/login/device/code',
         {
           method: 'POST',
           body: JSON.stringify({
             client_id: this.clientId,
-            scope: 'repo'  // Single fileアクセス用
+            scope: 'repo'  // リポジトリアクセス用のスコープ
           })
         }
       );
@@ -80,11 +67,6 @@ export class GitHubDeviceAuthService {
       if ('error' in data) {
         console.error('Device Flow error:', data);
         throw new Error(data.error_description || data.error || 'Unknown error');
-      }
-
-      if (!data.device_code || !data.user_code || !data.verification_uri) {
-        console.error('Invalid device flow response:', data);
-        throw new Error('Invalid device flow response from GitHub');
       }
 
       this.deviceCode = data.device_code;
@@ -101,14 +83,14 @@ export class GitHubDeviceAuthService {
     }
   }
 
-  async pollForToken(): Promise<string> {
+  async pollForToken(): Promise<string | null> {
     if (!this.deviceCode) {
       throw new Error('Device flow not initiated');
     }
 
     try {
       console.log('Polling for token with device code');
-      const data = await this.fetchWithJson<DeviceFlowTokenResponse>(
+      const data = await this.fetchWithJson<TokenResponse>(
         'https://github.com/login/oauth/access_token',
         {
           method: 'POST',
@@ -123,19 +105,16 @@ export class GitHubDeviceAuthService {
       if (data.error) {
         if (data.error === 'authorization_pending') {
           console.log('Authorization pending, waiting for user...');
-          return '';  // まだ認証待ち
+          return null;  // まだ認証待ち
         }
-        console.error('Token polling error:', data);
         throw new Error(data.error_description || data.error);
       }
 
       if (!data.access_token) {
-        console.error('No access token in response:', data);
         throw new Error('Invalid token response from GitHub');
       }
 
       console.log('Token received successfully');
-      this.accessToken = data.access_token;
       return data.access_token;
     } catch (error) {
       console.error('Token polling error:', error);
@@ -143,78 +122,35 @@ export class GitHubDeviceAuthService {
     }
   }
 
-  async waitForAuthentication(): Promise<string> {
+  async waitForAuthentication(timeoutMs = 900000): Promise<string> {
     if (!this.deviceCode) {
       throw new Error('Device flow not initiated');
     }
 
-    let attempts = 0;
-    const maxAttempts = 24; // 2分間（5秒 × 24回）
+    const startTime = Date.now();
+    let token: string | null = null;
 
-    while (attempts < maxAttempts) {
-      try {
-        console.log(`Polling attempt ${attempts + 1}/${maxAttempts}`);
-        const token = await this.pollForToken();
+    while (!token) {
+      if (Date.now() - startTime > timeoutMs) {
+        throw new Error('認証がタイムアウトしました。もう一度お試しください。');
+      }
 
-        if (token) {
-          return token;
-        }
+      token = await this.pollForToken();
 
-        attempts++;
+      if (!token) {
         await new Promise(resolve => setTimeout(resolve, this.pollingInterval));
-      } catch (error) {
-        if (error instanceof Error && 
-            (error.message.includes('authorization_pending') || 
-             error.message.includes('slow_down'))) {
-          attempts++;
-          await new Promise(resolve => setTimeout(resolve, this.pollingInterval));
-          continue;
-        }
-        throw error;
       }
     }
 
-    throw new Error('Authentication timed out');
+    return token;
   }
 
-  getHeaders(): Headers {
-    if (!this.accessToken) {
-      throw new Error('No access token available');
-    }
-
+  getHeaders(token: string): Headers {
     return new Headers({
       'Accept': 'application/vnd.github.v3+json',
-      'Authorization': `Bearer ${this.accessToken}`,
+      'Authorization': `Bearer ${token}`,
       'User-Agent': 'ScrumFestMap-GitHub-App',
       'X-GitHub-Api-Version': '2022-11-28'
     });
-  }
-  async getFile(owner: string, repo: string, path: string) {
-    try {
-      const response = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
-        {
-          headers: this.getHeaders()
-        }
-      );
-
-      if (!response.ok) {
-        const text = await response.text();
-        try {
-          const errorData = JSON.parse(text);
-          throw new Error(errorData.message || errorData.error || response.statusText);
-        } catch {
-          console.error('Failed to parse error response:', text);
-          throw new Error(`Failed to get file: ${response.statusText}`);
-        }
-      }
-
-      const data = await response.json();
-      console.log('File response data:', data);
-      return data;
-    } catch (error) {
-      console.error('File fetch error:', error);
-      throw new Error(`Failed to get file: ${error instanceof Error ? error.message : String(error)}`);
-    }
   }
 }

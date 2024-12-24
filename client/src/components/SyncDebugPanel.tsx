@@ -1,4 +1,4 @@
-import React, { useState, FC } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ interface AuthInstructionsProps {
   userCode: string;
 }
 
-const AuthInstructions: React.FC<AuthInstructionsProps> = ({ verificationUri, userCode }) => {
+const AuthInstructions = ({ verificationUri, userCode }: AuthInstructionsProps) => {
   return (
     <div className="bg-accent/20 p-4 rounded-lg space-y-4 my-4">
       <h3 className="font-semibold">GitHub認証手順</h3>
@@ -69,12 +69,12 @@ interface DebugContentProps {
   isSyncing: boolean;
 }
 
-const DebugContent: React.FC<DebugContentProps> = ({
+const DebugContent = ({
   logs,
   isLoading,
   error,
   isSyncing,
-}) => {
+}: DebugContentProps) => {
   if (isLoading || isSyncing) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -147,8 +147,8 @@ const DebugContent: React.FC<DebugContentProps> = ({
   );
 };
 
-function SyncDebugPanel() {
-  const [isOpen, setIsOpen] = React.useState<boolean>(false);
+export default function SyncDebugPanel() {
+  const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -244,5 +244,3 @@ function SyncDebugPanel() {
     </Dialog>
   );
 }
-
-export default SyncDebugPanel;
