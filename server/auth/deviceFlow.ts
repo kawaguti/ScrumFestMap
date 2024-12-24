@@ -64,7 +64,7 @@ export class GitHubDeviceAuthService {
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
         console.log('Starting Device Flow attempt:', attempt + 1);
-        const response = await fetch('https://github.com/login/device/code', {
+        const response = await fetch('https://api.github.com/login/device/code', {
           method: 'POST',
           headers: {
             'Accept': 'application/vnd.github+json',
@@ -125,7 +125,7 @@ export class GitHubDeviceAuthService {
         const url = 'https://github.com/login/oauth/access_token';
         console.log('Token request URL:', url);
 
-        const response = await fetch(url, {
+        const response = await fetch('https://api.github.com/login/oauth/access_token', {
           method: 'POST',
           headers: {
             'Accept': 'application/vnd.github+json',
