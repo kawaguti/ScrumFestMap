@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 // Custom error types for better error handling
@@ -36,7 +37,7 @@ export class GitHubDeviceAuthService {
     this.pollingInterval = options.pollingInterval;
     this.maxRetries = options.maxRetries;
     this.headers = {
-      'Accept': 'application/vnd.github.v3+json',
+      'Accept': 'application/json',
       'Content-Type': 'application/json',
       'User-Agent': 'ScrumFestMap-DeviceFlow',
       'X-GitHub-Api-Version': '2022-11-28'
@@ -72,10 +73,7 @@ export class GitHubDeviceAuthService {
         console.log('Starting Device Flow attempt:', attempt + 1);
         const response = await fetch('https://github.com/login/device/code', {
           method: 'POST',
-          headers: {
-            ...this.headers,
-            'Accept': 'application/json'  // Device Flow APIは標準のJSONを使用
-          },
+          headers: this.headers,
           body: JSON.stringify({
             client_id: this.clientId,
             scope: 'repo'
@@ -134,10 +132,7 @@ export class GitHubDeviceAuthService {
 
         const response = await fetch(url, {
           method: 'POST',
-          headers: {
-            ...this.headers,
-            'Accept': 'application/json'  // OAuth endpointは標準のJSONを使用
-          },
+          headers: this.headers,
           body: JSON.stringify({
             client_id: this.clientId,
             device_code: deviceCode,
@@ -179,7 +174,7 @@ export class GitHubDeviceAuthService {
         }
 
         if (validatedData.error === 'slow_down') {
-          currentInterval = Math.min(currentInterval * 1.5, 15000); // Cap at 15 seconds
+          currentInterval = Math.min(currentInterval * 1.5, 15000);
           console.log('Received slow_down signal, increasing interval to:', currentInterval);
           await new Promise(resolve => setTimeout(resolve, currentInterval));
           continue;
@@ -196,7 +191,6 @@ export class GitHubDeviceAuthService {
           throw error;
         }
 
-        // For network errors, implement exponential backoff
         const backoffTime = Math.min(1000 * Math.pow(2, pollCount % 4), 10000);
         console.log('Network error, backing off for:', backoffTime, 'ms');
         await new Promise(resolve => setTimeout(resolve, backoffTime));
