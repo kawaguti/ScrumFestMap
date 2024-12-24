@@ -63,31 +63,36 @@ export class GitHubDeviceAuthService {
 
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
+        const url = 'https://github.com/login/oauth/device/code';
         console.log('Starting Device Flow attempt:', attempt + 1);
-        const response = await fetch('https://github.com/login/oauth/device/code', {
+        console.log('Request URL:', url);
+
+        const response = await fetch(url, {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/x-www-form-urlencoded'
           },
-          body: JSON.stringify({
+          body: new URLSearchParams({
             client_id: this.clientId,
             scope: 'repo'
-          })
+          }).toString()
         });
 
         console.log('Device Flow response status:', response.status);
-        console.log('Device Flow response headers:', Object.fromEntries(response.headers.entries()));
+        console.log('Device Flow response headers:', Object.fromEntries(response.headers));
+
+        const responseText = await response.text();
+        console.log('Response body:', responseText);
 
         if (!response.ok) {
-          const errorText = await response.text();
           throw new DeviceFlowError(
-            `GitHub API error: ${errorText}`,
+            `GitHub API error: ${responseText}`,
             'GITHUB_API_ERROR'
           );
         }
 
-        const data = await response.json();
+        const data = JSON.parse(responseText);
         console.log('Parsed Device Flow response:', data);
 
         const validatedData = deviceFlowResponseSchema.parse(data);
