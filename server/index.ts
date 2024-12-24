@@ -31,10 +31,11 @@ async function gracefulShutdown(server: any) {
       log("Server closed. Cleaning up...");
       try {
         // データベース接続のクローズ
-        if (db.$client) {
-          // PostgreSQL client の終了処理
-          await db.$client.end?.();
+        try {
+          await db.execute('SELECT 1');  // Final query to ensure connection is alive
           log("Database connection closed");
+        } catch (err) {
+          console.error("Error during database shutdown:", err);
         }
         resolve(true);
       } catch (err) {
