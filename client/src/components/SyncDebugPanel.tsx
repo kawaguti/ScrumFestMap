@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -36,7 +36,7 @@ const DebugLogEntry = ({ log }: { log: DebugLog }) => (
   </div>
 );
 
-const DebugContent = React.memo(({ 
+const DebugContent = memo(function DebugContent({ 
   logs, 
   isLoading, 
   error 
@@ -44,7 +44,7 @@ const DebugContent = React.memo(({
   logs: DebugLog[];
   isLoading: boolean;
   error: Error | null;
-}) => {
+}) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
