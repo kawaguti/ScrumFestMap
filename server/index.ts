@@ -58,6 +58,13 @@ async function startServer() {
       }
     });
 
+    if (missingEnvVars.length > 0) {
+      log(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+      throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+    } else {
+      log("All GitHub authentication variables are configured correctly");
+    }
+
     // データベース接続テスト
     try {
       log("Testing database connection...");
@@ -71,7 +78,7 @@ async function startServer() {
 
     // 認証設定を初期化
     log("Setting up authentication...");
-    await setupAuth(app);  // 非同期処理として待機
+    setupAuth(app);
     log("Authentication setup complete");
 
     // リクエストロギングミドルウェア
@@ -80,7 +87,6 @@ async function startServer() {
       const path = req.path;
       let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
-      // レスポンスをインターセプトしてログを取る
       const originalResJson = res.json;
       res.json = function (bodyJson, ...args) {
         capturedJsonResponse = bodyJson;
@@ -145,13 +151,6 @@ async function startServer() {
         log(`Listening on port ${PORT}`);
         resolve(server);
       });
-
-      // エラーハンドリングを追加
-      server.on('error', (error: any) => {
-        log(`Server error: ${error.message}`);
-        console.error('Server startup error:', error);
-        process.exit(1);
-      });
     });
   } catch (error) {
     console.error("Server startup error:", error);
@@ -159,19 +158,6 @@ async function startServer() {
     throw error;
   }
 }
-
-// グローバルな未処理のエラーをキャッチ
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  log(`Uncaught Exception: ${error.message}`);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  log(`Unhandled Rejection: ${reason instanceof Error ? reason.message : String(reason)}`);
-  process.exit(1);
-});
 
 // サーバー起動
 startServer().catch((error) => {

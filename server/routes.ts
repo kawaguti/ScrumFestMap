@@ -24,8 +24,6 @@ function addSyncDebugLog(type: 'info' | 'error', title: string, details: any) {
     title,
     details
   });
-  // デバッグ用にコンソールにも出力
-  console.log(`[${type.toUpperCase()}] ${title}:`, details);
 }
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -44,15 +42,9 @@ function checkGitHubConfig(): { isConfigured: boolean; message?: string } {
   const installationId = process.env.GITHUB_INSTALLATION_ID;
 
   if (!appId || !privateKey || !installationId) {
-    const missing = [
-      !appId && 'GITHUB_APP_ID',
-      !privateKey && 'GITHUB_PRIVATE_KEY',
-      !installationId && 'GITHUB_INSTALLATION_ID'
-    ].filter(Boolean).join(', ');
-
     return {
       isConfigured: false,
-      message: `GitHub連携機能は現在利用できません。環境変数(${missing})の設定が必要です。`
+      message: "GitHub連携機能は現在利用できません。環境変数の設定が必要です。"
     };
   }
 
@@ -92,31 +84,21 @@ export function setupRoutes(app: Express) {
   });
 
   app.post("/api/admin/sync-github", requireAdmin, async (req, res) => {
+    const githubConfig = checkGitHubConfig();
+    if (!githubConfig.isConfigured) {
+      return res.status(503).json({
+        error: "GitHub同期は現在利用できません",
+        details: githubConfig.message,
+        status: 503
+      });
+    }
+
+    clearSyncDebugLogs();
+    addSyncDebugLog('info', 'Starting GitHub sync process', {
+      timestamp: new Date().toISOString()
+    });
+
     try {
-      clearSyncDebugLogs();
-      addSyncDebugLog('info', 'Starting GitHub sync process', {
-        timestamp: new Date().toISOString(),
-        user: req.user
-      });
-
-      const githubConfig = checkGitHubConfig();
-      if (!githubConfig.isConfigured) {
-        addSyncDebugLog('error', 'GitHub configuration error', {
-          message: githubConfig.message
-        });
-        return res.status(503).json({
-          error: "GitHub同期は現在利用できません",
-          details: githubConfig.message,
-          status: 503
-        });
-      }
-
-      addSyncDebugLog('info', 'GitHub configuration validated', {
-        appId: process.env.GITHUB_APP_ID ? 'Set' : 'Not set',
-        privateKey: process.env.GITHUB_PRIVATE_KEY ? 'Set' : 'Not set',
-        installationId: process.env.GITHUB_INSTALLATION_ID ? 'Set' : 'Not set'
-      });
-
       const github = new GitHubAppService(
         process.env.GITHUB_APP_ID,
         process.env.GITHUB_PRIVATE_KEY,
@@ -130,35 +112,23 @@ export function setupRoutes(app: Express) {
         .orderBy(desc(events.date));
 
       addSyncDebugLog('info', 'Events fetched from database', {
-        count: allEvents.length,
-        eventIds: allEvents.map(e => e.id)
+        count: allEvents.length
       });
 
+      // マークダウンを生成
       const markdownContent = generateMarkdown(allEvents);
 
       addSyncDebugLog('info', 'Markdown generated', {
-        contentLength: markdownContent.length,
-        previewFirstLine: markdownContent.split('\n')[0]
+        contentLength: markdownContent.length
       });
 
+      // GitHubにファイルを更新
       const result = await github.updateAllEventsFile(
         markdownContent,
         'kawaguti',
         'ScrumFestMapViewer',
         'all-events.md'
       );
-
-      if (result === null) {
-        addSyncDebugLog('info', 'No changes detected', {
-          message: 'イベント情報に変更がないため、GitHub同期をスキップしました'
-        });
-
-        return res.json({
-          success: true,
-          message: "イベント情報に変更がないため、GitHub同期をスキップしました",
-          debugLogs: syncDebugLogs
-        });
-      }
 
       addSyncDebugLog('info', 'File update succeeded', {
         commitSha: result.commit.sha
@@ -175,7 +145,6 @@ export function setupRoutes(app: Express) {
       console.error('Sync error:', error);
       addSyncDebugLog('error', 'Sync process error', {
         error: error instanceof Error ? {
-          name: error.name,
           message: error.message,
           stack: error.stack
         } : String(error)
