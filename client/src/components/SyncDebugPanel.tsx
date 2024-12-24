@@ -83,8 +83,8 @@ const DebugLogEntry = memo(function DebugLogEntry({ log }: { log: DebugLog }) {
       </div>
       {isDeviceFlow ? (
         <AuthInstructions
-          verificationUri={log.details.verificationUri}
-          userCode={log.details.userCode}
+          verificationUri={log.details.verification_uri}
+          userCode={log.details.user_code}
         />
       ) : (
         <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-48">
@@ -125,7 +125,7 @@ const DebugContent = memo(function DebugContent({
           <p className="font-semibold">エラーが発生しました</p>
         </div>
         <p className="text-sm pl-7">
-          {error instanceof Error ? error.message : String(error)}
+          {error.message}
         </p>
       </div>
     );
@@ -135,7 +135,7 @@ const DebugContent = memo(function DebugContent({
     <ScrollArea className="h-[calc(80vh-8rem)] rounded-md border p-4">
       <div className="space-y-4">
         {logs.map((log, index) => (
-          <DebugLogEntry key={index} log={log} />
+          <DebugLogEntry key={`${log.timestamp}-${index}`} log={log} />
         ))}
         {logs.length === 0 && (
           <div className="text-center text-muted-foreground">
@@ -156,10 +156,14 @@ export function SyncDebugPanel() {
     queryKey: ['/api/admin/sync-debug-logs'],
     queryFn: async () => {
       const response = await fetch('/api/admin/sync-debug-logs', {
+        headers: {
+          'Accept': 'application/json',
+        },
         credentials: 'include'
       });
       if (!response.ok) {
-        throw new Error('Failed to fetch debug logs');
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.message || 'Failed to fetch debug logs');
       }
       return response.json();
     },
@@ -170,12 +174,15 @@ export function SyncDebugPanel() {
     mutationFn: async () => {
       const response = await fetch('/api/admin/sync-github', {
         method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+        },
         credentials: 'include',
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || data.details || 'GitHubとの同期に失敗しました');
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.details || 'GitHubとの同期に失敗しました');
       }
 
       return response.json();

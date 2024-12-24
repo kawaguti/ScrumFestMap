@@ -36,7 +36,8 @@ export class GitHubDeviceAuthService {
     });
 
     if (!response.ok) {
-      throw new Error(`Device flow start failed: ${await response.text()}`);
+      const errorData = await response.json();
+      throw new Error(`Device flow start failed: ${errorData.error || errorData.message || response.statusText}`);
     }
 
     const data = await response.json();
@@ -69,7 +70,8 @@ export class GitHubDeviceAuthService {
     });
 
     if (!response.ok) {
-      throw new Error(`Token polling failed: ${await response.text()}`);
+      const errorData = await response.json();
+      throw new Error(`Token polling failed: ${errorData.error || errorData.message || response.statusText}`);
     }
 
     const data: DeviceFlowTokenResponse = await response.json();
@@ -101,6 +103,7 @@ export class GitHubDeviceAuthService {
       'X-GitHub-Api-Version': '2022-11-28'
     });
   }
+
   async getFile(owner: string, repo: string, path: string) {
     const response = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
@@ -110,7 +113,8 @@ export class GitHubDeviceAuthService {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to get file: ${await response.text()}`);
+      const errorData = await response.json();
+      throw new Error(`Failed to get file: ${errorData.message || errorData.error || response.statusText}`);
     }
 
     return response.json();
