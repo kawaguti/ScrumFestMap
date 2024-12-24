@@ -52,7 +52,7 @@ export class GitHubDeviceAuthService {
         },
         body: new URLSearchParams({
           client_id: this.clientId,
-          scope: 'repo'
+          scope: 'single_file:all-events.md'
         }).toString()
       });
 
