@@ -43,10 +43,6 @@ args = "Server"
 task = "workflow.run"
 args = "Client"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Build Client"
-
 [[workflows.workflow]]
 name = "Server"
 author = "agent"
@@ -76,17 +72,3 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "cd client && npm run dev"
 waitForPort = 3001
-
-[[workflows.workflow]]
-name = "Build Client"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd client && npm run build"

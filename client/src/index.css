@@ -7,10 +7,16 @@
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --border: 219 13% 91%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    @apply font-sans antialiased;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 }
 
@@ -48,15 +54,14 @@
   }
 
   .past-event .marker-head {
-    background: rgba(30, 41, 59, 0.95);
-    border: 2.5px solid white;
+    background: rgba(30, 41, 59, 0.95);  /* slate-800の値を直接rgba指定で不透明度を上げる */
+    border: 2.5px solid white;  /* ボーダーを少し太くして存在感を出す */
   }
 }
-
-.popup-description {
-  display: -webkit-box;
-  -webkit-line-clamp: 7;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  .popup-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 7;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
