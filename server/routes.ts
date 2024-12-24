@@ -1,4 +1,3 @@
-
 import { type Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { users, events, eventHistory } from "../db/schema";
@@ -37,6 +36,21 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+function checkGitHubConfig(): { isConfigured: boolean; message?: string } {
+  const appId = process.env.GITHUB_APP_ID;
+  const privateKey = process.env.GITHUB_PRIVATE_KEY;
+  const installationId = process.env.GITHUB_INSTALLATION_ID;
+
+  if (!appId || !privateKey || !installationId) {
+    return {
+      isConfigured: false,
+      message: "GitHub連携機能は現在利用できません。環境変数の設定が必要です。"
+    };
+  }
+
+  return { isConfigured: true };
+}
+
 export function setupRoutes(app: Express) {
   app.get("/api/events", async (req, res) => {
     try {
@@ -70,21 +84,26 @@ export function setupRoutes(app: Express) {
   });
 
   app.post("/api/admin/sync-github", requireAdmin, async (req, res) => {
+    const githubConfig = checkGitHubConfig();
+    if (!githubConfig.isConfigured) {
+      return res.status(503).json({
+        error: "GitHub同期は現在利用できません",
+        details: githubConfig.message,
+        status: 503
+      });
+    }
+
     clearSyncDebugLogs();
     addSyncDebugLog('info', 'Starting GitHub sync process', {
       timestamp: new Date().toISOString()
     });
 
     try {
-      const appId = process.env.GITHUB_APP_ID;
-      const privateKey = process.env.GITHUB_PRIVATE_KEY;
-      const installationId = process.env.GITHUB_INSTALLATION_ID;
-
-      if (!appId || !privateKey || !installationId) {
-        throw new Error("GitHub App credentials are missing");
-      }
-
-      const github = new GitHubAppService(appId, privateKey, installationId);
+      const github = new GitHubAppService(
+        process.env.GITHUB_APP_ID,
+        process.env.GITHUB_PRIVATE_KEY,
+        process.env.GITHUB_INSTALLATION_ID
+      );
 
       const allEvents = await db
         .select()

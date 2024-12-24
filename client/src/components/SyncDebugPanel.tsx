@@ -73,15 +73,23 @@ const DebugContent = React.memo(function DebugContent({
   }
 
   if (error) {
+    const isConfigError = error.message?.includes('GitHub同期は現在利用できません');
     return (
-      <div className="text-destructive p-4 space-y-2">
+      <div className={`${isConfigError ? 'text-muted-foreground' : 'text-destructive'} p-4 space-y-2`}>
         <div className="flex items-center gap-2">
           <AlertCircle className="h-5 w-5" />
-          <p className="font-semibold">エラーが発生しました</p>
+          <p className="font-semibold">
+            {isConfigError ? 'GitHub連携が設定されていません' : 'エラーが発生しました'}
+          </p>
         </div>
         <p className="text-sm pl-7">
           {error instanceof Error ? error.message : 'Unknown error'}
         </p>
+        {isConfigError && (
+          <p className="text-sm pl-7 mt-4">
+            この機能を使用するには、環境変数の設定が必要です。
+          </p>
+        )}
       </div>
     );
   }
@@ -119,7 +127,7 @@ export default function SyncDebugPanel() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || 'デバッグログの取得に失敗しました');
+        throw new Error(errorData.error || errorData.message || errorData.details || 'デバッグログの取得に失敗しました');
       }
 
       return response.json();
@@ -153,9 +161,10 @@ export default function SyncDebugPanel() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/sync-debug-logs'] });
     },
     onError: (error) => {
+      const isConfigError = error.message?.includes('GitHub同期は現在利用できません');
       toast({
-        variant: "destructive",
-        title: "同期エラー",
+        variant: isConfigError ? "default" : "destructive",
+        title: isConfigError ? "GitHub連携未設定" : "同期エラー",
         description: error instanceof Error ? error.message : "GitHubとの同期に失敗しました。",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/sync-debug-logs'] });

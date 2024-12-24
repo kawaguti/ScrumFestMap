@@ -8,35 +8,44 @@ interface GitHubUpdateResponse {
 }
 
 export class GitHubAppService {
-  private readonly appId: string;
-  private readonly privateKey: string;
-  private readonly installationId: string;
+  private readonly appId: string | undefined;
+  private readonly privateKey: string | undefined;
+  private readonly installationId: string | undefined;
 
   constructor(appId: string | undefined, privateKey: string | undefined, installationId: string | undefined) {
-    // Validate all required parameters at construction time
-    if (!appId || !privateKey || !installationId) {
-      throw new Error('Required GitHub authentication parameters are missing');
-    }
-
     this.appId = appId;
-    this.privateKey = this.normalizePrivateKey(privateKey);
+    this.privateKey = privateKey ? this.normalizePrivateKey(privateKey) : undefined;
     this.installationId = installationId;
   }
 
   private normalizePrivateKey(key: string): string {
-    // Ensure the private key is properly formatted with newlines
     if (!key.includes('-----BEGIN RSA PRIVATE KEY-----')) {
       return `-----BEGIN RSA PRIVATE KEY-----\n${key}\n-----END RSA PRIVATE KEY-----`;
     }
     return key;
   }
 
+  private validateConfig(): { isValid: boolean; message?: string } {
+    if (!this.appId || !this.privateKey || !this.installationId) {
+      return {
+        isValid: false,
+        message: "GitHub認証の設定が不完全です。GITHUB_APP_ID, GITHUB_PRIVATE_KEY, GITHUB_INSTALLATION_IDが必要です。"
+      };
+    }
+    return { isValid: true };
+  }
+
   private async getOctokit(): Promise<Octokit> {
+    const config = this.validateConfig();
+    if (!config.isValid) {
+      throw new Error(config.message);
+    }
+
     try {
       const auth = createAppAuth({
-        appId: this.appId,
-        privateKey: this.privateKey,
-        installationId: this.installationId
+        appId: this.appId!,
+        privateKey: this.privateKey!,
+        installationId: this.installationId!
       });
 
       const { token } = await auth({ type: "installation" });
@@ -53,6 +62,11 @@ export class GitHubAppService {
     repo: string,
     path: string
   ): Promise<GitHubUpdateResponse> {
+    const config = this.validateConfig();
+    if (!config.isValid) {
+      throw new Error(config.message);
+    }
+
     try {
       const octokit = await this.getOctokit();
       console.log('Octokit initialized successfully');
