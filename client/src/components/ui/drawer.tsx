@@ -1,19 +1,11 @@
+"use client"
+
 import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "@/lib/utils"
 
-const Drawer = React.forwardRef<
-  React.ElementRef<typeof DrawerPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Root>
->(({ shouldScaleBackground = true, ...props }, ref) => (
-  <DrawerPrimitive.Root
-    ref={ref}
-    shouldScaleBackground={shouldScaleBackground}
-    {...props}
-  />
-))
-Drawer.displayName = "Drawer"
+const Drawer = DrawerPrimitive.Root
 
 const DrawerTrigger = DrawerPrimitive.Trigger
 
