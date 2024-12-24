@@ -127,7 +127,8 @@ export function setupRoutes(app: Express) {
         markdownContent,
         'kawaguti',
         'ScrumFestMapViewer',
-        'all-events.md'
+        'all-events.md',
+        `Update events: ${allEvents.map(e => e.name).join(", ")}`
       );
 
       addSyncDebugLog('info', 'File update succeeded', {
