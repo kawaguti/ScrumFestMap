@@ -89,5 +89,4 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd client && npm run build && vite preview"
-waitForPort = 4173
+args = "cd client && npm run build"
