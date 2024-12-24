@@ -27,7 +27,6 @@ export class GitHubDeviceAuthService {
   private readonly clientId: string;
   private pollingInterval: number;
   private readonly maxRetries: number;
-  private readonly headers: HeadersInit;
 
   constructor(
     clientId: string,
@@ -36,12 +35,6 @@ export class GitHubDeviceAuthService {
     this.clientId = clientId;
     this.pollingInterval = options.pollingInterval;
     this.maxRetries = options.maxRetries;
-    this.headers = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'User-Agent': 'ScrumFestMap-DeviceFlow',
-      'X-GitHub-Api-Version': '2022-11-28'
-    };
   }
 
   async authenticateWithDeviceFlow(): Promise<string> {
@@ -74,10 +67,12 @@ export class GitHubDeviceAuthService {
         const response = await fetch('https://github.com/login/device/code', {
           method: 'POST',
           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+            'Content-Type': 'application/json',
+            'User-Agent': 'ScrumFestMap-DeviceFlow'
           },
-          body: new URLSearchParams({
+          body: JSON.stringify({
             client_id: this.clientId,
             scope: 'repo'
           })
@@ -94,10 +89,7 @@ export class GitHubDeviceAuthService {
           );
         }
 
-        const rawData = await response.text();
-        console.log('Raw Device Flow response:', rawData);
-
-        const data = JSON.parse(rawData);
+        const data = await response.json();
         console.log('Parsed Device Flow response:', data);
 
         const validatedData = deviceFlowResponseSchema.parse(data);
@@ -136,10 +128,12 @@ export class GitHubDeviceAuthService {
         const response = await fetch(url, {
           method: 'POST',
           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+            'Content-Type': 'application/json',
+            'User-Agent': 'ScrumFestMap-DeviceFlow'
           },
-          body: new URLSearchParams({
+          body: JSON.stringify({
             client_id: this.clientId,
             device_code: deviceCode,
             grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
@@ -156,10 +150,7 @@ export class GitHubDeviceAuthService {
           );
         }
 
-        const rawData = await response.text();
-        console.log('Raw token response:', rawData);
-
-        const data = JSON.parse(rawData);
+        const data = await response.json();
         console.log('Parsed token response:', {
           hasToken: !!data.access_token,
           error: data.error,
