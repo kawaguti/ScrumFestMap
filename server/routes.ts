@@ -160,6 +160,8 @@ export function setupRoutes(app: Express) {
   });
 }
 
+import { prefectureCoordinates } from "../client/src/lib/prefectures";
+
 function generateMarkdown(events: Event[]): string {
   const now = new Date();
   let markdown = `# スクラムフェスマップ\n\n`;
@@ -173,7 +175,7 @@ function generateMarkdown(events: Event[]): string {
     markdown += `## ${event.name}\n\n`;
     markdown += `- 開催地: ${event.prefecture}\n`;
 
-    // 座標の出力
+    // 座標の出力（カスタム座標または都道府県のデフォルト座標を使用）
     if (event.coordinates) {
       const coordinates = typeof event.coordinates === 'string' 
         ? event.coordinates.split(',').map(coord => coord.trim())
@@ -181,6 +183,12 @@ function generateMarkdown(events: Event[]): string {
 
       if (Array.isArray(coordinates)) {
         const [lat, lng] = coordinates;
+        markdown += `- 座標: \`[${lng}, ${lat}]\` (Leaflet形式)\n`;
+      }
+    } else {
+      const prefCoords = prefectureCoordinates[event.prefecture];
+      if (prefCoords) {
+        const [lat, lng] = prefCoords;
         markdown += `- 座標: \`[${lng}, ${lat}]\` (Leaflet形式)\n`;
       }
     }
