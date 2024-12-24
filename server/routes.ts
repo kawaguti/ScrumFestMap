@@ -444,23 +444,42 @@ export function setupRoutes(app: Express) {
         });
       }
 
-      // GitHubデバイス認証を開始
-      const deviceAuth = new GitHubDeviceAuthService(githubClientId);
-      const deviceFlow = await deviceAuth.startDeviceFlow();
+      // GitHubファイル更新インスタンスを作成
+      const github = new GitHubFileUpdater(
+        githubAppId,
+        githubPrivateKey,
+        'kawaguti',
+        'ScrumFestMapViewer',
+        true  // Device Flowを有効化
+      );
 
-      addSyncDebugLog('info', 'Device Flow started', {
-        verification_uri: deviceFlow.verification_uri,
-        user_code: deviceFlow.user_code,
-        expires_in: deviceFlow.expires_in
+      // データベースからイベントを取得
+      const allEvents = await db
+        .select()
+        .from(events)
+        .where(eq(events.isArchived, false))
+        .orderBy(desc(events.date));
+
+      addSyncDebugLog('info', 'Events fetched from database', {
+        count: allEvents.length
+      });
+
+      // マークダウンを生成
+      const markdownContent = generateMarkdown(allEvents);
+
+      // GitHubにファイルを更新
+      const result = await github.updateAllEventsFile(markdownContent);
+
+      addSyncDebugLog('info', 'Sync completed', {
+        commitSha: result.commit.sha,
+        fileUrl: result.content.html_url
       });
 
       res.setHeader('Content-Type', 'application/json');
       res.json({
         success: true,
-        message: "GitHubデバイス認証を開始しました",
-        verification_uri: deviceFlow.verification_uri,
-        user_code: deviceFlow.user_code,
-        expires_in: deviceFlow.expires_in,
+        message: "GitHubリポジトリにイベント一覧を同期しました",
+        details: `更新されたファイル: ${result.content.html_url}`,
         debugLogs: syncDebugLogs
       });
 
