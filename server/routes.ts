@@ -1,4 +1,3 @@
-
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { prefectureCoordinates } from "../client/src/lib/prefectures";
@@ -206,6 +205,33 @@ export function setupRoutes(app: Express) {
         details: error instanceof Error ? error.message : "不明なエラー",
         status: 500
       });
+    }
+  });
+
+  app.put("/api/events/:id", async (req, res) => {
+    console.log('Updating event:', req.params.id, 'with data:', req.body);
+    try {
+      const eventId = parseInt(req.params.id, 10);
+      const updatedEvent = await db.update(events)
+        .set({
+          name: req.body.name,
+          prefecture: req.body.prefecture,
+          date: req.body.date,
+          website: req.body.website,
+          description: req.body.description,
+          youtubePlaylist: req.body.youtubePlaylist,
+          coordinates: req.body.coordinates || null,
+          updatedAt: new Date()
+        })
+        .where(eq(events.id, eventId));
+      
+      if (updatedEvent.rowsAffected === 0) {
+          return res.status(404).json({ error: "Event not found", status: 404});
+      }
+      res.json({ message: "Event updated successfully", status: 200});
+    } catch (error) {
+        console.error("Error updating event:", error);
+        res.status(500).json({ error: "Failed to update event", details: error instanceof Error ? error.message : "Unknown error", status: 500 });
     }
   });
 }
