@@ -134,9 +134,9 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                 const prefecture = prefectures.find(p => p.name === event.prefecture);
                 if (!prefecture) return null;
 
-                // データベースの coordinates を使用
+                // イベントの座標か都道府県のデフォルト座標を使用
                 let coordinates: [number, number];
-                if (event.coordinates) {
+                if (event.coordinates && event.coordinates.trim() !== '') {
                   const [lat, lng] = event.coordinates.split(',').map(coord => parseFloat(coord.trim()));
                   coordinates = [lat, lng] as [number, number];
                 } else {
