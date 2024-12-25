@@ -66,13 +66,18 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
       const coordinates = values.coordinates?.trim();
       const data = {
         ...values,
-        coordinates: coordinates || null
+        coordinates: coordinates || null,
+        date: values.date instanceof Date ? values.date : new Date(values.date)
       };
       await onSubmit(data);
       form.reset();
     } catch (error) {
       console.error("Error submitting form:", error);
-      // Handle error appropriately, e.g., display an error message to the user
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: "イベントの保存に失敗しました。"
+      });
     }
   };
 
