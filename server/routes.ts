@@ -169,6 +169,9 @@ export function setupRoutes(app: Express) {
       // Generate commit message
       let commitMessage = 'Update all-events.md';
       if (lastEventChanges.length > 0) {
+        const latestEvent = lastEventChanges[0];
+        commitMessage = `Update: ${latestEvent.eventName}`;
+        
         const changesSummary = lastEventChanges
           .map(change => `${change.eventName} (${change.modifiedColumn})`)
           .join(', ');
