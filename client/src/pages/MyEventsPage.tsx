@@ -165,7 +165,10 @@ export default function MyEventsPage() {
                       headers: {
                         "Content-Type": "application/json",
                       },
-                      body: JSON.stringify(data),
+                      body: JSON.stringify({
+                        ...data,
+                        coordinates: editingEvent.coordinates
+                      }),
                       credentials: "include",
                     });
 
