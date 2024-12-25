@@ -74,11 +74,40 @@ export class GitHubAppService {
     }
   }
 
+  async getCurrentFileContent(
+    owner: string,
+    repo: string,
+    path: string
+  ): Promise<string> {
+    const octokit = await this.getOctokit();
+    try {
+      const { data: currentFile } = await octokit.repos.getContent({
+        owner,
+        repo,
+        path,
+      });
+
+      if (Array.isArray(currentFile)) {
+        throw new Error('Unexpected response: path points to a directory');
+      }
+
+      if (!('content' in currentFile)) {
+        throw new Error('File content not found in response');
+      }
+
+      return Buffer.from(currentFile.content, 'base64').toString('utf8');
+    } catch (error) {
+      console.error('Failed to get current file content:', error);
+      throw error;
+    }
+  }
+
   async updateAllEventsFile(
     newContent: string,
     owner: string,
     repo: string,
-    path: string
+    path: string,
+    commitMessage: string = 'Update all-events.md'
   ): Promise<GitHubUpdateResponse> {
     const config = this.validateConfig();
     if (!config.isValid) {
@@ -111,7 +140,7 @@ export class GitHubAppService {
         owner,
         repo,
         path,
-        message: 'Update all-events.md',
+        message: commitMessage,
         content: Buffer.from(newContent).toString('base64'),
         sha: currentFile.sha,
       });

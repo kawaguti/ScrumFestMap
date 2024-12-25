@@ -125,11 +125,51 @@ export function setupRoutes(app: Express) {
         contentLength: markdownContent.length
       });
 
+      // Get latest event history entries since last sync
+      const lastEventChanges = await db
+        .select({
+          eventName: events.name,
+          modifiedColumn: eventHistory.modifiedColumn,
+          modifiedAt: eventHistory.modifiedAt
+        })
+        .from(eventHistory)
+        .innerJoin(events, eq(events.id, eventHistory.eventId))
+        .orderBy(desc(eventHistory.modifiedAt))
+        .limit(5);
+
+      // Generate commit message
+      let commitMessage = 'Update all-events.md';
+      if (lastEventChanges.length > 0) {
+        const changesSummary = lastEventChanges
+          .map(change => `${change.eventName} (${change.modifiedColumn})`)
+          .join(', ');
+        commitMessage += `\n\n更新されたイベント:\n${changesSummary}`;
+      }
+
+      // Compare with current content before updating
+      const currentContent = await github.getCurrentFileContent(
+        'kawaguti',
+        'ScrumFestMapViewer',
+        'all-events.md'
+      );
+
+      if (currentContent === markdownContent) {
+        addSyncDebugLog('info', 'Skipping update - content unchanged', {
+          timestamp: new Date().toISOString()
+        });
+        return res.json({
+          success: true,
+          message: "コンテンツに変更がないため、同期をスキップしました",
+          debugLogs: syncDebugLogs
+        });
+      }
+
       const result = await github.updateAllEventsFile(
         markdownContent,
         'kawaguti',
         'ScrumFestMapViewer',
-        'all-events.md'
+        'all-events.md',
+        commitMessage
       );
 
       addSyncDebugLog('info', 'File update succeeded', {
