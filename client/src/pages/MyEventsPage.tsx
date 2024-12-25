@@ -116,7 +116,7 @@ export default function MyEventsPage() {
                 マークダウンでダウンロード
               </Button>
 
-              {user?.isAdmin && (
+              {user && (
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -130,7 +130,7 @@ export default function MyEventsPage() {
                     )}
                     GitHubに同期
                   </Button>
-                  <SyncDebugPanel />
+                  {user.isAdmin && <SyncDebugPanel />}
                 </div>
               )}
 
