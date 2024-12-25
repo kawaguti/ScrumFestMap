@@ -66,10 +66,17 @@ export default function AdminPage() {
   useEffect(() => {
     if (!user) {
       setLocation("/auth");
-    } else if (!user.isAdmin) {
+      return;
+    } 
+    if (!user.isAdmin) {
       setLocation("/");
+      return;
     }
   }, [user, setLocation]);
+
+  if (!user?.isAdmin) {
+    return null;
+  }
 
   // Mutations
   const promoteMutation = useMutation({
