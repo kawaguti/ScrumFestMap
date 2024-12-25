@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEventSchema } from "@db/schema";
 import {
@@ -48,6 +49,7 @@ function roundToNearest15Min(date: Date) {
 }
 
 export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
+  const { toast } = useToast();
   const form = useForm({
     resolver: zodResolver(insertEventSchema),
     defaultValues: defaultValues || {
