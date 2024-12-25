@@ -58,7 +58,9 @@ function generateLocationInfo(event: Event): string {
 }
 
 function generateDateInfo(event: Event): string {
-  return `- 開催日: ${format(new Date(event.date), "yyyy年MM月dd日(E)", { locale: ja })}\n\n`;
+  const date = new Date(event.date);
+  date.setHours(date.getHours() + 9); // JST adjustment
+  return `- 開催日: ${format(date, "yyyy年MM月dd日(E)", { locale: ja })}\n\n`;
 }
 
 function generateDescriptionSection(event: Event): string {
