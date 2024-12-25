@@ -13,10 +13,6 @@ export function generateEventMarkdown(events: Event[], options: MarkdownOptions 
   const now = new Date();
   let header = `# スクラムフェスマップ\n\n`;
   
-  if (options.includeTimestamp) {
-    header += `作成日時: ${format(now, "yyyy年MM月dd日 HH:mm", { locale: ja })}\n\n`;
-  }
-  
   if (options.includeMapLink) {
     header += `- マップ: https://scrumfestmap.kawaguti.dev\n\n`;
   }
