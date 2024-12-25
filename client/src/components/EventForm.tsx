@@ -238,8 +238,11 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
                   <FormControl>
                     <Input
                       placeholder="35.255086694192784, 139.15577749578438"
-                      value={field.value || ""}
-                      onChange={field.onChange}
+                      value={field.value ?? ""}
+                      onChange={(e) => {
+                        const value = e.target.value.trim();
+                        field.onChange(value || null);
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
