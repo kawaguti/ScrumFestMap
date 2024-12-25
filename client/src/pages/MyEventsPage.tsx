@@ -167,7 +167,7 @@ export default function MyEventsPage() {
                       },
                       body: JSON.stringify({
                         ...data,
-                        coordinates: data.coordinates || editingEvent.coordinates
+                        coordinates: data.coordinates
                       }),
                       credentials: "include",
                     });
