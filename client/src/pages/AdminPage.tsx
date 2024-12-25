@@ -75,7 +75,12 @@ export default function AdminPage() {
   }, [user, setLocation]);
 
   if (!user?.isAdmin) {
-    return null;
+    return (
+      <div className="container mx-auto py-6">
+        <h1 className="text-3xl font-bold text-red-500">アクセス権限がありません</h1>
+        <p className="mt-4">このページは管理者のみがアクセスできます。</p>
+      </div>
+    );
   }
 
   // Mutations
@@ -181,7 +186,12 @@ export default function AdminPage() {
   });
 
   if (!user?.isAdmin) {
-    return null;
+    return (
+      <div className="container mx-auto py-6">
+        <h1 className="text-3xl font-bold text-red-500">アクセス権限がありません</h1>
+        <p className="mt-4">このページは管理者のみがアクセスできます。</p>
+      </div>
+    );
   }
 
   return (
