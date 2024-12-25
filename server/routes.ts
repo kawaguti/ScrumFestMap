@@ -136,6 +136,29 @@ export function setupRoutes(app: Express) {
     }
   });
   
+  app.post("/api/events", async (req, res) => {
+    try {
+      const eventData = {
+        ...req.body,
+        date: new Date(req.body.date),
+        coordinates: req.body.coordinates?.trim() || null,
+        isArchived: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      const newEvent = await db.insert(events).values(eventData).returning();
+      res.json(newEvent[0]);
+    } catch (error) {
+      console.error("Error creating event:", error);
+      res.status(500).json({
+        error: "イベントの作成に失敗しました",
+        details: error instanceof Error ? error.message : "不明なエラー",
+        status: 500
+      });
+    }
+  });
+
   app.get("/api/events", async (req, res) => {
     try {
       console.log('[DEBUG] Fetching events from database');
