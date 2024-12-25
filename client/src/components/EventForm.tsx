@@ -73,12 +73,16 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
       };
       await onSubmit(data);
       form.reset();
-    } catch (error) {
+      toast({
+        title: "成功",
+        description: "イベントを保存しました。"
+      });
+    } catch (error: any) {
       console.error("Error submitting form:", error);
       toast({
         variant: "destructive",
         title: "エラー",
-        description: "イベントの保存に失敗しました。"
+        description: error.message || "イベントの保存に失敗しました。"
       });
     }
   };
