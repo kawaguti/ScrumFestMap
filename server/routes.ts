@@ -68,6 +68,21 @@ export function setupRoutes(app: Express) {
       });
     }
   });
+
+  app.get("/api/admin/events", requireAdmin, async (req, res) => {
+    try {
+      const allEvents = await db.select().from(events);
+      res.json(allEvents);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      res.status(500).json({
+        error: "イベント情報の取得に失敗しました",
+        details: error instanceof Error ? error.message : "不明なエラー",
+        status: 500
+      });
+    }
+  });
+  
   app.get("/api/events", async (req, res) => {
     try {
       console.log('[DEBUG] Fetching events from database');
