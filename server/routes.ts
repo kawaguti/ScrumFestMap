@@ -146,24 +146,6 @@ export function setupRoutes(app: Express) {
         commitMessage += `\n\n更新されたイベント:\n${changesSummary}`;
       }
 
-      // Compare with current content before updating
-      const currentContent = await github.getCurrentFileContent(
-        'kawaguti',
-        'ScrumFestMapViewer',
-        'all-events.md'
-      );
-
-      if (currentContent === markdownContent) {
-        addSyncDebugLog('info', 'Skipping update - content unchanged', {
-          timestamp: new Date().toISOString()
-        });
-        return res.json({
-          success: true,
-          message: "コンテンツに変更がないため、同期をスキップしました",
-          debugLogs: syncDebugLogs
-        });
-      }
-
       const result = await github.updateAllEventsFile(
         markdownContent,
         'kawaguti',
