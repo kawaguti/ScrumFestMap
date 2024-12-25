@@ -36,24 +36,23 @@ async function fetchAllUsers(): Promise<User[]> {
       }
     });
     
-    const text = await response.text();
-    console.log("Raw response:", text);
-    
+    const contentType = response.headers.get("content-type");
+    if (!contentType?.includes("application/json")) {
+      console.error("Invalid content type:", contentType);
+      throw new Error("サーバーからの応答が不正です");
+    }
+
     if (!response.ok) {
       if (response.status === 403) {
         throw new Error("管理者権限が必要です");
       }
-      throw new Error(`${response.status}: ${text}`);
+      const errorText = await response.text();
+      throw new Error(`${response.status}: ${errorText}`);
     }
 
-    try {
-      const data = JSON.parse(text);
-      console.log("Parsed users:", data);
-      return data;
-    } catch (parseError) {
-      console.error("JSON parse error:", parseError);
-      throw new Error("ユーザーデータの解析に失敗しました");
-    }
+    const data = await response.json();
+    console.log("Fetched users:", data);
+    return data;
   } catch (error) {
     console.error("User data fetch error:", error);
     throw error;
@@ -197,10 +196,7 @@ export default function AdminPage() {
     queryFn: fetchAllUsers,
     enabled: !!user?.isAdmin,
     retry: false,
-    refetchOnWindowFocus: true,
-    onError: (error) => {
-      console.error('Users fetch error:', error);
-    }
+    refetchOnWindowFocus: true
   });
 
   const { data: events = [], isLoading: isLoadingEvents, error: eventsError } = useQuery({
