@@ -27,23 +27,33 @@ import { ja } from "date-fns/locale";
 import SyncDebugPanel from "@/components/SyncDebugPanel";
 
 async function fetchAllUsers(): Promise<User[]> {
-  const response = await fetch("/api/admin/users", {
-    credentials: "include",
-  });
-  if (!response.ok) {
-    throw new Error("Failed to fetch users");
+  try {
+    const response = await fetch("/api/admin/users", {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch users");
+    }
+    return response.json();
+  } catch (error) {
+    console.error("User data fetch error:", error);
+    throw error;
   }
-  return response.json();
 }
 
 async function fetchAllEvents(): Promise<Event[]> {
-  const response = await fetch("/api/admin/events", {
-    credentials: "include",
-  });
-  if (!response.ok) {
-    throw new Error("Failed to fetch events");
+  try {
+    const response = await fetch("/api/admin/events", {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch events");
+    }
+    return response.json();
+  } catch (error) {
+    console.error("Event data fetch error:", error);
+    throw error;
   }
-  return response.json();
 }
 
 export default function AdminPage() {
