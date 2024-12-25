@@ -9,10 +9,15 @@ type RequestResult = {
   message: string;
 };
 
+type ChangePasswordData = {
+  currentPassword: string;
+  newPassword: string;
+};
+
 async function handleRequest(
   url: string,
   method: string,
-  body?: InsertUser
+  body?: InsertUser | ChangePasswordData
 ): Promise<RequestResult> {
   try {
     const response = await fetch(url, {
@@ -88,6 +93,13 @@ export function useUser() {
     },
   });
 
+  const changePasswordMutation = useMutation({
+    mutationFn: (passwordData: ChangePasswordData) => handleRequest('/api/change-password', 'POST', passwordData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
+
   return {
     user,
     isLoading,
@@ -95,5 +107,6 @@ export function useUser() {
     login: loginMutation.mutateAsync,
     logout: logoutMutation.mutateAsync,
     register: registerMutation.mutateAsync,
+    changePassword: changePasswordMutation.mutateAsync,
   } as const;
 }
