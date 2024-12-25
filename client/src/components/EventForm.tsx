@@ -79,7 +79,7 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmitHandler)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmitHandler)} className="space-y-8 max-h-[calc(100vh-20rem)] overflow-y-auto pr-4">
         <div className="space-y-2">
           <div className="grid gap-4">
             <FormField
@@ -242,6 +242,29 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
                 />
               </div>
             )}
+
+            <FormField
+              control={form.control}
+              name="coordinates"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base font-semibold">
+                    座標（任意）
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="35.255086694192784, 139.15577749578438"
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <p className="text-sm text-muted-foreground">
+                    Googleマップからコピーした座標をそのまま貼り付けできます
+                  </p>
+                </FormItem>
+              )}
+            />
 
             <div className="flex justify-end pt-6">
               <Button
