@@ -61,9 +61,25 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
     },
   });
 
+  const onSubmitHandler = async (values: any) => {
+    try {
+      const coordinates = values.coordinates?.trim();
+      const data = {
+        ...values,
+        coordinates: coordinates || null
+      };
+      await onSubmit(data);
+      form.reset();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      // Handle error appropriately, e.g., display an error message to the user
+    }
+  };
+
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmitHandler)} className="space-y-8">
         <div className="space-y-2">
           <div className="grid gap-4">
             <FormField
