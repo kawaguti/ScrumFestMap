@@ -43,13 +43,13 @@ function generateLocationInfo(event: Event): string {
   // イベントの座標が指定されている場合はそれを使用
   if (event.coordinates && event.coordinates.trim() !== '') {
     const [lat, lng] = event.coordinates.split(',').map(coord => coord.trim());
-    info += `- 座標: \`[${lng}, ${lat}]\` (Leaflet形式)\n`;
+    info += `- 座標: \`[${lng}, ${lat}]\` (ユーザー指定座標)\n`;
   } else {
     // 座標が指定されていない場合は都道府県の座標を使用
     const prefCoords = prefectureCoordinates[event.prefecture];
     if (prefCoords) {
       const [lat, lng] = prefCoords;
-      info += `- 座標: \`[${lng}, ${lat}]\` (デフォルト座標)\n`;
+      info += `- 座標: \`[${lng}, ${lat}]\` (都道府県座標)\n`;
     } else {
       info += `- 座標: 未設定\n`;
     }
