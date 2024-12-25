@@ -53,6 +53,7 @@
     "@types/react-leaflet-markercluster": "^3.0.4",
     "@types/react-query": "^1.2.9",
     "@types/topojson-client": "^3.1.5",
+    "@vitejs/plugin-react-swc": "^3.7.2",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.1",
