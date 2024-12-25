@@ -75,6 +75,53 @@ export function setupRoutes(app: Express) {
     }
   });
 
+  app.put("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id, 10);
+      const { username, email } = req.body;
+
+      const updatedUser = await db.update(users)
+        .set({
+          username,
+          email,
+        })
+        .where(eq(users.id, userId))
+        .returning();
+
+      if (!updatedUser || updatedUser.length === 0) {
+        return res.status(404).json({ error: "ユーザーが見つかりません" });
+      }
+
+      res.json(updatedUser[0]);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({
+        error: "ユーザー情報の更新に失敗しました",
+        details: error instanceof Error ? error.message : "不明なエラー"
+      });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id, 10);
+      
+      // 自分自身は削除できないようにする
+      if (req.user?.id === userId) {
+        return res.status(400).json({ error: "自分自身は削除できません" });
+      }
+
+      await db.delete(users).where(eq(users.id, userId));
+      res.json({ message: "ユーザーを削除しました" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({
+        error: "ユーザーの削除に失敗しました",
+        details: error instanceof Error ? error.message : "不明なエラー"
+      });
+    }
+  });
+
   app.get("/api/admin/events", requireAdmin, async (req, res) => {
     try {
       const allEvents = await db.select().from(events);
@@ -269,7 +316,7 @@ export function setupRoutes(app: Express) {
         })
         .where(eq(events.id, eventId));
       
-      if (!updatedEvent || updatedEvent.rowCount === 0) {
+      if (!updatedUser || updatedEvent.rowCount === 0) {
           return res.status(404).json({ error: "Event not found", status: 404});
       }
       res.json({ message: "Event updated successfully", status: 200});

@@ -261,28 +261,116 @@ export default function AdminPage() {
                   {users.map((targetUser) => (
                     <TableRow key={targetUser.id}>
                       <TableCell>{targetUser.id}</TableCell>
-                      <TableCell>{targetUser.username}</TableCell>
-                      <TableCell>{targetUser.email}</TableCell>
+                      <TableCell>
+                        <input
+                          className="w-full p-1 border rounded"
+                          defaultValue={targetUser.username}
+                          onBlur={(e) => {
+                            if (e.target.value !== targetUser.username) {
+                              fetch(`/api/admin/users/${targetUser.id}`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  ...targetUser,
+                                  username: e.target.value
+                                })
+                              }).then(() => {
+                                queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+                                toast({
+                                  title: "更新完了",
+                                  description: "ユーザー名を更新しました。",
+                                });
+                              }).catch(() => {
+                                toast({
+                                  variant: "destructive",
+                                  title: "エラー",
+                                  description: "ユーザー名の更新に失敗しました。",
+                                });
+                              });
+                            }
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <input
+                          className="w-full p-1 border rounded"
+                          defaultValue={targetUser.email}
+                          onBlur={(e) => {
+                            if (e.target.value !== targetUser.email) {
+                              fetch(`/api/admin/users/${targetUser.id}`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  ...targetUser,
+                                  email: e.target.value
+                                })
+                              }).then(() => {
+                                queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+                                toast({
+                                  title: "更新完了",
+                                  description: "メールアドレスを更新しました。",
+                                });
+                              }).catch(() => {
+                                toast({
+                                  variant: "destructive",
+                                  title: "エラー",
+                                  description: "メールアドレスの更新に失敗しました。",
+                                });
+                              });
+                            }
+                          }}
+                        />
+                      </TableCell>
                       <TableCell>{targetUser.isAdmin ? "はい" : "いいえ"}</TableCell>
                       <TableCell>
-                        {!targetUser.isAdmin && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => promoteMutation.mutate(String(targetUser.id))}
-                          >
-                            管理者に昇格
-                          </Button>
-                        )}
-                        {targetUser.isAdmin && targetUser.id !== user?.id && (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => demoteMutation.mutate(String(targetUser.id))}
-                          >
-                            管理者権限を剥奪
-                          </Button>
-                        )}
+                        <div className="flex gap-2">
+                          {!targetUser.isAdmin && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => promoteMutation.mutate(String(targetUser.id))}
+                            >
+                              管理者に昇格
+                            </Button>
+                          )}
+                          {targetUser.isAdmin && targetUser.id !== user?.id && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => demoteMutation.mutate(String(targetUser.id))}
+                            >
+                              管理者権限を剥奪
+                            </Button>
+                          )}
+                          {targetUser.id !== user?.id && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm("このユーザーを削除してもよろしいですか？\nこの操作は取り消すことができません。")) {
+                                  fetch(`/api/admin/users/${targetUser.id}`, {
+                                    method: "DELETE",
+                                    credentials: "include",
+                                  }).then(() => {
+                                    queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+                                    toast({
+                                      title: "削除完了",
+                                      description: "ユーザーを削除しました。",
+                                    });
+                                  }).catch(() => {
+                                    toast({
+                                      variant: "destructive",
+                                      title: "エラー",
+                                      description: "ユーザーの削除に失敗しました。",
+                                    });
+                                  });
+                                }
+                              }}
+                            >
+                              削除
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
