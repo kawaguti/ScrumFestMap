@@ -58,12 +58,14 @@ function checkGitHubConfig(): { isConfigured: boolean; message?: string } {
 export function setupRoutes(app: Express) {
   app.get("/api/events", async (req, res) => {
     try {
+      console.log('[DEBUG] Fetching events from database');
       const allEvents = await db
         .select()
         .from(events)
         .where(eq(events.isArchived, false))
         .orderBy(desc(events.date));
 
+      console.log('[DEBUG] Found events:', allEvents.map(e => ({ id: e.id, name: e.name })));
       res.json(allEvents);
     } catch (error) {
       console.error("Error fetching events:", error);
