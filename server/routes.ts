@@ -10,7 +10,6 @@ import type { Event } from "../db/schema";
 import { eq, desc } from "drizzle-orm";
 import { GitHubAppService } from './github-auth';
 
-// デバッグ情報を保存するための配列
 let syncDebugLogs: Array<{
   timestamp: string;
   type: 'info' | 'error';
@@ -120,14 +119,12 @@ export function setupRoutes(app: Express) {
         count: allEvents.length
       });
 
-      // マークダウンを生成
       const markdownContent = generateMarkdown(allEvents);
 
       addSyncDebugLog('info', 'Markdown generated', {
         contentLength: markdownContent.length
       });
 
-      // GitHubにファイルを更新
       const result = await github.updateAllEventsFile(
         markdownContent,
         'kawaguti',
@@ -163,11 +160,35 @@ export function setupRoutes(app: Express) {
       });
     }
   });
+
+  app.get("/api/events/download", async (req, res) => {
+    try {
+      const allEvents = await db
+        .select()
+        .from(events)
+        .where(eq(events.isArchived, false))
+        .orderBy(desc(events.date));
+
+      const markdown = generateMarkdown(allEvents);
+      const filename = `all-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`;
+      
+      res.setHeader('Content-Type', 'text/markdown');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(markdown);
+    } catch (error) {
+      console.error("Error generating markdown:", error);
+      res.status(500).json({
+        error: "マークダウンの生成に失敗しました",
+        details: error instanceof Error ? error.message : "不明なエラー",
+        status: 500
+      });
+    }
+  });
 }
 
 function generateMarkdown(events: Event[]): string {
   const now = new Date();
-  const header = `# スクラムフェスマップ\n\n作成日時: ${format(now, "yyyy年MM月dd日 HH:mm", { locale: ja })}\n\n`;
+  let header = `# スクラムフェスマップ\n\n作成日時: ${format(now, "yyyy年MM月dd日 HH:mm", { locale: ja })}\n\n`;
   header += `- マップ: https://scrumfestmap.kawaguti.dev\n\n---\n\n`;
 
   const eventsList = events
@@ -228,36 +249,4 @@ function generateMarkdown(events: Event[]): string {
     }).join('');
 
   return header + eventsList;
-}ring('ja-JP')}\n`;
-    markdown += `- 開催地: ${event.prefecture}\n`;
-    if (event.website) markdown += `- Webサイト: ${event.website}\n`;
-    if (event.youtubePlaylist) markdown += `- 録画一覧: ${event.youtubePlaylist}\n`;
-    if (event.description) markdown += `\n${event.description}\n`;
-    markdown += '\n---\n\n';
-  });
-
-  return markdown;
 }
-app.get("/api/events/download", async (req, res) => {
-  try {
-    const allEvents = await db
-      .select()
-      .from(events)
-      .where(eq(events.isArchived, false))
-      .orderBy(desc(events.date));
-
-    const markdown = generateMarkdown(allEvents);
-    const filename = `all-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`;
-    
-    res.setHeader('Content-Type', 'text/markdown');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(markdown);
-  } catch (error) {
-    console.error("Error generating markdown:", error);
-    res.status(500).json({
-      error: "マークダウンの生成に失敗しました",
-      details: error instanceof Error ? error.message : "不明なエラー",
-      status: 500
-    });
-  }
-});
