@@ -6,8 +6,14 @@ import { type Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { users, events, eventHistory } from "../db/schema";
 import type { Event } from "../db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, gt } from "drizzle-orm";
 import { GitHubAppService } from './github-auth';
+
+// 同期状態の管理
+const syncState = {
+  lastSyncTime: null as Date | null,
+  lastLoginTime: new Date()
+};
 
 let syncDebugLogs: Array<{
   timestamp: string;
@@ -163,8 +169,15 @@ export function setupRoutes(app: Express) {
         })
         .from(eventHistory)
         .innerJoin(events, eq(events.id, eventHistory.eventId))
-        .orderBy(desc(eventHistory.modifiedAt))
-        .limit(5);
+        .where(
+          syncState.lastSyncTime 
+            ? gt(eventHistory.modifiedAt, syncState.lastSyncTime)
+            : gt(eventHistory.modifiedAt, syncState.lastLoginTime)
+        )
+        .orderBy(desc(eventHistory.modifiedAt));
+
+      // 同期状態を更新
+      syncState.lastSyncTime = new Date();
 
       // Generate commit message
       let commitMessage = 'Update all-events.md';
