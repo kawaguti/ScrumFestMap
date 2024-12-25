@@ -216,11 +216,11 @@ export function setupRoutes(app: Express) {
         .set({
           name: req.body.name,
           prefecture: req.body.prefecture,
-          date: req.body.date,
+          date: new Date(req.body.date),
           website: req.body.website,
           description: req.body.description,
           youtubePlaylist: req.body.youtubePlaylist,
-          coordinates: req.body.coordinates || null,
+          coordinates: req.body.coordinates ? req.body.coordinates.trim() : null,
           updatedAt: new Date()
         })
         .where(eq(events.id, eventId));
