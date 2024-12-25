@@ -169,7 +169,14 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                     <Popup>
                       <div className="space-y-2">
                         <h3 className="font-bold text-lg">{event.name}</h3>
-                        <p className="text-sm text-muted-foreground">{event.prefecture}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {event.prefecture}
+                          {event.coordinates && (
+                            <span className="text-xs ml-1">
+                              ({event.coordinates.trim() === coordinates.join(', ') ? '都道府県座標' : 'ユーザー指定座標'})
+                            </span>
+                          )}
+                        </p>
                         <p className="text-sm">{new Date(event.date).toLocaleDateString('ja-JP')}</p>
                         {event.description && (
                           <p className="text-sm mt-2 popup-description">{event.description}</p>
