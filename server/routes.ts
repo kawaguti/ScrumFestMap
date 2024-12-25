@@ -225,7 +225,7 @@ export function setupRoutes(app: Express) {
         })
         .where(eq(events.id, eventId));
       
-      if (updatedEvent.rowsAffected === 0) {
+      if (!updatedEvent || updatedEvent.rowCount === 0) {
           return res.status(404).json({ error: "Event not found", status: 404});
       }
       res.json({ message: "Event updated successfully", status: 200});
