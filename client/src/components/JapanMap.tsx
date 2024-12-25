@@ -138,10 +138,14 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                 let coordinates: [number, number];
                 if (event.coordinates && event.coordinates.trim() !== '') {
                   try {
+                    console.log(`イベント「${event.name}」の座標処理:`, event.coordinates);
                     const [lat, lng] = event.coordinates.split(',').map(coord => Number(coord.trim()));
+                    console.log('パース後の座標:', { lat, lng });
                     if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-                      coordinates = [lat, lng] as [number, number]; // Leafletは[latitude, longitude]形式
+                      coordinates = [lat, lng] as [number, number];
+                      console.log('有効な座標として設定:', coordinates);
                     } else {
+                      console.log('座標が範囲外のためデフォルト使用');
                       coordinates = prefectureCoordinates[event.prefecture];
                     }
                   } catch (error) {
