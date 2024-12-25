@@ -142,7 +142,8 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                     const [lat, lng] = event.coordinates.split(',').map(coord => Number(coord.trim()));
                     console.log('パース後の座標:', { lat, lng });
                     if (!isNaN(lat) && !isNaN(lng)) {
-                      coordinates = [lat, lng] as [number, number];
+                      // Leafletは[latitude, longitude]の順序で座標を期待する
+                      coordinates = [lng, lat] as [number, number];
                       console.log('有効な座標として設定:', coordinates);
                       if (!coordinates[0] || !coordinates[1]) {
                         console.log('座標が不完全なためデフォルト使用');
