@@ -139,14 +139,13 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                 if (event.coordinates && event.coordinates.trim() !== '') {
                   try {
                     const [lat, lng] = event.coordinates.split(',').map(coord => Number(coord.trim()));
-                    if (!isNaN(lat) && !isNaN(lng) && 
-                        lat >= -90 && lat <= 90 && 
-                        lng >= -180 && lng <= 180) {
-                      coordinates = [lat, lng] as [number, number];
+                    if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                      coordinates = [lng, lat] as [number, number]; // LeafletはLngLat形式
                     } else {
                       coordinates = prefectureCoordinates[event.prefecture];
                     }
                   } catch (error) {
+                    console.error('座標の解析エラー:', error, event.coordinates);
                     coordinates = prefectureCoordinates[event.prefecture];
                   }
                 } else {
