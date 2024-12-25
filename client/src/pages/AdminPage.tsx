@@ -181,20 +181,33 @@ export default function AdminPage() {
     },
   });
 
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
+  const { data: users = [], isLoading: isLoadingUsers, error: usersError } = useQuery({
     queryKey: ["admin", "users"],
     queryFn: fetchAllUsers,
     enabled: !!user?.isAdmin,
     retry: false,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    onError: (error) => {
+      console.error('Users fetch error:', error);
+    }
   });
 
-  const { data: events = [], isLoading: isLoadingEvents } = useQuery({
+  const { data: events = [], isLoading: isLoadingEvents, error: eventsError } = useQuery({
     queryKey: ["admin", "events"],
     queryFn: fetchAllEvents,
     enabled: !!user?.isAdmin,
     retry: false,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    onError: (error) => {
+      console.error('Events fetch error:', error);
+    }
+  });
+
+  console.log('Admin page data:', { 
+    usersCount: users.length, 
+    eventsCount: events.length,
+    usersError,
+    eventsError
   });
 
   if (!user?.isAdmin) {
