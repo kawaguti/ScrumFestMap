@@ -137,8 +137,18 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                 // イベントの座標か都道府県のデフォルト座標を使用
                 let coordinates: [number, number];
                 if (event.coordinates && event.coordinates.trim() !== '') {
-                  const [lat, lng] = event.coordinates.split(',').map(coord => parseFloat(coord.trim()));
-                  coordinates = [lat, lng] as [number, number];
+                  try {
+                    const [lat, lng] = event.coordinates.split(',').map(coord => Number(coord.trim()));
+                    if (!isNaN(lat) && !isNaN(lng) && 
+                        lat >= -90 && lat <= 90 && 
+                        lng >= -180 && lng <= 180) {
+                      coordinates = [lat, lng] as [number, number];
+                    } else {
+                      coordinates = prefectureCoordinates[event.prefecture];
+                    }
+                  } catch (error) {
+                    coordinates = prefectureCoordinates[event.prefecture];
+                  }
                 } else {
                   coordinates = prefectureCoordinates[event.prefecture];
                 }
