@@ -216,33 +216,6 @@ export function EventForm({ defaultValues, onSubmit }: EventFormProps) {
               )}
             />
 
-            {defaultValues && (
-              <div className="grid gap-4">
-                <FormField
-                  control={form.control}
-                  name="coordinates"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-base font-semibold">
-                        座標（編集時のみ）
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="35.255086694192784, 139.15577749578438"
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                      <p className="text-sm text-muted-foreground">
-                        Googleマップからコピーした座標をそのまま貼り付けできます
-                      </p>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
             <FormField
               control={form.control}
               name="coordinates"
