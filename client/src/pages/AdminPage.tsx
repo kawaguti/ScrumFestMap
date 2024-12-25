@@ -30,11 +30,19 @@ async function fetchAllUsers(): Promise<User[]> {
   try {
     const response = await fetch("/api/admin/users", {
       credentials: "include",
+      headers: {
+        "Cache-Control": "no-cache"
+      }
     });
     if (!response.ok) {
-      throw new Error("Failed to fetch users");
+      if (response.status === 403) {
+        throw new Error("管理者権限が必要です");
+      }
+      throw new Error(`${response.status}: ${await response.text()}`);
     }
-    return response.json();
+    const data = await response.json();
+    console.log("Fetched users:", data);
+    return data;
   } catch (error) {
     console.error("User data fetch error:", error);
     throw error;
@@ -177,12 +185,16 @@ export default function AdminPage() {
     queryKey: ["admin", "users"],
     queryFn: fetchAllUsers,
     enabled: !!user?.isAdmin,
+    retry: false,
+    refetchOnWindowFocus: true
   });
 
   const { data: events = [], isLoading: isLoadingEvents } = useQuery({
     queryKey: ["admin", "events"],
     queryFn: fetchAllEvents,
     enabled: !!user?.isAdmin,
+    retry: false,
+    refetchOnWindowFocus: true
   });
 
   if (!user?.isAdmin) {
