@@ -140,7 +140,7 @@ export function JapanMap({ events, selectedPrefecture, onPrefectureSelect }: Jap
                   try {
                     const [lat, lng] = event.coordinates.split(',').map(coord => Number(coord.trim()));
                     if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-                      coordinates = [lng, lat] as [number, number]; // LeafletはLngLat形式
+                      coordinates = [lat, lng] as [number, number]; // Leafletは[latitude, longitude]形式
                     } else {
                       coordinates = prefectureCoordinates[event.prefecture];
                     }
