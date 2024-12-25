@@ -266,26 +266,18 @@ export function setupRoutes(app: Express) {
   app.delete("/api/events/:id", async (req, res) => {
     try {
       const eventId = parseInt(req.params.id, 10);
-      const result = await db.delete(events)
-        .where(eq(events.id, eventId));
+      await db.delete(events).where(eq(events.id, eventId));
       
-      if (!result || result.rowCount === 0) {
-        return res.status(404).json({ 
-          error: "イベントが見つかりません", 
-          status: 404 
-        });
-      }
-      
-      res.json({ 
-        message: "イベントを削除しました", 
-        status: 200 
+      res.status(200).json({ 
+        success: true,
+        message: "イベントを削除しました"
       });
     } catch (error) {
       console.error("Error deleting event:", error);
       res.status(500).json({ 
-        error: "イベントの削除に失敗しました", 
-        details: error instanceof Error ? error.message : "不明なエラー",
-        status: 500 
+        success: false,
+        error: "イベントの削除に失敗しました",
+        message: error instanceof Error ? error.message : "不明なエラー"
       });
     }
   });
