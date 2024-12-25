@@ -31,18 +31,29 @@ async function fetchAllUsers(): Promise<User[]> {
     const response = await fetch("/api/admin/users", {
       credentials: "include",
       headers: {
+        "Accept": "application/json",
         "Cache-Control": "no-cache"
       }
     });
+    
+    const text = await response.text();
+    console.log("Raw response:", text);
+    
     if (!response.ok) {
       if (response.status === 403) {
         throw new Error("管理者権限が必要です");
       }
-      throw new Error(`${response.status}: ${await response.text()}`);
+      throw new Error(`${response.status}: ${text}`);
     }
-    const data = await response.json();
-    console.log("Fetched users:", data);
-    return data;
+
+    try {
+      const data = JSON.parse(text);
+      console.log("Parsed users:", data);
+      return data;
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError);
+      throw new Error("ユーザーデータの解析に失敗しました");
+    }
   } catch (error) {
     console.error("User data fetch error:", error);
     throw error;
