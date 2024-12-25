@@ -204,10 +204,7 @@ export default function AdminPage() {
     queryFn: fetchAllEvents,
     enabled: !!user?.isAdmin,
     retry: false,
-    refetchOnWindowFocus: true,
-    onError: (error) => {
-      console.error('Events fetch error:', error);
-    }
+    refetchOnWindowFocus: true
   });
 
   console.log('Admin page data:', { 

@@ -55,6 +55,19 @@ function checkGitHubConfig(): { isConfigured: boolean; message?: string } {
 }
 
 export function setupRoutes(app: Express) {
+  app.get("/api/admin/users", requireAdmin, async (req, res) => {
+    try {
+      const allUsers = await db.select().from(users);
+      res.json(allUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({
+        error: "ユーザー情報の取得に失敗しました",
+        details: error instanceof Error ? error.message : "不明なエラー",
+        status: 500
+      });
+    }
+  });
   app.get("/api/events", async (req, res) => {
     try {
       console.log('[DEBUG] Fetching events from database');
