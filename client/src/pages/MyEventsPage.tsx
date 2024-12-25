@@ -157,6 +157,7 @@ export default function MyEventsPage() {
                   website: editingEvent.website || "",
                   description: editingEvent.description || "",
                   youtubePlaylist: editingEvent.youtubePlaylist || "",
+                  coordinates: editingEvent.coordinates || "",
                 }}
                 onSubmit={async (data) => {
                   try {
