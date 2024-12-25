@@ -238,3 +238,26 @@ function generateMarkdown(events: Event[]): string {
 
   return markdown;
 }
+app.get("/api/events/download", async (req, res) => {
+  try {
+    const allEvents = await db
+      .select()
+      .from(events)
+      .where(eq(events.isArchived, false))
+      .orderBy(desc(events.date));
+
+    const markdown = generateMarkdown(allEvents);
+    const filename = `all-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`;
+    
+    res.setHeader('Content-Type', 'text/markdown');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(markdown);
+  } catch (error) {
+    console.error("Error generating markdown:", error);
+    res.status(500).json({
+      error: "マークダウンの生成に失敗しました",
+      details: error instanceof Error ? error.message : "不明なエラー",
+      status: 500
+    });
+  }
+});

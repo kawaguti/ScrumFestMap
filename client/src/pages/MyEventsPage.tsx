@@ -109,12 +109,7 @@ export default function MyEventsPage() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  const processedEvents = events.map(event => ({
-                    ...event,
-                    date: new Date(event.date)
-                  }));
-                  const markdown = generateEventMarkdown(processedEvents);
-                  downloadMarkdown(markdown, `all-events-${format(new Date(), "yyyyMMdd-HHmm")}.md`);
+                  window.location.href = '/api/events/download';
                 }}
               >
                 <Download className="h-4 w-4 mr-2" />
