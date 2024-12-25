@@ -35,6 +35,16 @@ function addSyncDebugLog(type: 'info' | 'error', title: string, details: any) {
   });
 }
 
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ 
+      error: "ログインが必要です",
+      status: 401
+    });
+  }
+  next();
+}
+
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || !req.user?.isAdmin) {
     return res.status(403).json({ 
@@ -192,7 +202,7 @@ export function setupRoutes(app: Express) {
     });
   });
 
-  app.post("/api/admin/sync-github", requireAdmin, async (req, res) => {
+  app.post("/api/admin/sync-github", requireAuth, async (req, res) => {
     const githubConfig = checkGitHubConfig();
     if (!githubConfig.isConfigured) {
       return res.status(503).json({
