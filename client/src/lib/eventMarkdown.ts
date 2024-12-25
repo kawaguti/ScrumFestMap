@@ -10,7 +10,6 @@ interface MarkdownOptions {
 }
 
 export function generateEventMarkdown(events: Event[], options: MarkdownOptions = {}): string {
-  const now = new Date();
   let header = `# スクラムフェスマップ\n\n`;
   
   if (options.includeMapLink) {
